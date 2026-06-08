@@ -1,40 +1,43 @@
 # Externalization — remaining steps
 
-This module is **pre-staged**: the `dk-oioubl-v2-1` addon still also lives in
-`gobl` core (`addons/dk/oioubl-v2-1`). It builds here against a local gobl core
-via a `replace` in `go.mod`. The steps below complete the move once
-[gobl PR #847](https://github.com/invopop/gobl/pull/847) (approved
-external-addon registry) merges and a core tag is cut.
+This module is **migrated locally**: the `dk-oioubl-v2-1` addon lives here (not in
+gobl core), and `gobl.ubl` imports it. It currently builds via a dev `replace`
+in `go.mod` against the local gobl core checked out on the **`externalize-dk-oioubl`**
+branch — the branch that carries the EN 16931 OIOUBL relaxations and has no
+in-core dk-oioubl addon. The steps below finalise it for publishing.
 
-Gate: **#847 merged + gobl core tag cut** (provides `tax.RegisterApprovedAddon`
-and keeps `bill.Status` / `is.*` in core).
+## Layout (mirrors `gobl.fr.ctc`)
+- root `dkoioubl` package (`doc.go`) — reserved for OIOUBL tooling
+- `addon/` — the `dk-oioubl-v2-1` addon (package `addon`); consumers import it
+  aliased: `oioubl "github.com/invopop/gobl.dk.oioubl/addon"`
+- `addon/en16931_carveout_test.go` — tests for core's EN 16931 relaxations that
+  only apply with this addon (they moved out of core, which must not test-depend
+  on an external addon)
 
-1. **gobl core — register the approved key.** In `addons/external.go` add an
-   entry for `dk-oioubl-v2-1` (`Key`, `Name`, `Module:
-   "github.com/invopop/gobl.dk.oioubl"`). Editing that file is the approval step;
-   it does **not** bypass the runtime gate (a document declaring the addon still
-   needs this module imported).
+## Gates & steps
 
-2. **gobl core — remove the in-core addon.** Delete `addons/dk/oioubl-v2-1/`,
-   `data/addons/dk-oioubl*.json` and `data/rules/dk-oioubl.json`.
+1. **gobl 0.5 released** — brings PR #847: the approved external-addon registry
+   (`tax.RegisterApprovedAddon`), `gobl/pkg/examples`, and fr/ctc externalised.
+   *(Not released yet as of writing; expected imminently.)*
 
-3. **gobl core — relocate the en16931 carve-out tests.** `addons/eu/en16931/`
-   production code keeps its OIOUBL relaxations (they reference the addon by the
-   literal string `tax.AddonIn("dk-oioubl-v2-1")`, no import). But
-   `bill_test.go` / `tax_combo_test.go` *import* the oioubl package — move those
-   OIOUBL-specific cases into this module (e.g. `addon/en16931_carveout_test.go`)
-   so core has no dependency on the external addon.
+2. **A gobl core PR** (the OIOUBL core-side, always needed — only the addon
+   *implementation* externalises, not its core hooks):
+   - Land the EN 16931 OIOUBL relaxations in `addons/eu/en16931` (the
+     `tax.AddonIn("dk-oioubl-v2-1")` guards — production code, literal key, no
+     import). These are currently only on the `add-dk-oioubl-v2-1-addon` branch.
+   - Register the approved key in `addons/external.go`: `dk-oioubl-v2-1`
+     (`Key`, `Name`, `Module: "github.com/invopop/gobl.dk.oioubl"`).
+   - (dk-oioubl was never merged into main's in-core addons, so there's nothing
+     to delete there.)
+   - Cut a gobl core tag.
 
-4. **This module — pin the core tag.** Drop the `replace` in `go.mod` and pin
-   `github.com/invopop/gobl` to the new core tag.
+3. **This module** — drop the `replace` in `go.mod`; pin
+   `github.com/invopop/gobl` to the new core tag; add `examples/` +
+   `examples_test.go` (using `gobl/pkg/examples`, available from 0.5); push to
+   `invopop/gobl.dk.oioubl` and tag.
 
-5. **gobl.ubl — re-point the import.** Change `oioubl
-   "github.com/invopop/gobl/addons/dk/oioubl-v2-1"` →
-   `oioubl "github.com/invopop/gobl.dk.oioubl/addon"` (the alias and all
-   `oioubl.*` references stay), add `github.com/invopop/gobl.dk.oioubl` to
-   `go.mod`, and re-pin gobl core.
-
-6. **Publish.** Push this module to `invopop/gobl.dk.oioubl` and tag it.
+4. **gobl.ubl** — drop both dev `replace`s; pin the gobl core tag and the
+   `gobl.dk.oioubl` tag.
 
 Note: `gobl.ubl` only imports the addon for its keys/extension constants
 (`oioubl.V2_1`, `oioubl.ExtKey*`); the XML serialization stays in `gobl.ubl`
