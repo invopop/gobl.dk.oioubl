@@ -1,0 +1,56 @@
+{
+	"$schema": "https://gobl.org/draft-0/envelope",
+	"head": {
+		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
+		"dig": {
+			"alg": "sha256",
+			"val": "f35b19e00c618e5c9fe247bd1e556271488eacc96ba868d2650fb0891723dce5"
+		}
+	},
+	"doc": {
+		"$schema": "https://gobl.org/draft-0/bill/status",
+		"$regime": "DK",
+		"$addons": [
+			"dk-oioubl-v2-1"
+		],
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3",
+		"type": "response",
+		"issue_date": "2026-01-15",
+		"code": "RESP001",
+		"supplier": {
+			"name": "Kunde ApS",
+			"tax_id": {
+				"country": "DK",
+				"code": "88146328"
+			},
+			"inboxes": [
+				{
+					"scheme": "0184",
+					"code": "88146328"
+				}
+			]
+		},
+		"customer": {
+			"name": "Eksempel A/S",
+			"tax_id": {
+				"country": "DK",
+				"code": "12345674"
+			},
+			"inboxes": [
+				{
+					"scheme": "0184",
+					"code": "12345674"
+				}
+			]
+		},
+		"lines": [
+			{
+				"index": 1,
+				"key": "rejected",
+				"doc": {
+					"code": "INV1000"
+				}
+			}
+		]
+	}
+}

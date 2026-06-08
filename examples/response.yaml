@@ -1,0 +1,28 @@
+$schema: "https://gobl.org/draft-0/bill/status"
+$regime: "DK"
+$addons:
+  - "dk-oioubl-v2-1"
+uuid: "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3"
+type: "response"
+code: "RESP001"
+issue_date: "2026-01-15"
+supplier:
+  name: "Kunde ApS"
+  tax_id:
+    country: "DK"
+    code: "88146328"
+  inboxes:
+    - scheme: "0184"
+      code: "88146328"
+customer:
+  name: "Eksempel A/S"
+  tax_id:
+    country: "DK"
+    code: "12345674"
+  inboxes:
+    - scheme: "0184"
+      code: "12345674"
+lines:
+  - key: "rejected"
+    doc:
+      code: "INV1000"

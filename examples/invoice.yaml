@@ -1,0 +1,53 @@
+$schema: "https://gobl.org/draft-0/bill/invoice"
+$regime: "DK"
+$addons:
+  - "dk-oioubl-v2-1"
+uuid: "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2"
+type: "standard"
+currency: "DKK"
+issue_date: "2026-01-01"
+series: "2026"
+code: "1000"
+supplier:
+  name: "Eksempel A/S"
+  tax_id:
+    country: "DK"
+    code: "12345674"
+  inboxes:
+    - scheme: "0184"
+      code: "12345674"
+  addresses:
+    - num: "1"
+      street: "Hovedgaden"
+      locality: "København"
+      code: "1000"
+      country: "DK"
+customer:
+  name: "Kunde ApS"
+  tax_id:
+    country: "DK"
+    code: "88146328"
+  inboxes:
+    - scheme: "0184"
+      code: "88146328"
+  people:
+    - name:
+        given: "Anders"
+        surname: "Jensen"
+      identities:
+        - label: "Contact"
+          code: "C-001"
+  addresses:
+    - num: "5"
+      street: "Bygaden"
+      locality: "Aarhus"
+      code: "8000"
+      country: "DK"
+lines:
+  - quantity: 1
+    item:
+      name: "Produkt"
+      price: "100.00"
+    taxes:
+      - cat: "VAT"
+        rate: "standard"
