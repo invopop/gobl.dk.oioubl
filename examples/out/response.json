@@ -4,7 +4,7 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "f35b19e00c618e5c9fe247bd1e556271488eacc96ba868d2650fb0891723dce5"
+			"val": "0cfc5f078466384bec324590d54528257d798a278fe3a33ceb171f6e4a7270c9"
 		}
 	},
 	"doc": {
@@ -49,6 +49,9 @@
 				"key": "rejected",
 				"doc": {
 					"code": "INV1000"
+				},
+				"ext": {
+					"dk-oioubl-response-code": "BusinessReject"
 				}
 			}
 		]
