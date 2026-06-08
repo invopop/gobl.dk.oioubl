@@ -1,9 +1,9 @@
-package oioubl_test
+package addon_test
 
 import (
 	"testing"
 
-	oioubl "github.com/invopop/gobl.dk.oioubl/oioubl"
+	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	en16931 "github.com/invopop/gobl/addons/eu/en16931"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/cef"

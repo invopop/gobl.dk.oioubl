@@ -32,5 +32,5 @@ Import the addon for its side effects to register it, then declare the
 `dk-oioubl-v2-1` addon on a GOBL document:
 
 ```go
-import _ "github.com/invopop/gobl.dk.oioubl/oioubl"
+import _ "github.com/invopop/gobl.dk.oioubl/addon"
 ```

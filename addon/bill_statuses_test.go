@@ -1,10 +1,10 @@
-package oioubl_test
+package addon_test
 
 import (
 	"testing"
 
 	_ "github.com/invopop/gobl"
-	oioubl "github.com/invopop/gobl.dk.oioubl/oioubl"
+	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/org"

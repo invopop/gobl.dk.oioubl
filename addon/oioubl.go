@@ -1,6 +1,6 @@
 // Package oioubl provides extensions and validations for the Danish OIOUBL 2.1
 // standard used on the NemHandel e-invoicing network.
-package oioubl
+package addon
 
 import (
 	"github.com/invopop/gobl/addons/eu/en16931"

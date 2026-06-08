@@ -22,7 +22,7 @@ and keeps `bill.Status` / `is.*` in core).
    production code keeps its OIOUBL relaxations (they reference the addon by the
    literal string `tax.AddonIn("dk-oioubl-v2-1")`, no import). But
    `bill_test.go` / `tax_combo_test.go` *import* the oioubl package — move those
-   OIOUBL-specific cases into this module (e.g. `oioubl/en16931_carveout_test.go`)
+   OIOUBL-specific cases into this module (e.g. `addon/en16931_carveout_test.go`)
    so core has no dependency on the external addon.
 
 4. **This module — pin the core tag.** Drop the `replace` in `go.mod` and pin
@@ -30,7 +30,7 @@ and keeps `bill.Status` / `is.*` in core).
 
 5. **gobl.ubl — re-point the import.** Change `oioubl
    "github.com/invopop/gobl/addons/dk/oioubl-v2-1"` →
-   `oioubl "github.com/invopop/gobl.dk.oioubl/oioubl"` (the alias and all
+   `oioubl "github.com/invopop/gobl.dk.oioubl/addon"` (the alias and all
    `oioubl.*` references stay), add `github.com/invopop/gobl.dk.oioubl` to
    `go.mod`, and re-pin gobl core.
 

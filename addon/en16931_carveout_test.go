@@ -1,4 +1,4 @@
-package oioubl_test
+package addon_test
 
 import (
 	"testing"
