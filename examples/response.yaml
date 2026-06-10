@@ -11,17 +11,15 @@ supplier:
   tax_id:
     country: "DK"
     code: "88146328"
-  inboxes:
-    - scheme: "0184"
-      code: "88146328"
+  endpoints:
+    - uri: "iso6523-actorid-upis::0184:88146328"
 customer:
   name: "Eksempel A/S"
   tax_id:
     country: "DK"
     code: "12345674"
-  inboxes:
-    - scheme: "0184"
-      code: "12345674"
+  endpoints:
+    - uri: "iso6523-actorid-upis::0184:12345674"
 lines:
   - key: "rejected"
     doc:

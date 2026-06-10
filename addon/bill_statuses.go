@@ -22,9 +22,8 @@ func billStatusRules() *rules.Set {
 			// PartyLegalEntity). The citations below follow that mapping rather
 			// than the GOBL field name.
 			rules.Field("supplier",
-				rules.Field("inboxes",
-					rules.Assert("01", "supplier inboxes are required (F-APR012)", is.Present),
-				),
+				rules.Assert("01", "supplier must have an ISO 6523 endpoint or inbox (F-APR012)",
+					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
 				rules.Assert("06", "supplier must have a tax ID or identities (F-APR041)",
 					is.Func("has tax id or identities", partyHasTaxIDOrIdentities)),
 				rules.Assert("07", "supplier must have a name or legal identity (F-LIB022)",
@@ -32,9 +31,8 @@ func billStatusRules() *rules.Set {
 			),
 			rules.Field("customer",
 				rules.Assert("02", "customer is required for a response", is.Present),
-				rules.Field("inboxes",
-					rules.Assert("03", "customer inboxes are required (F-APR008)", is.Present),
-				),
+				rules.Assert("03", "customer must have an ISO 6523 endpoint or inbox (F-APR008)",
+					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
 				rules.Assert("08", "customer must have a name or legal identity (F-LIB022)",
 					is.Func("has name or legal identity", partyHasNameOrLegalIdentity)),
 			),
@@ -69,6 +67,17 @@ var isResponseType = is.Func("response status type", func(val any) bool {
 	st, ok := val.(*bill.Status)
 	return ok && st != nil && st.Type == bill.StatusTypeResponse
 })
+
+// partyHasEndpointOrInbox accepts either routing model: org.Endpoint is the
+// going-forward form for the wire cbc:EndpointID, while org.Inbox documents
+// produced before the endpoint migration remain valid.
+func partyHasEndpointOrInbox(val any) bool {
+	p, ok := val.(*org.Party)
+	if !ok || p == nil {
+		return true
+	}
+	return len(p.Endpoints) > 0 || len(p.Inboxes) > 0
+}
 
 func partyHasTaxIDOrIdentities(val any) bool {
 	p, ok := val.(*org.Party)

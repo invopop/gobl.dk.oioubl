@@ -24,14 +24,14 @@ func testStatusResponse(t *testing.T) *bill.Status {
 		Code:      "RESP001",
 		IssueDate: cal.MakeDate(2026, 1, 15),
 		Supplier: &org.Party{
-			Name:    "Kunde ApS",
-			TaxID:   &tax.Identity{Country: "DK", Code: "88146328"},
-			Inboxes: []*org.Inbox{{Scheme: "0184", Code: "88146328"}},
+			Name:      "Kunde ApS",
+			TaxID:     &tax.Identity{Country: "DK", Code: "88146328"},
+			Endpoints: []*org.Endpoint{{URI: "iso6523-actorid-upis::0184:88146328"}},
 		},
 		Customer: &org.Party{
-			Name:    "Eksempel A/S",
-			TaxID:   &tax.Identity{Country: "DK", Code: "12345674"},
-			Inboxes: []*org.Inbox{{Scheme: "0184", Code: "12345674"}},
+			Name:      "Eksempel A/S",
+			TaxID:     &tax.Identity{Country: "DK", Code: "12345674"},
+			Endpoints: []*org.Endpoint{{URI: "iso6523-actorid-upis::0184:12345674"}},
 		},
 		Lines: []*bill.StatusLine{
 			{
@@ -57,12 +57,20 @@ func TestStatusValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "F-APR005")
 	})
 
-	t.Run("missing supplier inboxes (F-APR012)", func(t *testing.T) {
+	t.Run("missing supplier endpoint and inboxes (F-APR012)", func(t *testing.T) {
 		st := testStatusResponse(t)
-		st.Supplier.Inboxes = nil
+		st.Supplier.Endpoints = nil
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "F-APR012")
+	})
+
+	t.Run("inbox-only supplier still passes (pre-endpoint documents)", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Supplier.Endpoints = nil
+		st.Supplier.Inboxes = []*org.Inbox{{Scheme: "0184", Code: "88146328"}}
+		require.NoError(t, st.Calculate())
+		assert.NoError(t, rules.Validate(st))
 	})
 
 	t.Run("supplier without tax ID or identities (F-APR041)", func(t *testing.T) {
@@ -118,9 +126,9 @@ func TestStatusValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "customer is required")
 	})
 
-	t.Run("missing customer inboxes (F-APR008)", func(t *testing.T) {
+	t.Run("missing customer endpoint and inboxes (F-APR008)", func(t *testing.T) {
 		st := testStatusResponse(t)
-		st.Customer.Inboxes = nil
+		st.Customer.Endpoints = nil
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "F-APR008")
@@ -181,7 +189,7 @@ func TestStatusValidation(t *testing.T) {
 	t.Run("non-response status skips F-APR rules", func(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Type = bill.StatusTypeSystem
-		st.Supplier.Inboxes = nil
+		st.Supplier.Endpoints = nil
 		st.Customer = nil
 		st.Lines[0].Doc = nil
 		require.NoError(t, st.Calculate())
