@@ -57,6 +57,14 @@ func billInvoiceRules() *rules.Set {
 					is.Func("complete StructuredDK address", addressStructuredDKComplete)),
 			),
 		),
+		rules.Field("totals",
+			// OIOUBL rejects negative monetary totals outright (F-LIB016 on
+			// PayableAmount / TaxInclusiveAmount, F-LIB020 on amounts):
+			// over-discounted or over-advanced documents must be modelled as
+			// credit notes instead.
+			rules.Assert("26", "payable and due totals must not be negative (F-LIB016 / F-LIB020)",
+				is.Func("non-negative totals", totalsNonNegative)),
+		),
 		rules.Field("customer",
 			rules.Assert("02", "customer must have an ISO 6523 endpoint or inbox (F-INV044 / F-CRN040)",
 				is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
@@ -448,4 +456,15 @@ func roundingInRange(val any) bool {
 		return true
 	}
 	return a.Compare(roundingMin) >= 0 && a.Compare(roundingMax) <= 0
+}
+
+func totalsNonNegative(val any) bool {
+	tt, ok := val.(*bill.Totals)
+	if !ok || tt == nil {
+		return true
+	}
+	if tt.Payable.IsNegative() {
+		return false
+	}
+	return tt.Due == nil || !tt.Due.IsNegative()
 }

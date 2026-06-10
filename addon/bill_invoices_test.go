@@ -684,3 +684,29 @@ func TestCreditNoteValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "F-INV335")
 	})
 }
+
+func TestTotalsNonNegative(t *testing.T) {
+	t.Run("over-discounted invoice is rejected (F-LIB016)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Discounts = []*bill.Discount{{
+			Reason: "Goodwill",
+			Amount: num.MakeAmount(1000000, 2),
+			Taxes:  tax.Set{{Category: tax.CategoryVAT, Key: tax.KeyStandard, Percent: num.NewPercentage(250, 3)}},
+		}}
+		require.NoError(t, inv.Calculate())
+		err := rules.Validate(inv)
+		assert.ErrorContains(t, err, "F-LIB016")
+	})
+
+	t.Run("fully discounted to zero passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		require.NoError(t, inv.Calculate())
+		inv.Discounts = []*bill.Discount{{
+			Reason: "Goodwill",
+			Amount: inv.Totals.Total,
+			Taxes:  tax.Set{{Category: tax.CategoryVAT, Key: tax.KeyStandard, Percent: num.NewPercentage(250, 3)}},
+		}}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+}
