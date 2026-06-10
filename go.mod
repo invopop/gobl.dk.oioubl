@@ -3,7 +3,7 @@ module github.com/invopop/gobl.dk.oioubl
 go 1.24.0
 
 require (
-	github.com/invopop/gobl v0.403.1-0.20260603091605-04cd0c610990
+	github.com/invopop/gobl v0.403.1-0.20260610095043-ed195eab80d6
 	github.com/stretchr/testify v1.11.1
 )
 
@@ -27,8 +27,3 @@ require (
 	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// Dev-only: build against the local gobl core that carries the EN 16931 OIOUBL
-// relaxations and the bill.Status promotion. Dropped once a core tag with the
-// approved external-addon registry (PR #847) is cut and pinned here.
-replace github.com/invopop/gobl => ../gobl
