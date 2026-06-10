@@ -83,17 +83,26 @@ func TestInvoiceValidation(t *testing.T) {
 		require.NoError(t, rules.Validate(inv))
 	})
 
-	t.Run("missing supplier inboxes (F-INV031)", func(t *testing.T) {
+	t.Run("bare DK supplier passes via the derived participant (F-INV031)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Inboxes = nil
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+
+	t.Run("supplier without participant or tax ID code fails (F-INV031)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Supplier.Inboxes = nil
+		inv.Supplier.TaxID = &tax.Identity{Country: "DK"}
 		require.NoError(t, inv.Calculate())
 		err := rules.Validate(inv)
 		assert.ErrorContains(t, err, "F-INV031")
 	})
 
-	t.Run("missing customer inboxes (F-INV044)", func(t *testing.T) {
+	t.Run("customer without participant or tax ID code fails (F-INV044)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Customer.Inboxes = nil
+		inv.Customer.TaxID = &tax.Identity{Country: "DK"}
 		require.NoError(t, inv.Calculate())
 		err := rules.Validate(inv)
 		assert.ErrorContains(t, err, "F-INV044")
@@ -659,9 +668,10 @@ func TestCreditNoteValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "F-INV147")
 	})
 
-	t.Run("missing supplier inboxes fails (F-CRN028)", func(t *testing.T) {
+	t.Run("supplier without participant or tax ID code fails (F-CRN028)", func(t *testing.T) {
 		cn := testCreditNoteStandard(t)
 		cn.Supplier.Inboxes = nil
+		cn.Supplier.TaxID = &tax.Identity{Country: "DK"}
 		require.NoError(t, cn.Calculate())
 		err := rules.Validate(cn)
 		assert.ErrorContains(t, err, "F-INV031")

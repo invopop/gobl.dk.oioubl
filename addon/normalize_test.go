@@ -122,3 +122,38 @@ func TestNormalizeStatusResponseCode(t *testing.T) {
 			"the lossy error event must not clobber the original wire code")
 	})
 }
+
+func TestNormalizePartyParticipant(t *testing.T) {
+	t.Run("DK party without participant derives the CVR endpoint", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Supplier.Inboxes = nil
+		inv.Supplier.Endpoints = nil
+		inv.Customer.Inboxes = nil
+		inv.Customer.Endpoints = nil
+		inv.Payment = bankPayment()
+		require.NoError(t, inv.Calculate())
+		require.Len(t, inv.Supplier.Endpoints, 1)
+		assert.Contains(t, inv.Supplier.Endpoints[0].URI.String(), "iso6523-actorid-upis::0184:")
+		require.NoError(t, rules.Validate(inv), "a bare DK party should validate via the derived participant")
+	})
+
+	t.Run("existing participant is left untouched", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		require.NoError(t, inv.Calculate())
+		supplier := inv.Supplier
+		if len(supplier.Endpoints) > 0 {
+			assert.Len(t, supplier.Endpoints, 1, "no duplicate endpoint may be added")
+		} else {
+			assert.Empty(t, supplier.Endpoints, "an inbox-modelled party must not gain endpoints")
+		}
+	})
+
+	t.Run("foreign party is left untouched", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Customer.TaxID = &tax.Identity{Country: "DE", Code: "129273398"}
+		inv.Customer.Inboxes = nil
+		inv.Customer.Endpoints = nil
+		require.NoError(t, inv.Calculate())
+		assert.Empty(t, inv.Customer.Endpoints, "no participant can be derived for non-DK parties")
+	})
+}

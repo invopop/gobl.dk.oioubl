@@ -57,9 +57,17 @@ func TestStatusValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "F-APR005")
 	})
 
-	t.Run("missing supplier endpoint and inboxes (F-APR012)", func(t *testing.T) {
+	t.Run("bare DK supplier passes via the derived participant (F-APR012)", func(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Supplier.Endpoints = nil
+		require.NoError(t, st.Calculate())
+		assert.NoError(t, rules.Validate(st))
+	})
+
+	t.Run("supplier without participant or tax ID code fails (F-APR012)", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Supplier.Endpoints = nil
+		st.Supplier.TaxID = &tax.Identity{Country: "DK"}
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "F-APR012")
@@ -126,9 +134,10 @@ func TestStatusValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "customer is required")
 	})
 
-	t.Run("missing customer endpoint and inboxes (F-APR008)", func(t *testing.T) {
+	t.Run("customer without participant or tax ID code fails (F-APR008)", func(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Customer.Endpoints = nil
+		st.Customer.TaxID = &tax.Identity{Country: "DK"}
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "F-APR008")

@@ -4,9 +4,30 @@ import (
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/tax"
 )
+
+// iso6523EndpointScheme is the URI scheme org.Endpoint uses for Peppol-style
+// participant identifiers.
+const iso6523EndpointScheme = "iso6523-actorid-upis"
+
+// normalizeParty derives the NemHandel participant endpoint for a Danish party
+// from its tax identity: the Danish VAT number is the CVR number, which is the
+// ISO 6523 0184 participant code. Parties that already carry a participant —
+// an ISO 6523 endpoint or any inbox — are left untouched.
+func normalizeParty(p *org.Party) {
+	if p.TaxID == nil || p.TaxID.Country != "DK" || p.TaxID.Code == cbc.CodeEmpty {
+		return
+	}
+	if p.Endpoint(iso6523EndpointScheme) != nil || len(p.Inboxes) > 0 {
+		return
+	}
+	p.Endpoints = append(p.Endpoints, &org.Endpoint{
+		URI: cbc.URI(iso6523EndpointScheme + "::0184:" + p.TaxID.Code.String()),
+	})
+}
 
 // normalizePayInstructions records the OIOUBL paymentchannelcode-1.1 value in the
 // dk-oioubl-payment-channel extension, derived from the payment means, so the
