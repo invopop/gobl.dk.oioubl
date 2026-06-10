@@ -8,25 +8,10 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// normalize applies the OIOUBL-specific normalizations during Calculate.
-func normalize(doc any) {
-	switch obj := doc.(type) {
-	case *tax.Combo:
-		normalizeTaxCombo(obj)
-	case *pay.Instructions:
-		normalizePayInstructions(obj)
-	case *bill.StatusLine:
-		normalizeStatusLine(obj)
-	}
-}
-
 // normalizePayInstructions records the OIOUBL paymentchannelcode-1.1 value in the
 // dk-oioubl-payment-channel extension, derived from the payment means, so the
 // gobl.ubl serializer emits cbc:PaymentChannelCode directly.
 func normalizePayInstructions(instr *pay.Instructions) {
-	if instr == nil {
-		return
-	}
 	if ch := oioublPaymentChannel(instr.Ext.Get(untdid.ExtKeyPaymentMeans)); ch != "" {
 		instr.Ext = instr.Ext.Set(ExtKeyPaymentChannel, ch)
 	}
@@ -58,7 +43,7 @@ func oioublPaymentChannel(means cbc.Code) cbc.Code {
 // exemption reason (and allows the VATEX code), even though OIOUBL reports it as
 // ZeroRated (OIOUBL 2.1 has no exempt category).
 func normalizeTaxCombo(c *tax.Combo) {
-	if c == nil || c.Category != tax.CategoryVAT {
+	if c.Category != tax.CategoryVAT {
 		return
 	}
 	if oc := oioublTaxCategory(c.Ext.Get(untdid.ExtKeyTaxCategory)); oc != "" {
@@ -87,9 +72,6 @@ func oioublTaxCategory(untdidCat cbc.Code) cbc.Code {
 // document the line carries the parsed extension but no event, so the mapping is
 // applied in reverse to recover the GOBL status event.
 func normalizeStatusLine(line *bill.StatusLine) {
-	if line == nil {
-		return
-	}
 	if code := oioublResponseCode(line.Key); code != "" && line.Ext.Get(ExtKeyResponseCode) == "" {
 		line.Ext = line.Ext.Set(ExtKeyResponseCode, code)
 	}
@@ -105,13 +87,13 @@ func normalizeStatusLine(line *bill.StatusLine) {
 // to nothing and are rejected by the addon validation rules (F-APR018).
 func oioublResponseCode(event cbc.Key) cbc.Code {
 	switch event {
-	case bill.StatusEventAccepted:
+	case bill.StatusLineAccepted:
 		return ExtValueResponseCodeBusinessAccept
-	case bill.StatusEventRejected:
+	case bill.StatusLineRejected:
 		return ExtValueResponseCodeBusinessReject
-	case bill.StatusEventAcknowledged:
+	case bill.StatusLineAcknowledged:
 		return ExtValueResponseCodeTechnicalAccept
-	case bill.StatusEventError:
+	case bill.StatusLineError:
 		return ExtValueResponseCodeTechnicalReject
 	}
 	return ""
@@ -122,13 +104,13 @@ func oioublResponseCode(event cbc.Key) cbc.Code {
 func goblStatusEvent(code cbc.Code) cbc.Key {
 	switch code {
 	case ExtValueResponseCodeBusinessAccept:
-		return bill.StatusEventAccepted
+		return bill.StatusLineAccepted
 	case ExtValueResponseCodeBusinessReject:
-		return bill.StatusEventRejected
+		return bill.StatusLineRejected
 	case ExtValueResponseCodeTechnicalAccept:
-		return bill.StatusEventAcknowledged
+		return bill.StatusLineAcknowledged
 	case ExtValueResponseCodeTechnicalReject, ExtValueResponseCodeProfileReject:
-		return bill.StatusEventError
+		return bill.StatusLineError
 	}
 	return ""
 }

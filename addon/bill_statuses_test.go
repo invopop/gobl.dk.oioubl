@@ -35,7 +35,7 @@ func testStatusResponse(t *testing.T) *bill.Status {
 		},
 		Lines: []*bill.StatusLine{
 			{
-				Key: bill.StatusEventRejected,
+				Key: bill.StatusLineRejected,
 				Doc: &org.DocumentRef{Code: "INV1000"},
 			},
 		},
@@ -135,84 +135,6 @@ func TestStatusValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "F-LIB022")
 	})
 
-	t.Run("issuer absent is allowed", func(t *testing.T) {
-		st := testStatusResponse(t)
-		require.NoError(t, st.Calculate())
-		assert.NoError(t, rules.Validate(st))
-	})
-
-	t.Run("issuer set without inboxes (F-APR008)", func(t *testing.T) {
-		st := testStatusResponse(t)
-		st.Issuer = &org.Party{
-			Name:  "Invopop",
-			TaxID: &tax.Identity{Country: "DK", Code: "12345674"},
-		}
-		require.NoError(t, st.Calculate())
-		err := rules.Validate(st)
-		assert.ErrorContains(t, err, "F-APR008")
-	})
-
-	t.Run("issuer set without tax ID or identities (F-APR040)", func(t *testing.T) {
-		st := testStatusResponse(t)
-		st.Issuer = &org.Party{
-			Name:    "Invopop",
-			Inboxes: []*org.Inbox{{Scheme: "0184", Code: "12345674"}},
-		}
-		require.NoError(t, st.Calculate())
-		err := rules.Validate(st)
-		assert.ErrorContains(t, err, "F-APR040")
-	})
-
-	t.Run("issuer set without name or identities (F-LIB022)", func(t *testing.T) {
-		st := testStatusResponse(t)
-		st.Issuer = &org.Party{
-			TaxID:   &tax.Identity{Country: "DK", Code: "12345674"},
-			Inboxes: []*org.Inbox{{Scheme: "0184", Code: "12345674"}},
-		}
-		require.NoError(t, st.Calculate())
-		err := rules.Validate(st)
-		assert.ErrorContains(t, err, "F-LIB022")
-	})
-
-	t.Run("issuer fully populated passes", func(t *testing.T) {
-		st := testStatusResponse(t)
-		st.Issuer = &org.Party{
-			Name:    "Invopop",
-			TaxID:   &tax.Identity{Country: "DK", Code: "12345674"},
-			Inboxes: []*org.Inbox{{Scheme: "0184", Code: "12345674"}},
-		}
-		require.NoError(t, st.Calculate())
-		assert.NoError(t, rules.Validate(st))
-	})
-
-	t.Run("recipient absent is allowed", func(t *testing.T) {
-		st := testStatusResponse(t)
-		require.NoError(t, st.Calculate())
-		assert.NoError(t, rules.Validate(st))
-	})
-
-	t.Run("recipient set without inboxes (F-APR012)", func(t *testing.T) {
-		st := testStatusResponse(t)
-		st.Recipient = &org.Party{
-			Name:  "Forsendelses Hub A/S",
-			TaxID: &tax.Identity{Country: "DK", Code: "12345674"},
-		}
-		require.NoError(t, st.Calculate())
-		err := rules.Validate(st)
-		assert.ErrorContains(t, err, "F-APR012")
-	})
-
-	t.Run("recipient fully populated passes", func(t *testing.T) {
-		st := testStatusResponse(t)
-		st.Recipient = &org.Party{
-			Name:    "Forsendelses Hub A/S",
-			TaxID:   &tax.Identity{Country: "DK", Code: "12345674"},
-			Inboxes: []*org.Inbox{{Scheme: "0184", Code: "12345674"}},
-		}
-		require.NoError(t, st.Calculate())
-		assert.NoError(t, rules.Validate(st))
-	})
-
 	t.Run("missing line doc", func(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Lines[0].Doc = nil
@@ -223,7 +145,7 @@ func TestStatusValidation(t *testing.T) {
 
 	t.Run("unsupported status event (F-APR018)", func(t *testing.T) {
 		st := testStatusResponse(t)
-		st.Lines[0].Key = bill.StatusEventPaid
+		st.Lines[0].Key = bill.StatusLinePaid
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "F-APR018")
@@ -231,7 +153,7 @@ func TestStatusValidation(t *testing.T) {
 
 	t.Run("acknowledged event is supported", func(t *testing.T) {
 		st := testStatusResponse(t)
-		st.Lines[0].Key = bill.StatusEventAcknowledged
+		st.Lines[0].Key = bill.StatusLineAcknowledged
 		require.NoError(t, st.Calculate())
 		assert.NoError(t, rules.Validate(st))
 	})
@@ -239,7 +161,7 @@ func TestStatusValidation(t *testing.T) {
 	t.Run("more than one response line (F-APR051)", func(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Lines = append(st.Lines, &bill.StatusLine{
-			Key: bill.StatusEventAccepted,
+			Key: bill.StatusLineAccepted,
 			Doc: &org.DocumentRef{Code: "INV1001"},
 		})
 		require.NoError(t, st.Calculate())

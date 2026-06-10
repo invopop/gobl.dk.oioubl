@@ -6,6 +6,7 @@ import (
 	"github.com/invopop/gobl/addons/eu/en16931"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/i18n"
+	"github.com/invopop/gobl/norm"
 	"github.com/invopop/gobl/pkg/here"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/rules/is"
@@ -32,6 +33,12 @@ func init() {
 		billInvoiceRules(),
 		billStatusRules(),
 		billTaxComboRules(),
+	)
+	norm.RegisterWithGuard(
+		is.InContext(tax.AddonIn(V2_1)),
+		norm.For(normalizeTaxCombo),
+		norm.For(normalizePayInstructions),
+		norm.For(normalizeStatusLine),
 	)
 }
 
@@ -81,6 +88,5 @@ func newAddon() *tax.AddonDef {
 			},
 		},
 		Extensions: extensions,
-		Normalizer: normalize,
 	}
 }

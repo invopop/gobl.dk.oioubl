@@ -16,11 +16,11 @@ func billStatusRules() *rules.Set {
 				rules.Assert("05", "code is required (F-APR005)", is.Present),
 			),
 			// The converter sends the response FROM the responder TO the
-			// originator: the customer (or issuer) becomes the SenderParty
-			// (F-APR008 endpoint, F-APR040 one PartyLegalEntity) and the supplier
-			// (or recipient) becomes the ReceiverParty (F-APR012 endpoint,
-			// F-APR041 at most one PartyLegalEntity). The citations below follow
-			// that mapping rather than the GOBL field name.
+			// originator: the customer becomes the SenderParty (F-APR008
+			// endpoint, F-APR040 one PartyLegalEntity) and the supplier becomes
+			// the ReceiverParty (F-APR012 endpoint, F-APR041 at most one
+			// PartyLegalEntity). The citations below follow that mapping rather
+			// than the GOBL field name.
 			rules.Field("supplier",
 				rules.Field("inboxes",
 					rules.Assert("01", "supplier inboxes are required (F-APR012)", is.Present),
@@ -38,26 +38,6 @@ func billStatusRules() *rules.Set {
 				rules.Assert("08", "customer must have a name or legal identity (F-LIB022)",
 					is.Func("has name or legal identity", partyHasNameOrLegalIdentity)),
 			),
-			rules.Field("issuer",
-				rules.Field("inboxes",
-					rules.Assert("09", "issuer inboxes are required when issuer is set (F-APR008)", is.Present),
-				),
-				rules.Assert("10", "issuer must have a tax ID or identities when set (F-APR040)",
-					is.Func("has tax id or identities", partyHasTaxIDOrIdentities)),
-				rules.Assert("11", "issuer must have a name or legal identity when set (F-LIB022)",
-					is.Func("has name or legal identity", partyHasNameOrLegalIdentity)),
-			),
-			// A recipient, when present, replaces the supplier as the document's
-			// ReceiverParty, so it carries the same requirements as the supplier.
-			rules.Field("recipient",
-				rules.Field("inboxes",
-					rules.Assert("12", "recipient inboxes are required when recipient is set (F-APR012)", is.Present),
-				),
-				rules.Assert("13", "recipient must have a tax ID or identities when set (F-APR041)",
-					is.Func("has tax id or identities", partyHasTaxIDOrIdentities)),
-				rules.Assert("14", "recipient must have a name or legal identity when set (F-LIB022)",
-					is.Func("has name or legal identity", partyHasNameOrLegalIdentity)),
-			),
 			rules.Field("lines",
 				// An OIOUBL ApplicationResponse carries exactly one Response for one
 				// referenced document (F-APR051 / F-APR054); the converter maps each
@@ -70,10 +50,10 @@ func billStatusRules() *rules.Set {
 					rules.Field("key",
 						rules.Assert("15", "response status event must be one OIOUBL supports (F-APR018)",
 							is.In(
-								bill.StatusEventAccepted,
-								bill.StatusEventRejected,
-								bill.StatusEventAcknowledged,
-								bill.StatusEventError,
+								bill.StatusLineAccepted,
+								bill.StatusLineRejected,
+								bill.StatusLineAcknowledged,
+								bill.StatusLineError,
 							)),
 					),
 					rules.Field("doc",
