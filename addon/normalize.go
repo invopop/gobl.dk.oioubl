@@ -18,20 +18,20 @@ func normalizePayInstructions(instr *pay.Instructions) {
 }
 
 // oioublPaymentChannel maps a UNTDID 4461 payment means to its OIOUBL payment
-// channel: Giro (50) → DK:GIRO, FIK (93) → DK:FIK, direct debit (49) carries no
-// channel, and every other settled means defaults to IBAN.
+// channel: Giro (50) → DK:GIRO, FIK (93) → DK:FIK, and the account-transfer
+// means (30/31/42 bank transfers, 58 SEPA credit transfer) → IBAN. Every other
+// accepted means (cash, cheque, direct debit, cards, clearing) settles outside
+// a payment channel and carries none.
 func oioublPaymentChannel(means cbc.Code) cbc.Code {
 	switch means {
-	case "":
-		return ""
 	case "50":
 		return ExtValuePaymentChannelGiro
 	case "93":
 		return ExtValuePaymentChannelFIK
-	case "49":
-		return ""
-	default:
+	case "30", "31", "42", "58":
 		return ExtValuePaymentChannelIBAN
+	default:
+		return ""
 	}
 }
 
@@ -71,9 +71,16 @@ func oioublTaxCategory(untdidCat cbc.Code) cbc.Code {
 // gobl.ubl serializer emits cac:Response/cbc:ResponseCode directly. On an inbound
 // document the line carries the parsed extension but no event, so the mapping is
 // applied in reverse to recover the GOBL status event.
+//
+// An extension that still reverse-maps to the current key is left untouched, so
+// an inbound ProfileReject (which folds into the error event alongside
+// TechnicalReject) survives recalculation; an extension that no longer matches
+// the key — a stale value after the key was edited — is overwritten.
 func normalizeStatusLine(line *bill.StatusLine) {
-	if code := oioublResponseCode(line.Key); code != "" && line.Ext.Get(ExtKeyResponseCode) == "" {
-		line.Ext = line.Ext.Set(ExtKeyResponseCode, code)
+	if code := oioublResponseCode(line.Key); code != "" {
+		if cur := line.Ext.Get(ExtKeyResponseCode); cur == "" || goblStatusEvent(cur) != line.Key {
+			line.Ext = line.Ext.Set(ExtKeyResponseCode, code)
+		}
 	}
 	if line.Key == "" {
 		if event := goblStatusEvent(line.Ext.Get(ExtKeyResponseCode)); event != "" {

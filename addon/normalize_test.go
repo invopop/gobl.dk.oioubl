@@ -102,4 +102,23 @@ func TestNormalizeStatusResponseCode(t *testing.T) {
 		require.NoError(t, st.Calculate())
 		assert.Equal(t, bill.StatusLineRejected, st.Lines[0].Key)
 	})
+
+	t.Run("stale response code is overwritten after the key changes", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Lines[0].Key = bill.StatusLineRejected
+		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "BusinessAccept"})
+		require.NoError(t, st.Calculate())
+		assert.Equal(t, "BusinessReject", st.Lines[0].Ext.Get(oioubl.ExtKeyResponseCode).String())
+	})
+
+	t.Run("inbound ProfileReject survives recalculation", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Lines[0].Key = ""
+		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "ProfileReject"})
+		require.NoError(t, st.Calculate())
+		assert.Equal(t, bill.StatusLineError, st.Lines[0].Key)
+		require.NoError(t, st.Calculate())
+		assert.Equal(t, "ProfileReject", st.Lines[0].Ext.Get(oioubl.ExtKeyResponseCode).String(),
+			"the lossy error event must not clobber the original wire code")
+	})
 }
