@@ -14,8 +14,14 @@ OIOUBL-specific rules and extensions on top:
   the `dk-oioubl-tax-category` extension.
 - **Payment** — OIOUBL payment channels (IBAN / Giro / FIK) and the structured
   Giro/FIK payment identifiers (`dk-oioubl-payment-channel`, `dk-oioubl-payment-id`).
-- **Invoice / credit note** — supplier & customer inboxes, contacts and ordering
-  references required by the OIOUBL schematron.
+- **Participants** — parties are routed by ISO 6523 endpoints
+  (`iso6523-actorid-upis::0184:<CVR>`); a Danish party carrying only a tax
+  identity derives its CVR participant automatically, and explicit endpoints or
+  inboxes always win. On the OIOUBL wire these become the symbolic schemes
+  (`DK:CVR`, `GLN`, `DK:SE`).
+- **Invoice / credit note** — participant, contact and ordering references
+  required by the OIOUBL schematron, plus the non-negative totals rule
+  (corrections are credit notes in Denmark).
 - **Invoice Response** — `bill.Status` validation for the OIOUBL
   ApplicationResponse (responsecode-1.1 event set, single response, party
   requirements).
@@ -34,3 +40,20 @@ Import the addon for its side effects to register it, then declare the
 ```go
 import _ "github.com/invopop/gobl.dk.oioubl/addon"
 ```
+
+```yaml
+$schema: "https://gobl.org/draft-0/bill/invoice"
+$regime: "DK"
+$addons:
+  - "dk-oioubl-v2-1"
+supplier:
+  name: "Eksempel A/S"
+  tax_id:
+    country: "DK"
+    code: "12345674"
+  # endpoints may be omitted: the addon derives
+  # iso6523-actorid-upis::0184:12345674 from the tax identity.
+```
+
+See [`examples/`](examples/) for complete invoice, credit note and Invoice
+Response documents with their calculated envelopes.
