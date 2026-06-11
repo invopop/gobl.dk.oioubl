@@ -3,7 +3,7 @@ module github.com/invopop/gobl.dk.oioubl
 go 1.24.0
 
 require (
-	github.com/invopop/gobl v0.403.1-0.20260610095043-ed195eab80d6
+	github.com/invopop/gobl v0.500.1-0.20260611074651-0f34d24f52af
 	github.com/stretchr/testify v1.11.1
 )
 
