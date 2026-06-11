@@ -3,6 +3,8 @@ package addon_test
 import (
 	"testing"
 
+	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/tax"
 
@@ -26,6 +28,20 @@ func TestEN16931CarveOuts(t *testing.T) {
 		if err := rules.Validate(inv); err != nil {
 			assert.NotContains(t, err.Error(), "payment details are required")
 			assert.NotContains(t, err.Error(), "payment terms are required")
+		}
+	})
+
+	t.Run("amount-only payment terms pass (pay-terms shape)", func(t *testing.T) {
+		// OIOUBL allows bare payment terms — its official samples carry terms
+		// with only an ID and amount — so EN 16931's due-dates-or-notes shape
+		// requirement must not fire.
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Terms: &pay.Terms{},
+		}
+		require.NoError(t, inv.Calculate())
+		if err := rules.Validate(inv); err != nil {
+			assert.NotContains(t, err.Error(), "due_dates or notes")
 		}
 	})
 
