@@ -288,7 +288,9 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "F-LIB100")
 	})
 
-	t.Run("bank-transfer code 42 with account passes", func(t *testing.T) {
+	t.Run("payment-means code 42 is rejected (F-LIB100)", func(t *testing.T) {
+		// 42 (domestic bank transfer) needs DK:BANK + a Registreringsnummer that
+		// the IBAN mapping can't produce, so it is excluded from the allowed set.
 		inv := testInvoiceStandard(t)
 		inv.Payment = &bill.PaymentDetails{
 			Instructions: &pay.Instructions{
@@ -298,19 +300,32 @@ func TestInvoiceValidation(t *testing.T) {
 			},
 		}
 		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB100")
+	})
+
+	t.Run("SEPA credit-transfer code 58 with account passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Instructions: &pay.Instructions{
+				Key:            pay.MeansKeyOther,
+				Ext:            tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "58"}),
+				CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK5000400440116243", BIC: "DABADKKK"}},
+			},
+		}
+		require.NoError(t, inv.Calculate())
 		assert.NoError(t, rules.Validate(inv))
 	})
 
-	t.Run("bank-transfer code 42 without account fails (F-LIB126)", func(t *testing.T) {
+	t.Run("SEPA credit-transfer code 58 without account fails (F-LIB377)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Payment = &bill.PaymentDetails{
 			Instructions: &pay.Instructions{
 				Key: pay.MeansKeyOther,
-				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
+				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "58"}),
 			},
 		}
 		require.NoError(t, inv.Calculate())
-		assert.ErrorContains(t, rules.Validate(inv), "F-LIB126")
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB107")
 	})
 
 	t.Run("bank-transfer code 31 without account fails (F-LIB107)", func(t *testing.T) {
@@ -326,7 +341,7 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(inv), "F-LIB107")
 	})
 
-	t.Run("bank-transfer code 31 without a BIC passes (F-LIB113 rolled back)", func(t *testing.T) {
+	t.Run("bank-transfer code 31 without a BIC fails (F-LIB113)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Payment = &bill.PaymentDetails{
 			Instructions: &pay.Instructions{
@@ -336,9 +351,9 @@ func TestInvoiceValidation(t *testing.T) {
 			},
 		}
 		require.NoError(t, inv.Calculate())
-		// F-LIB113 (BIC mandatory) is commented out in the schematron, so OIOUBL
-		// does not require a BIC; rule 18 no longer fires.
-		require.NoError(t, rules.Validate(inv))
+		// F-LIB113 requires the FinancialInstitution/ID (sourced from the BIC) on
+		// the IBAN channel; only the 2017 $IbanOnly variant is commented out.
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB113")
 	})
 
 	t.Run("inline street address with no separate number passes (StructuredLax)", func(t *testing.T) {

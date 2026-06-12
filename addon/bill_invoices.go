@@ -16,8 +16,14 @@ import (
 // OIOUBL (F-LIB100). It includes "30" (generic credit transfer) because the
 // gobl.ubl converter maps it to OIOUBL's "31"; the remaining values are emitted
 // as-is. Codes outside this set can't produce valid OIOUBL output.
+//
+// "42" (domestic bank transfer) is deliberately excluded: OIOUBL settles it
+// through the DK:BANK channel with a Registreringsnummer (numeric branch ID) and
+// a domestic account number (F-LIB127/128/131/311), none of which the converter's
+// IBAN mapping can produce, so every means-42 document is wire-fatal. Re-add it
+// only once DK:BANK + branch-number modelling exists.
 var validPaymentMeansCodes = []cbc.Code{
-	"1", "10", "20", "30", "31", "42", "48", "49", "50", "58", "59", "93", "97",
+	"1", "10", "20", "30", "31", "48", "49", "50", "58", "59", "93", "97",
 }
 
 // Rule citations reference the OIOUBL Invoice schematron (F-INV) first and
@@ -238,15 +244,25 @@ func firstPersonHasIdentityCode(val any) bool {
 // (payment-means 30, which the converter maps to 31, or 31 itself) carries a
 // credit transfer with no BIC. OIOUBL requires the FinancialInstitution/ID for
 // the IBAN channel (F-LIB113), which the converter sources from the BIC.
-// ibanTransferMissingBIC gates rule 18 (the BIC requirement, F-LIB113). The
-// detector always returns false because F-LIB113 is rolled back in the OIOUBL
-// schematron — its assertion is commented out at the source ("Implementated -
-// but roolback at 20170823") — so OIOUBL does not require a BIC on an IBAN
-// credit transfer. Requiring one would reject documents the format accepts.
-// The rule is kept (registered + cited) rather than deleted so it is a one-line
-// change to re-enable: restore the payment-means 30/31 + empty-BIC check below
-// if F-LIB113 is ever reinstated.
-func ibanTransferMissingBIC(_ any) bool {
+//
+// F-LIB113 is active: only the 2017 $IbanOnly variant is commented out in the
+// schematron (OIOUBL_Common_Schematron.xml ~L670), the original assertion is
+// live — phive rejects a means-31 IBAN transfer with no BIC. The detector
+// scans every credit transfer (matching the account rule), so a missing BIC on
+// any entry fails; rule 13 separately handles a missing account.
+func ibanTransferMissingBIC(val any) bool {
+	instr, ok := val.(*pay.Instructions)
+	if !ok || instr == nil {
+		return false
+	}
+	if !instr.Ext.Get(untdid.ExtKeyPaymentMeans).In("30", "31") {
+		return false
+	}
+	for _, ct := range instr.CreditTransfer {
+		if ct != nil && ct.BIC == "" {
+			return true
+		}
+	}
 	return false
 }
 
@@ -270,10 +286,11 @@ func standardRatedHasPositivePercent(val any) bool {
 }
 
 // bankTransferCodes are the OIOUBL PaymentMeansCode values that settle to a
-// payee bank account: 42 (domestic), 31 (IBAN), and 30 (generic credit transfer,
-// which the gobl.ubl converter maps to 31). OIOUBL then requires the account
-// identifier (F-LIB107 for 30/31, F-LIB126 for 42), which GOBL core leaves optional.
-var bankTransferCodes = []cbc.Code{"30", "31", "42"}
+// payee bank account: 31 (IBAN), 30 (generic credit transfer, which the gobl.ubl
+// converter maps to 31), and 58 (SEPA credit transfer). OIOUBL then requires the
+// account identifier (F-LIB107 for 30/31, F-LIB377 for 58), which GOBL core
+// leaves optional. (42 is excluded — see validPaymentMeansCodes.)
+var bankTransferCodes = []cbc.Code{"30", "31", "58"}
 
 func bankTransferMissingAccount(val any) bool {
 	instr, ok := val.(*pay.Instructions)

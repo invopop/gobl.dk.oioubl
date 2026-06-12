@@ -40,16 +40,17 @@ func normalizePayInstructions(instr *pay.Instructions) {
 
 // oioublPaymentChannel maps a UNTDID 4461 payment means to its OIOUBL payment
 // channel: Giro (50) → DK:GIRO, FIK (93) → DK:FIK, and the account-transfer
-// means (30/31/42 bank transfers, 58 SEPA credit transfer) → IBAN. Every other
+// means (30/31 bank transfers, 58 SEPA credit transfer) → IBAN. Every other
 // accepted means (cash, cheque, direct debit, cards, clearing) settles outside
-// a payment channel and carries none.
+// a payment channel and carries none. (42 is not an accepted means — see
+// validPaymentMeansCodes.)
 func oioublPaymentChannel(means cbc.Code) cbc.Code {
 	switch means {
 	case "50":
 		return ExtValuePaymentChannelGiro
 	case "93":
 		return ExtValuePaymentChannelFIK
-	case "30", "31", "42", "58":
+	case "30", "31", "58":
 		return ExtValuePaymentChannelIBAN
 	default:
 		return ""
