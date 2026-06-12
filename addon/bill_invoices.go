@@ -52,10 +52,6 @@ func billInvoiceRules() *rules.Set {
 		rules.Field("supplier",
 			rules.Assert("01", "supplier must have an ISO 6523 endpoint or inbox (F-INV031 / F-CRN028)",
 				is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
-			rules.Field("addresses",
-				rules.Assert("16", "supplier address must be a complete OIOUBL StructuredDK address: a postal code (F-LIB033), a street name or PO box (F-LIB034), and a building number or PO box (F-LIB035)",
-					is.Func("complete StructuredDK address", addressStructuredDKComplete)),
-			),
 		),
 		rules.Field("totals",
 			// OIOUBL rejects negative monetary totals outright (F-LIB016 on
@@ -74,10 +70,6 @@ func billInvoiceRules() *rules.Set {
 				rules.Assert("03", "customer people are required (F-INV046 / F-CRN042)", is.Present),
 				rules.Assert("20", "the customer contact person requires an identity code for the OIOUBL Contact/ID (F-INV051)",
 					is.Func("first person has an identity code", firstPersonHasIdentityCode)),
-			),
-			rules.Field("addresses",
-				rules.Assert("17", "customer address must be a complete OIOUBL StructuredDK address: a postal code (F-LIB033), a street name or PO box (F-LIB034), and a building number or PO box (F-LIB035)",
-					is.Func("complete StructuredDK address", addressStructuredDKComplete)),
 			),
 		),
 		rules.When(is.Func("non-credit-note invoice with line order ref", invoiceWithLineOrderRef),
@@ -240,27 +232,6 @@ func firstPersonHasIdentityCode(val any) bool {
 	}
 	p := people[0]
 	return p != nil && len(p.Identities) > 0 && !p.Identities[0].Code.IsEmpty()
-}
-
-// addressStructuredDKComplete reports whether the first address (the one the
-// gobl.ubl converter emits) carries everything OIOUBL's StructuredDK format
-// requires: a postal code (F-LIB033), a street name or PO box (F-LIB034), and a
-// building number or PO box (F-LIB035). An empty address set passes here since
-// EN 16931 already governs address presence.
-func addressStructuredDKComplete(val any) bool {
-	addrs, ok := val.([]*org.Address)
-	if !ok || len(addrs) == 0 {
-		return true
-	}
-	a := addrs[0]
-	if a == nil {
-		return true
-	}
-	hasPostbox := a.PostOfficeBox != ""
-	hasCode := a.Code != ""
-	hasStreet := a.Street != "" || hasPostbox
-	hasNumber := a.Number != "" || hasPostbox
-	return hasCode && hasStreet && hasNumber
 }
 
 // ibanTransferMissingBIC reports whether an IBAN bank-transfer instruction

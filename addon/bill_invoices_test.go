@@ -341,22 +341,18 @@ func TestInvoiceValidation(t *testing.T) {
 		require.NoError(t, rules.Validate(inv))
 	})
 
-	t.Run("address without a postal code fails (F-LIB033)", func(t *testing.T) {
+	t.Run("inline street address with no separate number passes (StructuredLax)", func(t *testing.T) {
+		// The gobl.ubl converter emits OIOUBL addresses as StructuredLax, which
+		// imposes no mandatory sub-fields (only F-LIB036, forbidding free-text
+		// AddressLine, which we never emit). So an address whose house number is
+		// inline in the street, or one missing a postal code, is valid here;
+		// EN 16931 (BR-8/BR-10) still governs address presence and country.
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Addresses = []*org.Address{
-			{Number: "1", Street: "Hovedgaden", Locality: "København", Country: "DK"},
+			{Street: "Hovedgaden 27", Locality: "København", Country: "DK"},
 		}
 		require.NoError(t, inv.Calculate())
-		assert.ErrorContains(t, rules.Validate(inv), "F-LIB033")
-	})
-
-	t.Run("address without a street or PO box fails (F-LIB034)", func(t *testing.T) {
-		inv := testInvoiceStandard(t)
-		inv.Supplier.Addresses = []*org.Address{
-			{Number: "1", Locality: "København", Code: "1000", Country: "DK"},
-		}
-		require.NoError(t, inv.Calculate())
-		assert.ErrorContains(t, rules.Validate(inv), "F-LIB034")
+		require.NoError(t, rules.Validate(inv))
 	})
 
 	t.Run("standard-rated VAT with zero percent fails (F-LIB382)", func(t *testing.T) {
@@ -390,24 +386,6 @@ func TestInvoiceValidation(t *testing.T) {
 		}
 		require.NoError(t, inv.Calculate())
 		assert.ErrorContains(t, rules.Validate(inv), "F-LIB107")
-	})
-
-	t.Run("supplier address without a number or PO box fails (F-LIB035)", func(t *testing.T) {
-		inv := testInvoiceStandard(t)
-		inv.Supplier.Addresses = []*org.Address{
-			{Street: "Hovedgaden", Locality: "København", Code: "1000", Country: "DK"},
-		}
-		require.NoError(t, inv.Calculate())
-		assert.ErrorContains(t, rules.Validate(inv), "F-LIB035")
-	})
-
-	t.Run("address with a PO box and no number passes (F-LIB035)", func(t *testing.T) {
-		inv := testInvoiceStandard(t)
-		inv.Supplier.Addresses = []*org.Address{
-			{PostOfficeBox: "2700", Street: "Hovedgaden", Locality: "København", Code: "1000", Country: "DK"},
-		}
-		require.NoError(t, inv.Calculate())
-		assert.NoError(t, rules.Validate(inv))
 	})
 
 	t.Run("Giro code 50 with payment id passes", func(t *testing.T) {
