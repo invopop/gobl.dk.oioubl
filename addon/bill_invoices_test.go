@@ -90,6 +90,25 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(inv), "VAT")
 	})
 
+	t.Run("document-level charge without taxes is rejected (F-LIB226)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Charges = []*bill.Charge{
+			{Reason: "Freight", Amount: num.MakeAmount(10000, 2)},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB226")
+	})
+
+	t.Run("document-level charge with a VAT tax passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Charges = []*bill.Charge{
+			{Reason: "Freight", Amount: num.MakeAmount(10000, 2),
+				Taxes: tax.Set{{Category: "VAT", Rate: "standard"}}},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+
 	t.Run("bare DK supplier passes via the derived participant (F-INV031)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Inboxes = nil

@@ -158,6 +158,17 @@ func billInvoiceRules() *rules.Set {
 				),
 			),
 		),
+		// A document-level charge emits cac:AllowanceCharge, which OIOUBL
+		// requires to carry a TaxCategory (F-LIB226). en16931 mandates taxes
+		// on document-level discounts (BR-32) but not on charges (BR-36 only
+		// covers the reason/type), so this closes that gap.
+		rules.Field("charges",
+			rules.Each(
+				rules.Field("taxes",
+					rules.Assert("28", "document-level charge taxes are required for the OIOUBL TaxCategory (F-LIB226)", is.Present),
+				),
+			),
+		),
 	)
 }
 
