@@ -134,6 +134,11 @@ func billInvoiceRules() *rules.Set {
 		),
 		rules.Field("lines",
 			rules.Each(
+				// Every OIOUBL line needs a cac:TaxTotal (F-INV138 / F-CRN081),
+				// which the converter emits only from a VAT combo. GOBL core and
+				// en16931 require doc-level totals but not per-line taxes.
+				rules.Assert("27", "each line requires a VAT tax category (F-INV138 / F-CRN081)",
+					bill.RequireLineTaxCategory(tax.CategoryVAT)),
 				rules.Field("quantity",
 					rules.Assert("06", "line quantity must not be zero (F-INV147 / F-CRN088)", is.Func("non-zero amount", quantityNonZero)),
 				),

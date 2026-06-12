@@ -83,6 +83,13 @@ func TestInvoiceValidation(t *testing.T) {
 		require.NoError(t, rules.Validate(inv))
 	})
 
+	t.Run("line without a VAT tax is rejected (F-INV138 / F-CRN081)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Taxes = nil
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "VAT")
+	})
+
 	t.Run("bare DK supplier passes via the derived participant (F-INV031)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Inboxes = nil
