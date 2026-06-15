@@ -244,24 +244,88 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(inv))
 	})
 
-	t.Run("negative line discount fails (F-INV335)", func(t *testing.T) {
+	t.Run("zero line discount fails (F-LIB019)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Discounts = []*bill.LineDiscount{
-			{Amount: num.MakeAmount(-500, 2)},
+			{Reason: "Loyalty", Amount: num.MakeAmount(0, 2)},
 		}
 		require.NoError(t, inv.Calculate())
-		err := rules.Validate(inv)
-		assert.ErrorContains(t, err, "F-INV335")
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB019")
 	})
 
-	t.Run("negative line charge fails (F-INV335)", func(t *testing.T) {
+	t.Run("negative line discount fails (F-LIB019)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
-		inv.Lines[0].Charges = []*bill.LineCharge{
-			{Amount: num.MakeAmount(-500, 2)},
+		inv.Lines[0].Discounts = []*bill.LineDiscount{
+			{Reason: "Loyalty", Amount: num.MakeAmount(-500, 2)},
 		}
 		require.NoError(t, inv.Calculate())
-		err := rules.Validate(inv)
-		assert.ErrorContains(t, err, "F-INV335")
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB019")
+	})
+
+	t.Run("positive line discount passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Discounts = []*bill.LineDiscount{
+			{Reason: "Loyalty", Amount: num.MakeAmount(500, 2)},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+
+	t.Run("zero line charge fails (F-LIB019)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Charges = []*bill.LineCharge{
+			{Reason: "Handling", Amount: num.MakeAmount(0, 2)},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB019")
+	})
+
+	t.Run("negative line charge fails (F-LIB019)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Charges = []*bill.LineCharge{
+			{Reason: "Handling", Amount: num.MakeAmount(-500, 2)},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB019")
+	})
+
+	t.Run("zero document-level discount fails (F-LIB019)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Discounts = []*bill.Discount{
+			{Reason: "Goodwill", Amount: num.MakeAmount(0, 2)},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB019")
+	})
+
+	t.Run("zero document-level charge fails (F-LIB019)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Charges = []*bill.Charge{
+			{Reason: "Freight", Amount: num.MakeAmount(0, 2),
+				Taxes: tax.Set{{Category: "VAT", Rate: "standard"}}},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB019")
+	})
+
+	t.Run("zero advance fails (F-LIB013)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Advances: []*pay.Record{
+				{Description: "Deposit", Amount: num.MakeAmount(0, 2)},
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB013")
+	})
+
+	t.Run("tax category without an OIOUBL mapping is rejected (F-LIB309)", func(t *testing.T) {
+		// Intra-community (K), export (G) and not-subject (O) have no OIOUBL
+		// taxcategoryid-1.1 equivalent; in Denmark these are not OIOUBL traffic.
+		inv := testInvoiceStandard(t)
+		require.NoError(t, inv.Calculate())
+		inv.Lines[0].Taxes[0].Ext = inv.Lines[0].Taxes[0].Ext.Set(untdid.ExtKeyTaxCategory, "K")
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB309")
 	})
 
 	t.Run("delivery with receiver and addresses passes", func(t *testing.T) {
@@ -728,14 +792,22 @@ func TestCreditNoteValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(cn))
 	})
 
-	t.Run("negative credit-note line discount fails (F-CRN203)", func(t *testing.T) {
+	t.Run("zero credit-note line discount fails (F-LIB019)", func(t *testing.T) {
 		cn := testCreditNoteStandard(t)
 		cn.Lines[0].Discounts = []*bill.LineDiscount{
-			{Amount: num.MakeAmount(-500, 2)},
+			{Reason: "Loyalty", Amount: num.MakeAmount(0, 2)},
 		}
 		require.NoError(t, cn.Calculate())
-		err := rules.Validate(cn)
-		assert.ErrorContains(t, err, "F-INV335")
+		assert.ErrorContains(t, rules.Validate(cn), "F-LIB019")
+	})
+
+	t.Run("negative credit-note line discount fails (F-LIB019)", func(t *testing.T) {
+		cn := testCreditNoteStandard(t)
+		cn.Lines[0].Discounts = []*bill.LineDiscount{
+			{Reason: "Loyalty", Amount: num.MakeAmount(-500, 2)},
+		}
+		require.NoError(t, cn.Calculate())
+		assert.ErrorContains(t, rules.Validate(cn), "F-LIB019")
 	})
 }
 

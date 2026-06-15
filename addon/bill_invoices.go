@@ -149,27 +149,52 @@ func billInvoiceRules() *rules.Set {
 				rules.Field("discounts",
 					rules.Each(
 						rules.Field("amount",
-							rules.Assert("09", "line discount amount must not be negative (F-INV335 / F-CRN203)", is.Func("non-negative amount", amountNonNegative)),
+							rules.Assert("09", "line discount amount must be greater than zero (F-LIB019)", is.Func("positive amount", amountPositive)),
 						),
 					),
 				),
 				rules.Field("charges",
 					rules.Each(
 						rules.Field("amount",
-							rules.Assert("10", "line charge amount must not be negative (F-INV335 / F-CRN203)", is.Func("non-negative amount", amountNonNegative)),
+							rules.Assert("10", "line charge amount must be greater than zero (F-LIB019)", is.Func("positive amount", amountPositive)),
 						),
 					),
 				),
 			),
 		),
+		// A document-level discount emits cac:AllowanceCharge, whose cbc:Amount
+		// must be greater than zero (F-LIB019). A zero-amount allowance —
+		// including one promoted from a zero line discount — is wire-fatal.
+		rules.Field("discounts",
+			rules.Each(
+				rules.Field("amount",
+					rules.Assert("33", "document-level discount amount must be greater than zero (F-LIB019)", is.Func("positive amount", amountPositive)),
+				),
+			),
+		),
 		// A document-level charge emits cac:AllowanceCharge, which OIOUBL
-		// requires to carry a TaxCategory (F-LIB226). en16931 mandates taxes
-		// on document-level discounts (BR-32) but not on charges (BR-36 only
-		// covers the reason/type), so this closes that gap.
+		// requires to carry a TaxCategory (F-LIB226) and a cbc:Amount greater
+		// than zero (F-LIB019). en16931 mandates taxes on document-level
+		// discounts (BR-32) but not on charges (BR-36 only covers the
+		// reason/type), so the taxes rule closes that gap.
 		rules.Field("charges",
 			rules.Each(
+				rules.Field("amount",
+					rules.Assert("34", "document-level charge amount must be greater than zero (F-LIB019)", is.Func("positive amount", amountPositive)),
+				),
 				rules.Field("taxes",
 					rules.Assert("28", "document-level charge taxes are required for the OIOUBL TaxCategory (F-LIB226)", is.Present),
+				),
+			),
+		),
+		// A prepaid advance emits cac:PrepaidPayment/cbc:PaidAmount, which must
+		// be greater than zero (F-LIB013).
+		rules.Field("payment",
+			rules.Field("advances",
+				rules.Each(
+					rules.Field("amount",
+						rules.Assert("35", "advance amount must be greater than zero (F-LIB013)", is.Func("positive amount", amountPositive)),
+					),
 				),
 			),
 		),
@@ -182,7 +207,36 @@ func billTaxComboRules() *rules.Set {
 	return rules.For(new(tax.Combo),
 		rules.Assert("01", "standard-rated VAT must have a percent greater than zero (F-LIB382)",
 			is.Func("standard-rated has a positive percent", standardRatedHasPositivePercent)),
+		rules.Assert("32", "VAT category has no OIOUBL equivalent: only standard-rated, zero-rated, exempt and reverse-charge are supported (F-LIB309)",
+			is.Func("VAT category maps to an OIOUBL category", vatCategoryHasOIOUBLMapping)),
 	)
+}
+
+// vatCategoryHasOIOUBLMapping reports whether a VAT combo's EN 16931 UNTDID 5305
+// category maps to an OIOUBL taxcategoryid-1.1 value. OIOUBL supports only
+// StandardRated (S), ZeroRated (Z, and exempt E reported as ZeroRated) and
+// ReverseCharge (AE). Categories such as intra-community (K), export (G) and
+// not-subject-to-VAT (O) have no OIOUBL equivalent and would otherwise reach the
+// wire as a bare letter outside the codelist (F-LIB309). A combo whose category
+// has not yet been normalized carries no UNTDID category and is left to en16931.
+func vatCategoryHasOIOUBLMapping(val any) bool {
+	var combo *tax.Combo
+	switch c := val.(type) {
+	case *tax.Combo:
+		combo = c
+	case tax.Combo:
+		combo = &c
+	default:
+		return true
+	}
+	if combo == nil || combo.Category != tax.CategoryVAT {
+		return true
+	}
+	cat := combo.Ext.Get(untdid.ExtKeyTaxCategory)
+	if cat == "" {
+		return true
+	}
+	return oioublTaxCategory(cat) != ""
 }
 
 func invoiceWithLineOrderRef(val any) bool {
@@ -211,20 +265,19 @@ func quantityNonZero(val any) bool {
 	return true
 }
 
-// amountNonNegative backs rules 09/10 (F-INV335). The schematron forbids a
-// negative AllowanceCharge.Amount only "if InvoicedQuantity or Price.PriceAmount
-// is not negative", i.e. a negative allowance is permitted on a line whose
-// quantity or price is itself negative. This check is unconditional — slightly
-// stricter than F-INV335 — which is intentional and safe here: GOBL models
-// corrections as credit notes (a distinct document type with positive line
-// amounts), so a line with a negative quantity or price does not arise, and the
-// exception never applies. Revisit if GOBL ever emits negative line quantities.
-func amountNonNegative(val any) bool {
+// amountPositive backs the allowance, charge and advance amount rules. OIOUBL
+// rejects a negative or zero cbc:Amount on a cac:AllowanceCharge (F-LIB019, the
+// element line discounts and charges are promoted into) and likewise a zero or
+// negative cbc:PaidAmount on a cac:PrepaidPayment (F-LIB013). Rejecting zero is
+// safe: GOBL models corrections as credit notes (a distinct document type), so
+// a negative line amount does not arise, and a zero-amount allowance is a
+// degenerate entry the addon rejects rather than emit wire-fatal output.
+func amountPositive(val any) bool {
 	switch a := val.(type) {
 	case num.Amount:
-		return !a.IsNegative()
+		return a.IsPositive()
 	case *num.Amount:
-		return a == nil || !a.IsNegative()
+		return a == nil || a.IsPositive()
 	}
 	return true
 }
