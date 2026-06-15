@@ -43,6 +43,23 @@ const (
 	// 1-based position of this reminder within the dunning sequence (F-REM007).
 	// GOBL has no native field for it, so it is declared on the payment.
 	ExtKeyReminderSequence cbc.Key = "dk-oioubl-reminder-sequence"
+
+	// ExtKeyAddressFormat carries the OIOUBL addressformatcode-1.1 value emitted
+	// as cbc:AddressFormatCode on a party's PostalAddress (F-LIB025/027). GOBL has
+	// no native address-format field, so it is declared on the party that owns the
+	// address; absent, the gobl.ubl serializer defaults to StructuredLax (the
+	// universally valid format that imposes no mandatory sub-fields).
+	ExtKeyAddressFormat cbc.Key = "dk-oioubl-address-format"
+
+	// ExtKeyAddressID carries the address identifier (typically a GS1 GLN) emitted
+	// as cbc:ID for a StructuredID address (F-LIB037). GOBL models no address-level
+	// identifier, so it travels on the party extension alongside the format.
+	ExtKeyAddressID cbc.Key = "dk-oioubl-address-id"
+
+	// ExtKeyAddressDistrict carries the district name emitted as cbc:District for a
+	// StructuredRegion address (F-LIB039). GOBL has no district field (it offers
+	// region and country), so it travels on the party extension.
+	ExtKeyAddressDistrict cbc.Key = "dk-oioubl-address-district"
 )
 
 // OIOUBL remindertypecode-1.1 values (F-REM061).
@@ -56,6 +73,26 @@ const (
 	ExtValueTaxCategoryStandardRated cbc.Code = "StandardRated"
 	ExtValueTaxCategoryZeroRated     cbc.Code = "ZeroRated"
 	ExtValueTaxCategoryReverseCharge cbc.Code = "ReverseCharge"
+)
+
+// OIOUBL addressformatcode-1.1 values (F-LIB027).
+const (
+	// ExtValueAddressFormatStructuredDK is the fully structured Danish address:
+	// PostalZone plus StreetName-or-Postbox and BuildingNumber-or-Postbox
+	// (F-LIB033/034/035), no AddressLine.
+	ExtValueAddressFormatStructuredDK cbc.Code = "StructuredDK"
+	// ExtValueAddressFormatStructuredLax is the lenient structured address with no
+	// mandatory sub-fields; the default when none is declared.
+	ExtValueAddressFormatStructuredLax cbc.Code = "StructuredLax"
+	// ExtValueAddressFormatStructuredID is an address reduced to a single
+	// identifier (dk-oioubl-address-id, typically a GLN); no postal fields.
+	ExtValueAddressFormatStructuredID cbc.Code = "StructuredID"
+	// ExtValueAddressFormatStructuredRegion is a regional address carrying only
+	// Region, district and/or Country.
+	ExtValueAddressFormatStructuredRegion cbc.Code = "StructuredRegion"
+	// ExtValueAddressFormatUnstructured carries the address as free-text
+	// AddressLine elements only.
+	ExtValueAddressFormatUnstructured cbc.Code = "Unstructured"
 )
 
 // OIOUBL paymentchannelcode-1.1 values.
@@ -219,5 +256,64 @@ var extensions = []*cbc.Definition{
 			`),
 		},
 		Pattern: `^[0-9]+$`,
+	},
+	{
+		Key: ExtKeyAddressFormat,
+		Name: i18n.String{
+			i18n.EN: "OIOUBL Address Format",
+			i18n.DA: "OIOUBL Adresseformat",
+		},
+		Desc: i18n.String{
+			i18n.EN: here.Doc(`
+				The OIOUBL ` + "`addressformatcode-1.1`" + ` value emitted as
+				` + "`cbc:AddressFormatCode`" + ` on a party's postal address. GOBL has
+				no native address-format field, so it is declared on the party that owns
+				the address. When absent, the gobl.ubl serializer emits StructuredLax,
+				the format that imposes no mandatory sub-fields and is universally valid.
+
+				Each format constrains the address: StructuredDK requires a postal code
+				plus a street or post box and a building number or post box; StructuredID
+				requires only an identifier (` + "`dk-oioubl-address-id`" + `);
+				StructuredRegion carries only region, district and/or country; and
+				Unstructured carries free-text address lines only.
+			`),
+		},
+		Values: []*cbc.Definition{
+			{Code: ExtValueAddressFormatStructuredDK, Name: i18n.String{i18n.EN: "Structured Danish address"}},
+			{Code: ExtValueAddressFormatStructuredLax, Name: i18n.String{i18n.EN: "Lenient structured address"}},
+			{Code: ExtValueAddressFormatStructuredID, Name: i18n.String{i18n.EN: "Identifier-only address"}},
+			{Code: ExtValueAddressFormatStructuredRegion, Name: i18n.String{i18n.EN: "Regional address"}},
+			{Code: ExtValueAddressFormatUnstructured, Name: i18n.String{i18n.EN: "Unstructured address"}},
+		},
+	},
+	{
+		Key: ExtKeyAddressID,
+		Name: i18n.String{
+			i18n.EN: "OIOUBL Address Identifier",
+			i18n.DA: "OIOUBL Adresse-ID",
+		},
+		Desc: i18n.String{
+			i18n.EN: here.Doc(`
+				The identifier emitted as ` + "`cbc:ID`" + ` for a StructuredID address
+				(F-LIB037), typically a GS1 GLN. GOBL has no address-level identifier, so
+				it is declared on the party alongside the address format.
+			`),
+		},
+		Pattern: `^.+$`,
+	},
+	{
+		Key: ExtKeyAddressDistrict,
+		Name: i18n.String{
+			i18n.EN: "OIOUBL Address District",
+			i18n.DA: "OIOUBL Adressedistrikt",
+		},
+		Desc: i18n.String{
+			i18n.EN: here.Doc(`
+				The district name emitted as ` + "`cbc:District`" + ` for a
+				StructuredRegion address (F-LIB039). GOBL offers region and country but no
+				district, so it is declared on the party alongside the address format.
+			`),
+		},
+		Pattern: `^.+$`,
 	},
 }

@@ -1,0 +1,73 @@
+package addon
+
+import (
+	"github.com/invopop/gobl/org"
+	"github.com/invopop/gobl/rules"
+	"github.com/invopop/gobl/rules/is"
+	"github.com/invopop/gobl/tax"
+)
+
+// partyRules validates the OIOUBL address format declared on a party. GOBL has no
+// address-level extension, so the format (and the data OIOUBL needs that GOBL
+// does not model) is declared on the party via dk-oioubl-address-format and
+// applies to the party's postal address. When no format is declared the gobl.ubl
+// serializer emits StructuredLax, which imposes no completeness requirement.
+func partyRules() *rules.Set {
+	return rules.For(new(org.Party),
+		rules.Field("ext",
+			rules.AssertIfPresent("36", "address format must be an OIOUBL addressformatcode-1.1 value (F-LIB027)",
+				tax.ExtensionHasValidCode(ExtKeyAddressFormat)),
+		),
+		rules.When(is.Func("party with a declared address format", partyHasAddressFormat),
+			rules.Assert("37", "the party address is incomplete for its declared OIOUBL address format (F-LIB031 / F-LIB033 / F-LIB034 / F-LIB035 / F-LIB037 / F-LIB039)",
+				is.Func("address satisfies the declared format", partyAddressFormatComplete)),
+		),
+	)
+}
+
+func partyHasAddressFormat(val any) bool {
+	p, ok := val.(*org.Party)
+	return ok && p != nil && p.Ext.Get(ExtKeyAddressFormat) != ""
+}
+
+// partyAddressFormatComplete reports whether a party's first postal address
+// carries the data OIOUBL requires for the declared addressformatcode-1.1 value.
+// The data StructuredID and StructuredRegion need that GOBL does not model — the
+// identifier and the district — is read from the party extension.
+func partyAddressFormatComplete(val any) bool {
+	p, ok := val.(*org.Party)
+	if !ok || p == nil {
+		return true
+	}
+	var addr *org.Address
+	if len(p.Addresses) > 0 {
+		addr = p.Addresses[0]
+	}
+	switch p.Ext.Get(ExtKeyAddressFormat) {
+	case ExtValueAddressFormatStructuredDK:
+		// F-LIB033 PostalZone; F-LIB034 StreetName or Postbox; F-LIB035
+		// BuildingNumber or Postbox.
+		if addr == nil || addr.Code == "" {
+			return false
+		}
+		if addr.Street == "" && addr.PostOfficeBox == "" {
+			return false
+		}
+		return addr.Number != "" || addr.PostOfficeBox != ""
+	case ExtValueAddressFormatUnstructured:
+		// F-LIB031 allows only AddressLine, so there must be free-text content to
+		// render into it.
+		return addr != nil && (addr.Street != "" || addr.StreetExtra != "" || addr.PostOfficeBox != "")
+	case ExtValueAddressFormatStructuredID:
+		// F-LIB037: the identifier is mandatory.
+		return p.Ext.Get(ExtKeyAddressID) != ""
+	case ExtValueAddressFormatStructuredRegion:
+		// F-LIB039: region, district or country is required.
+		if p.Ext.Get(ExtKeyAddressDistrict) != "" {
+			return true
+		}
+		return addr != nil && (addr.Region != "" || addr.Country != "")
+	}
+	// StructuredLax imposes no completeness requirement.
+	return true
+}
