@@ -83,6 +83,15 @@ func TestInvoiceValidation(t *testing.T) {
 		require.NoError(t, rules.Validate(inv))
 	})
 
+	t.Run("unsupported document type is rejected (F-INV011)", func(t *testing.T) {
+		// 384 (corrective) is outside the OIOUBL invoicetypecode-1.1 set; in
+		// Denmark corrections are modelled as credit notes.
+		inv := testInvoiceStandard(t)
+		require.NoError(t, inv.Calculate())
+		inv.Tax.Ext = inv.Tax.Ext.Set(untdid.ExtKeyDocumentType, "384")
+		assert.ErrorContains(t, rules.Validate(inv), "F-INV011")
+	})
+
 	t.Run("line without a VAT tax is rejected (F-INV138 / F-CRN081)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Taxes = nil

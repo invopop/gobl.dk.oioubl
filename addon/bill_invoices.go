@@ -22,6 +22,13 @@ import (
 // a domestic account number (F-LIB127/128/131/311), none of which the converter's
 // IBAN mapping can produce, so every means-42 document is wire-fatal. Re-add it
 // only once DK:BANK + branch-number modelling exists.
+// validDocumentTypes are the UNTDID 1001 document-type codes OIOUBL accepts:
+// the invoicetypecode-1.1 set {325, 380, 393} on the Invoice root and 381 on the
+// CreditNote root (F-INV011 / F-CRN011). en16931 stamps codes outside this set
+// for corrective (384), debit-note (383) and self-billed (389) documents, which
+// OIOUBL rejects — in Denmark those are modelled as credit notes instead.
+var validDocumentTypes = []cbc.Code{"325", "380", "381", "393"}
+
 var validPaymentMeansCodes = []cbc.Code{
 	"1", "10", "20", "30", "31", "48", "49", "50", "58", "59", "93", "97",
 }
@@ -54,6 +61,12 @@ func billInvoiceRules() *rules.Set {
 	return rules.For(new(bill.Invoice),
 		rules.Field("code",
 			rules.Assert("05", "invoice code is required (F-INV009 / F-CRN006)", is.Present),
+		),
+		rules.Field("tax",
+			rules.Field("ext",
+				rules.AssertIfPresent("31", "document type must be an OIOUBL-supported code: invoice 325/380/393 or credit note 381 (F-INV011 / F-CRN011)",
+					tax.ExtensionsHasCodes(untdid.ExtKeyDocumentType, validDocumentTypes...)),
+			),
 		),
 		rules.Field("supplier",
 			rules.Assert("01", "supplier must have an ISO 6523 endpoint or inbox (F-INV031 / F-CRN028)",
