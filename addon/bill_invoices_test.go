@@ -109,6 +109,31 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(inv))
 	})
 
+	t.Run("foreign customer without a legal identity is rejected (F-LIB187)", func(t *testing.T) {
+		// A non-Danish party has no CVR to fabricate into the OIOUBL
+		// PartyLegalEntity/CompanyID, so it must carry a legal identity.
+		inv := testInvoiceStandard(t)
+		inv.Customer.TaxID = &tax.Identity{Country: "DE", Code: "282741168"}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB187")
+	})
+
+	t.Run("foreign customer with a legal identity passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Customer.TaxID = &tax.Identity{Country: "DE", Code: "282741168"}
+		inv.Customer.Identities = []*org.Identity{{Scope: org.IdentityScopeLegal, Code: "HRB12345"}}
+		require.NoError(t, inv.Calculate())
+		if err := rules.Validate(inv); err != nil {
+			assert.NotContains(t, err.Error(), "F-LIB187")
+		}
+	})
+
+	t.Run("Danish customer needs no explicit legal identity (CVR fabricated)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+
 	t.Run("bare DK supplier passes via the derived participant (F-INV031)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Inboxes = nil

@@ -58,6 +58,8 @@ func billInvoiceRules() *rules.Set {
 		rules.Field("supplier",
 			rules.Assert("01", "supplier must have an ISO 6523 endpoint or inbox (F-INV031 / F-CRN028)",
 				is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
+			rules.Assert("29", "supplier requires a legal identity or a Danish tax ID for the OIOUBL PartyLegalEntity/CompanyID (F-LIB187)",
+				is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
 		),
 		rules.Field("totals",
 			// OIOUBL rejects negative monetary totals outright (F-LIB016 on
@@ -70,6 +72,8 @@ func billInvoiceRules() *rules.Set {
 		rules.Field("customer",
 			rules.Assert("02", "customer must have an ISO 6523 endpoint or inbox (F-INV044 / F-CRN040)",
 				is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
+			rules.Assert("30", "customer requires a legal identity or a Danish tax ID for the OIOUBL PartyLegalEntity/CompanyID (F-LIB187)",
+				is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
 			// F-INV046 requires exactly one Contact in OIOUBL output;
 			// gobl.ubl picks one Person at emit time, so the addon asserts presence only.
 			rules.Field("people",
@@ -254,6 +258,34 @@ func firstPersonHasIdentityCode(val any) bool {
 	}
 	p := people[0]
 	return p != nil && len(p.Identities) > 0 && !p.Identities[0].Code.IsEmpty()
+}
+
+// partyHasOIOUBLLegalID reports whether a party can produce a non-empty OIOUBL
+// PartyLegalEntity/CompanyID (F-LIB187). The gobl.ubl converter emits a
+// PartyLegalEntity for any named party and fills its CompanyID from the first
+// legal-scope identity, or — for a Danish party — fabricates it from the CVR
+// (tax identity). A named non-Danish party with no legal identity would emit a
+// PartyLegalEntity with no CompanyID, which OIOUBL rejects.
+func partyHasOIOUBLLegalID(val any) bool {
+	p, ok := val.(*org.Party)
+	if !ok || p == nil {
+		return true
+	}
+	// No registration name means no PartyLegalEntity is emitted, so F-LIB187
+	// cannot fire (the party name is separately required by EN 16931).
+	if p.Name == "" {
+		return true
+	}
+	// A Danish tax identity is fabricated into the CompanyID as the CVR.
+	if p.TaxID != nil && p.TaxID.Country == "DK" && p.TaxID.Code != "" {
+		return true
+	}
+	for _, id := range p.Identities {
+		if id.Scope == org.IdentityScopeLegal && !id.Code.IsEmpty() {
+			return true
+		}
+	}
+	return false
 }
 
 // ibanTransferMissingBIC reports whether an IBAN bank-transfer instruction
