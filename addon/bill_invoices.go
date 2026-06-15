@@ -361,9 +361,8 @@ func partyHasOIOUBLLegalID(val any) bool {
 //
 // F-LIB113 is active: only the 2017 $IbanOnly variant is commented out in the
 // schematron (OIOUBL_Common_Schematron.xml ~L670), the original assertion is
-// live — phive rejects a means-31 IBAN transfer with no BIC. The detector
-// scans every credit transfer (matching the account rule), so a missing BIC on
-// any entry fails; rule 13 separately handles a missing account.
+// live — phive rejects a means-31 IBAN transfer with no BIC. Validates the first
+// credit transfer, the one the converter emits; rule 13 handles a missing account.
 func ibanTransferMissingBIC(val any) bool {
 	instr, ok := val.(*pay.Instructions)
 	if !ok || instr == nil {
@@ -372,12 +371,17 @@ func ibanTransferMissingBIC(val any) bool {
 	if !instr.Ext.Get(untdid.ExtKeyPaymentMeans).In("30", "31") {
 		return false
 	}
-	for _, ct := range instr.CreditTransfer {
-		if ct != nil && ct.BIC == "" {
-			return true
-		}
+	ct := firstCreditTransfer(instr)
+	return ct != nil && ct.BIC == ""
+}
+
+// firstCreditTransfer returns the credit transfer the converter emits (the
+// first); OIOUBL carries only one, so the payment rules must validate that one.
+func firstCreditTransfer(instr *pay.Instructions) *pay.CreditTransfer {
+	if len(instr.CreditTransfer) == 0 {
+		return nil
 	}
-	return false
+	return instr.CreditTransfer[0]
 }
 
 // standardRatedHasPositivePercent reports whether a tax combo that maps to the
@@ -415,12 +419,8 @@ func bankTransferMissingAccount(val any) bool {
 	if !code.In(bankTransferCodes...) {
 		return false
 	}
-	for _, ct := range instr.CreditTransfer {
-		if ct != nil && (ct.IBAN != "" || ct.Number != "") {
-			return false
-		}
-	}
-	return true
+	ct := firstCreditTransfer(instr)
+	return ct == nil || (ct.IBAN == "" && ct.Number == "")
 }
 
 func giroPaymentIDInvalid(val any) bool {
@@ -453,12 +453,8 @@ func accountLengthInvalid(val any, code cbc.Code, ok func(string) bool) bool {
 	if instr.Ext.Get(untdid.ExtKeyPaymentMeans) != code {
 		return false
 	}
-	for _, ct := range instr.CreditTransfer {
-		if ct != nil && ok(ct.Number) {
-			return false
-		}
-	}
-	return true
+	ct := firstCreditTransfer(instr)
+	return ct == nil || !ok(ct.Number)
 }
 
 // structuredPaymentRefInvalid reports whether a Giro/FIK instruction using a

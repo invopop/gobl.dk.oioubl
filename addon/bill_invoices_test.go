@@ -465,6 +465,21 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(inv), "F-LIB107")
 	})
 
+	t.Run("bank-transfer code 31 with account only on a non-first transfer fails (F-LIB107)", func(t *testing.T) {
+		// The converter emits only the first credit transfer, so an account on a
+		// later entry doesn't satisfy the requirement.
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Instructions: &pay.Instructions{
+				Key:            pay.MeansKeyOther,
+				Ext:            tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "31"}),
+				CreditTransfer: []*pay.CreditTransfer{{Name: "no account"}, {IBAN: "DK5000400440116243", BIC: "DABADKKK"}},
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB107")
+	})
+
 	t.Run("bank-transfer code 31 without a BIC fails (F-LIB113)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Payment = &bill.PaymentDetails{

@@ -33,9 +33,14 @@ func normalizeParty(p *org.Party) {
 // dk-oioubl-payment-channel extension, derived from the payment means, so the
 // gobl.ubl serializer emits cbc:PaymentChannelCode directly.
 func normalizePayInstructions(instr *pay.Instructions) {
-	if ch := oioublPaymentChannel(instr.Ext.Get(untdid.ExtKeyPaymentMeans)); ch != "" {
-		instr.Ext = instr.Ext.Set(ExtKeyPaymentChannel, ch)
+	ch := oioublPaymentChannel(instr.Ext.Get(untdid.ExtKeyPaymentMeans))
+	if ch == "" {
+		// Clear any channel left by a previous means: a stale DK:GIRO/DK:FIK on a
+		// channel-less means is wire-fatal (e.g. F-LIB321).
+		instr.Ext = instr.Ext.Delete(ExtKeyPaymentChannel)
+		return
 	}
+	instr.Ext = instr.Ext.Set(ExtKeyPaymentChannel, ch)
 }
 
 // oioublPaymentChannel maps a UNTDID 4461 payment means to its OIOUBL payment
