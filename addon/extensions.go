@@ -266,16 +266,10 @@ var extensions = []*cbc.Definition{
 		Desc: i18n.String{
 			i18n.EN: here.Doc(`
 				The OIOUBL ` + "`addressformatcode-1.1`" + ` value emitted as
-				` + "`cbc:AddressFormatCode`" + ` on a party's postal address. GOBL has
-				no native address-format field, so it is declared on the party that owns
-				the address. When absent, the gobl.ubl serializer emits StructuredLax,
-				the format that imposes no mandatory sub-fields and is universally valid.
-
-				Each format constrains the address: StructuredDK requires a postal code
-				plus a street or post box and a building number or post box; StructuredID
-				requires only an identifier (` + "`dk-oioubl-address-id`" + `);
-				StructuredRegion carries only region, district and/or country; and
-				Unstructured carries free-text address lines only.
+				` + "`cbc:AddressFormatCode`" + ` on a party's postal address. GOBL has no
+				native address-format field, so it is declared on the party. When absent,
+				the gobl.ubl serializer emits StructuredLax, which imposes no mandatory
+				sub-fields.
 			`),
 		},
 		Values: []*cbc.Definition{

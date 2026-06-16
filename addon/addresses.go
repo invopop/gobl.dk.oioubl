@@ -7,11 +7,9 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// partyRules validates the OIOUBL address format declared on a party. GOBL has no
-// address-level extension, so the format (and the data OIOUBL needs that GOBL
-// does not model) is declared on the party via dk-oioubl-address-format and
-// applies to the party's postal address. When no format is declared the gobl.ubl
-// serializer emits StructuredLax, which imposes no completeness requirement.
+// partyRules validates the OIOUBL address format declared on a party via
+// dk-oioubl-address-format (GOBL has no address-level extension). An absent
+// format serializes as StructuredLax, which imposes no completeness requirement.
 func partyRules() *rules.Set {
 	return rules.For(new(org.Party),
 		rules.Field("ext",
@@ -31,9 +29,7 @@ func partyHasAddressFormat(val any) bool {
 }
 
 // partyAddressFormatComplete reports whether a party's first postal address
-// carries the data OIOUBL requires for the declared addressformatcode-1.1 value.
-// The data StructuredID and StructuredRegion need that GOBL does not model — the
-// identifier and the district — is read from the party extension.
+// carries the data OIOUBL requires for its declared addressformatcode-1.1 value.
 func partyAddressFormatComplete(val any) bool {
 	p, ok := val.(*org.Party)
 	if !ok || p == nil {

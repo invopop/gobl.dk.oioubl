@@ -12,43 +12,29 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// validPaymentMeansCodes are the UNTDID 4461 payment-means values accepted for
-// OIOUBL (F-LIB100). It includes "30" (generic credit transfer) because the
-// gobl.ubl converter maps it to OIOUBL's "31"; the remaining values are emitted
-// as-is. Codes outside this set can't produce valid OIOUBL output.
-//
-// "42" (domestic bank transfer) is deliberately excluded: OIOUBL settles it
-// through the DK:BANK channel with a Registreringsnummer (numeric branch ID) and
-// a domestic account number (F-LIB127/128/131/311), none of which the converter's
-// IBAN mapping can produce, so every means-42 document is wire-fatal. Re-add it
-// only once DK:BANK + branch-number modelling exists.
-// validDocumentTypes are the UNTDID 1001 document-type codes OIOUBL accepts:
-// the invoicetypecode-1.1 set {325, 380, 393} on the Invoice root and 381 on the
-// CreditNote root (F-INV011 / F-CRN011). en16931 stamps codes outside this set
-// for corrective (384), debit-note (383) and self-billed (389) documents, which
-// OIOUBL rejects — in Denmark those are modelled as credit notes instead.
+// validPaymentMeansCodes are the UNTDID 4461 means accepted for OIOUBL (F-LIB100).
+// "30" is included because the converter maps it to OIOUBL's "31". "42" is excluded:
+// OIOUBL settles it via the DK:BANK channel with a branch number + domestic account
+// (F-LIB127/128/131/311), which the converter's IBAN mapping can't produce — re-add
+// once DK:BANK modelling exists.
+
+// validDocumentTypes are the UNTDID 1001 codes OIOUBL accepts: {325, 380, 393} on
+// the Invoice root and 381 on the CreditNote (F-INV011 / F-CRN011). en16931 stamps
+// 384/383/389 (corrective/debit-note/self-billed), which OIOUBL rejects — in Denmark
+// those are modelled as credit notes.
 var validDocumentTypes = []cbc.Code{"325", "380", "381", "393"}
 
 var validPaymentMeansCodes = []cbc.Code{
 	"1", "10", "20", "30", "31", "48", "49", "50", "58", "59", "93", "97",
 }
 
-// Rule citations reference the OIOUBL Invoice schematron (F-INV) first and
-// the CreditNote equivalent (F-CRN) second where one exists. F-INV142 is
-// invoice-only because OIOUBL CreditNote uses BillingReference rather than
-// OrderLineReference.
+// Rule citations reference the OIOUBL Invoice schematron (F-INV) first and the
+// CreditNote equivalent (F-CRN) second. F-INV142 is invoice-only (OIOUBL CreditNote
+// uses BillingReference, not OrderLineReference).
 //
-// Deliberately NOT enforced here: F-LIB318 (line quantity unitCode must be in
-// the OIOUBL codelist). OIOUBL 2.1 ships an older UN/ECE Rec 20 subset (~1100
-// codes) that omits common current codes — GOBL's `piece` (H87), `km` (KMT) and
-// the packaging units (box/bottle/pallet → X**) are not accepted, and most have
-// no OIOUBL equivalent to map to. Enforcing it would mean either maintaining the
-// full ~1100-code allowlist in the addon (a codelist-value check that belongs in
-// gobl.ubl, not here) or emitting a fabricated fallback (e.g. ZZ "mutually
-// defined"). Instead the converter emits the real Rec 20 code and the phive
-// schematron rejects an out-of-list unit downstream — the authoritative gate for
-// codelist values. So an invoice using e.g. `piece` fails at generation with
-// F-LIB318 and the user picks an OIOUBL-valid unit (C62/each).
+// Deliberately NOT enforced: F-LIB318 (unit code must be in OIOUBL's UN/ECE Rec 20
+// subset). The ~1100-code allowlist is a codelist-value check that belongs in
+// gobl.ubl, not here; phive rejects an out-of-list unit downstream.
 
 var (
 	roundingMin = num.MakeAmount(-1000, 2)
@@ -225,13 +211,10 @@ func billTaxComboRules() *rules.Set {
 	)
 }
 
-// vatCategoryHasOIOUBLMapping reports whether a VAT combo's EN 16931 UNTDID 5305
-// category maps to an OIOUBL taxcategoryid-1.1 value. OIOUBL supports only
-// StandardRated (S), ZeroRated (Z, and exempt E reported as ZeroRated) and
-// ReverseCharge (AE). Categories such as intra-community (K), export (G) and
-// not-subject-to-VAT (O) have no OIOUBL equivalent and would otherwise reach the
-// wire as a bare letter outside the codelist (F-LIB309). A combo whose category
-// has not yet been normalized carries no UNTDID category and is left to en16931.
+// vatCategoryHasOIOUBLMapping reports whether a VAT combo's UNTDID 5305 category
+// maps to an OIOUBL taxcategoryid-1.1 value. OIOUBL supports only S, Z (and exempt
+// E as ZeroRated) and AE; K/G/O have no equivalent and would reach the wire as a
+// bare letter outside the codelist (F-LIB309). An un-normalized combo is left to en16931.
 func vatCategoryHasOIOUBLMapping(val any) bool {
 	var combo *tax.Combo
 	switch c := val.(type) {
@@ -278,13 +261,10 @@ func quantityNonZero(val any) bool {
 	return true
 }
 
-// amountPositive backs the allowance, charge and advance amount rules. OIOUBL
-// rejects a negative or zero cbc:Amount on a cac:AllowanceCharge (F-LIB019, the
-// element line discounts and charges are promoted into) and likewise a zero or
-// negative cbc:PaidAmount on a cac:PrepaidPayment (F-LIB013). Rejecting zero is
-// safe: GOBL models corrections as credit notes (a distinct document type), so
-// a negative line amount does not arise, and a zero-amount allowance is a
-// degenerate entry the addon rejects rather than emit wire-fatal output.
+// amountPositive backs the allowance, charge and advance amount rules: OIOUBL
+// rejects a zero or negative cbc:Amount on a cac:AllowanceCharge (F-LIB019) and
+// cbc:PaidAmount on a cac:PrepaidPayment (F-LIB013). Rejecting zero is safe —
+// corrections are modelled as credit notes, so negative line amounts don't arise.
 func amountPositive(val any) bool {
 	switch a := val.(type) {
 	case num.Amount:
@@ -313,10 +293,8 @@ func neverTrue(any) bool {
 }
 
 // firstPersonHasIdentityCode reports whether the first contact person carries an
-// identity code. The gobl.ubl converter maps it to the OIOUBL cac:Contact/cbc:ID,
-// which is mandatory for the customer (F-INV051); without it the converter would
-// have to fabricate a value, so the addon requires real data instead. An empty
-// people set passes here since rule 03 governs presence.
+// identity code, mapped to the OIOUBL cac:Contact/cbc:ID (mandatory for the
+// customer, F-INV051). An empty people set passes (rule 03 governs presence).
 func firstPersonHasIdentityCode(val any) bool {
 	people, ok := val.([]*org.Person)
 	if !ok || len(people) == 0 {
@@ -327,11 +305,10 @@ func firstPersonHasIdentityCode(val any) bool {
 }
 
 // partyHasOIOUBLLegalID reports whether a party can produce a non-empty OIOUBL
-// PartyLegalEntity/CompanyID (F-LIB187). The gobl.ubl converter emits a
-// PartyLegalEntity for any named party and fills its CompanyID from the first
-// legal-scope identity, or — for a Danish party — fabricates it from the CVR
-// (tax identity). A named non-Danish party with no legal identity would emit a
-// PartyLegalEntity with no CompanyID, which OIOUBL rejects.
+// PartyLegalEntity/CompanyID (F-LIB187). The converter emits a PartyLegalEntity for
+// any named party, filling CompanyID from the first legal-scope identity or (for a
+// Danish party) the CVR; a named non-Danish party with no legal identity would emit
+// an empty CompanyID, which OIOUBL rejects.
 func partyHasOIOUBLLegalID(val any) bool {
 	p, ok := val.(*org.Party)
 	if !ok || p == nil {
@@ -354,15 +331,10 @@ func partyHasOIOUBLLegalID(val any) bool {
 	return false
 }
 
-// ibanTransferMissingBIC reports whether an IBAN bank-transfer instruction
-// (payment-means 30, which the converter maps to 31, or 31 itself) carries a
-// credit transfer with no BIC. OIOUBL requires the FinancialInstitution/ID for
-// the IBAN channel (F-LIB113), which the converter sources from the BIC.
-//
-// F-LIB113 is active: only the 2017 $IbanOnly variant is commented out in the
-// schematron (OIOUBL_Common_Schematron.xml ~L670), the original assertion is
-// live — phive rejects a means-31 IBAN transfer with no BIC. Validates the first
-// credit transfer, the one the converter emits; rule 13 handles a missing account.
+// ibanTransferMissingBIC reports whether an IBAN bank-transfer (means 30→31, or 31)
+// carries a credit transfer with no BIC. OIOUBL requires FinancialInstitution/ID
+// for the IBAN channel (F-LIB113), which the converter sources from the BIC. Rule
+// 13 handles a missing account.
 func ibanTransferMissingBIC(val any) bool {
 	instr, ok := val.(*pay.Instructions)
 	if !ok || instr == nil {
@@ -457,13 +429,11 @@ func accountLengthInvalid(val any, code cbc.Code, ok func(string) bool) bool {
 	return ct == nil || !ok(ct.Number)
 }
 
-// structuredPaymentRefInvalid reports whether a Giro/FIK instruction using a
-// structured kortart (Giro 04/15, FIK 71/75) is missing the numeric payment
-// reference that OIOUBL emits as cbc:InstructionID, or carries one of the wrong
-// length: mandatory F-LIB145 (Giro) / F-LIB153 (FIK), numeric F-LIB312 (Giro) /
-// F-LIB336 (FIK), length F-LIB149 (Giro <=16) / F-LIB156 (FIK 71 = 15) /
-// F-LIB157 (FIK 75 = 16). The simple kortart (Giro 01, FIK 73) carry no
-// reference and are emitted without an InstructionID, so they need no rule.
+// structuredPaymentRefInvalid reports whether a structured Giro/FIK kortart (Giro
+// 04/15, FIK 71/75) is missing the numeric cbc:InstructionID reference or has the
+// wrong length: F-LIB145/153 (mandatory), F-LIB312/336 (numeric), F-LIB149 (Giro
+// ≤16), F-LIB156 (FIK 71 = 15), F-LIB157 (FIK 75 = 16). Simple kortart (Giro 01,
+// FIK 73) carry no reference.
 func structuredPaymentRefInvalid(val any) bool {
 	instr, ok := val.(*pay.Instructions)
 	if !ok || instr == nil {
