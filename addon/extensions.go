@@ -31,6 +31,24 @@ const (
 	// GOBL status event (and conversely derives the event from a parsed value)
 	// so the gobl.ubl serializer emits it directly instead of mapping the codes.
 	ExtKeyResponseCode cbc.Key = "dk-oioubl-response-code"
+
+	// ExtKeyReminderType carries the OIOUBL remindertypecode-1.1 value emitted as
+	// cbc:ReminderTypeCode on a Reminder, the Danish dunning document mapped from a
+	// bill.Payment of type "request". OIOUBL allows two values, Reminder and Advis
+	// (F-REM006/059/060/061); GOBL has no native field, so it is declared on the
+	// payment.
+	ExtKeyReminderType cbc.Key = "dk-oioubl-reminder-type"
+
+	// ExtKeyReminderSequence carries the OIOUBL cbc:ReminderSequenceNumeric, the
+	// 1-based position of this reminder within the dunning sequence (F-REM007).
+	// GOBL has no native field for it, so it is declared on the payment.
+	ExtKeyReminderSequence cbc.Key = "dk-oioubl-reminder-sequence"
+)
+
+// OIOUBL remindertypecode-1.1 values (F-REM061).
+const (
+	ExtValueReminderTypeReminder cbc.Code = "Reminder"
+	ExtValueReminderTypeAdvis    cbc.Code = "Advis"
 )
 
 // OIOUBL taxcategoryid-1.1 category codes.
@@ -165,5 +183,41 @@ var extensions = []*cbc.Definition{
 			{Code: ExtValueResponseCodeTechnicalReject, Name: i18n.String{i18n.EN: "Technical reject"}},
 			{Code: ExtValueResponseCodeProfileReject, Name: i18n.String{i18n.EN: "Profile reject"}},
 		},
+	},
+	{
+		Key: ExtKeyReminderType,
+		Name: i18n.String{
+			i18n.EN: "OIOUBL Reminder Type",
+			i18n.DA: "OIOUBL Rykkertype",
+		},
+		Desc: i18n.String{
+			i18n.EN: here.Doc(`
+				The OIOUBL ` + "`remindertypecode-1.1`" + ` value emitted as
+				` + "`cbc:ReminderTypeCode`" + ` on a Reminder, the Danish dunning
+				document mapped from a ` + "`bill.Payment`" + ` of type "request".
+				OIOUBL accepts two values: ` + "`Advis`" + ` (an advisory notice, such
+				as an account statement) and ` + "`Reminder`" + ` (a formal dunning
+				reminder). Required by F-REM006/F-REM061.
+			`),
+		},
+		Values: []*cbc.Definition{
+			{Code: ExtValueReminderTypeReminder, Name: i18n.String{i18n.EN: "Reminder", i18n.DA: "Rykker"}},
+			{Code: ExtValueReminderTypeAdvis, Name: i18n.String{i18n.EN: "Advisory notice", i18n.DA: "Advis"}},
+		},
+	},
+	{
+		Key: ExtKeyReminderSequence,
+		Name: i18n.String{
+			i18n.EN: "OIOUBL Reminder Sequence",
+			i18n.DA: "OIOUBL Rykkersekvens",
+		},
+		Desc: i18n.String{
+			i18n.EN: here.Doc(`
+				The OIOUBL ` + "`cbc:ReminderSequenceNumeric`" + `, the 1-based position
+				of this reminder within the dunning sequence (the first reminder is 1,
+				the second 2, and so on). Required by F-REM007.
+			`),
+		},
+		Pattern: `^[0-9]+$`,
 	},
 }
