@@ -34,6 +34,7 @@ func init() {
 		billStatusRules(),
 		billTaxComboRules(),
 		billPaymentRules(),
+		partyRules(),
 	)
 	norm.RegisterWithGuard(
 		is.InContext(tax.AddonIn(V2_1)),

@@ -87,6 +87,22 @@ func TestNormalizeStandardUnchanged(t *testing.T) {
 	require.NoError(t, rules.Validate(inv))
 }
 
+func TestNormalizeClearsStalePaymentChannel(t *testing.T) {
+	inv := testInvoiceStandard(t)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	// Cheque carries no payment channel, but a stale DK:GIRO lingers from a
+	// previous means; normalization must clear it (F-LIB321).
+	inv.Payment = &bill.PaymentDetails{
+		Instructions: &pay.Instructions{
+			Key: pay.MeansKeyCheque,
+			Ext: tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyPaymentChannel: oioubl.ExtValuePaymentChannelGiro}),
+		},
+	}
+	require.NoError(t, inv.Calculate())
+	assert.Empty(t, inv.Payment.Instructions.Ext.Get(oioubl.ExtKeyPaymentChannel).String(),
+		"a channel-less means must clear a stale payment channel")
+}
+
 func TestNormalizeStatusResponseCode(t *testing.T) {
 	t.Run("event maps to the OIOUBL response code (outbound)", func(t *testing.T) {
 		st := testStatusResponse(t)
