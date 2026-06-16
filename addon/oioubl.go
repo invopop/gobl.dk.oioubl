@@ -33,6 +33,7 @@ func init() {
 		billInvoiceRules(),
 		billStatusRules(),
 		billTaxComboRules(),
+		billPaymentRules(),
 	)
 	norm.RegisterWithGuard(
 		is.InContext(tax.AddonIn(V2_1)),
