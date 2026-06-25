@@ -102,6 +102,9 @@ func TestStatusValidation(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Supplier.Name = ""
 		st.Supplier.Identities = nil
+		// Clear the CVR too: a Danish tax ID normalizes into a legal identity, so
+		// only a party with no name AND no derivable legal id fails F-LIB022.
+		st.Supplier.TaxID = nil
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "F-LIB022")
@@ -109,9 +112,11 @@ func TestStatusValidation(t *testing.T) {
 
 	t.Run("name-less supplier with a non-legal identity fails (F-LIB022)", func(t *testing.T) {
 		// A tax-scope-only identity yields no PartyLegalEntity, so it cannot
-		// produce valid OIOUBL and must be rejected.
+		// produce valid OIOUBL and must be rejected. The CVR is cleared so it
+		// does not normalize into a legal identity.
 		st := testStatusResponse(t)
 		st.Supplier.Name = ""
+		st.Supplier.TaxID = nil
 		st.Supplier.Identities = []*org.Identity{{Scope: org.IdentityScopeTax, Code: "88146328"}}
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
@@ -147,6 +152,7 @@ func TestStatusValidation(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Customer.Name = ""
 		st.Customer.Identities = nil
+		st.Customer.TaxID = nil // CVR would normalize into a legal identity
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "F-LIB022")

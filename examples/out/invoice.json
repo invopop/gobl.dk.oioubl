@@ -4,7 +4,7 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "f8e1785b545543ca42e131ebb85b5a6cd0e3121c0c4904a4ac7f4504821099ce"
+			"val": "9e5ad7027f088225d3b54920bf6438996130d7fef1e0c008fd230f7698a70a29"
 		},
 		"from": "iso6523-actorid-upis::0184:12345674",
 		"to": "iso6523-actorid-upis::0184:88146328"
@@ -33,6 +33,15 @@
 				"country": "DK",
 				"code": "12345674"
 			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "12345674",
+					"ext": {
+						"iso-scheme-id": "0184"
+					}
+				}
+			],
 			"endpoints": [
 				{
 					"uri": "iso6523-actorid-upis::0184:12345674"
@@ -54,6 +63,15 @@
 				"country": "DK",
 				"code": "88146328"
 			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "88146328",
+					"ext": {
+						"iso-scheme-id": "0184"
+					}
+				}
+			],
 			"people": [
 				{
 					"name": {

@@ -2,6 +2,7 @@ package addon
 
 import (
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
@@ -21,12 +22,36 @@ func normalizeParty(p *org.Party) {
 	if p.TaxID == nil || p.TaxID.Country != "DK" || p.TaxID.Code == cbc.CodeEmpty {
 		return
 	}
-	if p.Endpoint(iso6523EndpointScheme) != nil || len(p.Inboxes) > 0 {
-		return
+	// Participant endpoint: the CVR is the ISO 6523 0184 participant code, unless
+	// the party already carries an endpoint or inbox.
+	if p.Endpoint(iso6523EndpointScheme) == nil && len(p.Inboxes) == 0 {
+		p.Endpoints = append(p.Endpoints, &org.Endpoint{
+			URI: cbc.URI(iso6523EndpointScheme + "::" + icd0184 + ":" + p.TaxID.Code.String()),
+		})
 	}
-	p.Endpoints = append(p.Endpoints, &org.Endpoint{
-		URI: cbc.URI(iso6523EndpointScheme + "::0184:" + p.TaxID.Code.String()),
-	})
+	// Legal identity: OIOUBL's PartyLegalEntity/CompanyID is the CVR (ISO 6523
+	// 0184). Set it explicitly so the converter maps it rather than fabricating
+	// one from the tax ID. Left untouched if a legal identity already exists.
+	if !hasLegalIdentity(p) {
+		p.Identities = append(p.Identities, &org.Identity{
+			Scope: org.IdentityScopeLegal,
+			Code:  p.TaxID.Code,
+			Ext:   tax.ExtensionsOf(cbc.CodeMap{iso.ExtKeySchemeID: cbc.Code(icd0184)}),
+		})
+	}
+}
+
+// icd0184 is the ISO 6523 ICD for the Danish CVR register.
+const icd0184 = "0184"
+
+// hasLegalIdentity reports whether the party already carries a legal-scope identity.
+func hasLegalIdentity(p *org.Party) bool {
+	for _, id := range p.Identities {
+		if id != nil && id.Scope == org.IdentityScopeLegal {
+			return true
+		}
+	}
+	return false
 }
 
 // normalizePayInstructions records the OIOUBL paymentchannelcode-1.1 value in the
