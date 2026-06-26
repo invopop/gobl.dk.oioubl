@@ -160,6 +160,24 @@ func oioublTaxCategory(untdidCat cbc.Code) cbc.Code {
 	return ""
 }
 
+// GOBLTaxCategory is the inverse of oioublTaxCategory: it returns the EN 16931
+// UNTDID 5305 category for an OIOUBL taxcategoryid-1.1 value, used by the gobl.ubl
+// converter on parse so the codelist lives only here. It returns "" for a value
+// that is not an OIOUBL category (other profiles already carry the UNTDID code).
+// Exempt does not round-trip — OIOUBL has no exempt category, so both Z and E map
+// to ZeroRated, which reverses only to Z.
+func GOBLTaxCategory(taxCategoryID cbc.Code) cbc.Code {
+	switch taxCategoryID {
+	case ExtValueTaxCategoryStandardRated:
+		return "S"
+	case ExtValueTaxCategoryZeroRated:
+		return "Z"
+	case ExtValueTaxCategoryReverseCharge:
+		return "AE"
+	}
+	return ""
+}
+
 // normalizeStatusLine records the OIOUBL responsecode-1.1 value in the
 // dk-oioubl-response-code extension, derived from the GOBL status event, so the
 // gobl.ubl serializer emits cac:Response/cbc:ResponseCode directly. On an inbound
