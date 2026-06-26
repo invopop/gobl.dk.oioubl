@@ -58,8 +58,8 @@ func normalizeParty(p *org.Party) {
 // already-symbolic Danish value passes through.
 func danishParticipantScheme(p *org.Party) cbc.Code {
 	raw := participantICD(p)
-	if s, ok := EndpointSchemes[raw]; ok {
-		return cbc.Code(s)
+	if s := SchemeForICD(raw); s != "" {
+		return s
 	}
 	switch cbc.Code(raw) {
 	case SchemeDKCVR, SchemeDKSE, SchemeGLN:
