@@ -1,6 +1,8 @@
 package addon
 
 import (
+	"strings"
+
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/catalogues/untdid"
@@ -39,6 +41,46 @@ func normalizeParty(p *org.Party) {
 			Ext:   tax.ExtensionsOf(cbc.CodeMap{iso.ExtKeySchemeID: cbc.Code(icd0184)}),
 		})
 	}
+	// Endpoint identifier scheme: the converter emits the EndpointID schemeID 1:1
+	// from this extension. Derive the symbolic OIOUBL scheme (F-LIB179) from the
+	// Danish participant ICD; a foreign participant supplies it manually. A pre-set
+	// value is respected.
+	if p.Ext.Get(ExtKeyAddressScheme) == "" {
+		if s := danishParticipantScheme(p); s != "" {
+			p.Ext = p.Ext.Set(ExtKeyAddressScheme, s)
+		}
+	}
+}
+
+// danishParticipantScheme derives the symbolic OIOUBL identifier scheme (F-LIB179)
+// from a party's participant ICD — the ISO 6523 endpoint ICD, or an inbox scheme
+// (the pre-endpoint routing model). Only the Danish schemes are derived; an
+// already-symbolic Danish value passes through.
+func danishParticipantScheme(p *org.Party) cbc.Code {
+	raw := participantICD(p)
+	if s, ok := EndpointSchemes[raw]; ok {
+		return cbc.Code(s)
+	}
+	switch cbc.Code(raw) {
+	case SchemeDKCVR, SchemeDKSE, SchemeGLN:
+		return cbc.Code(raw)
+	}
+	return ""
+}
+
+// participantICD returns a party's participant scheme: the ISO 6523 ICD from its
+// endpoint URI, or the first inbox's scheme.
+func participantICD(p *org.Party) string {
+	if ep := p.Endpoint(iso6523EndpointScheme); ep != nil {
+		rest := strings.TrimPrefix(strings.TrimPrefix(string(ep.URI), iso6523EndpointScheme), "::")
+		if icd, _, ok := strings.Cut(rest, ":"); ok {
+			return icd
+		}
+	}
+	if len(p.Inboxes) > 0 {
+		return p.Inboxes[0].Scheme.String()
+	}
+	return ""
 }
 
 // icd0184 is the ISO 6523 ICD for the Danish CVR register.

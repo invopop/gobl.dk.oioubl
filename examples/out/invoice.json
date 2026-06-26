@@ -4,7 +4,7 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "9e5ad7027f088225d3b54920bf6438996130d7fef1e0c008fd230f7698a70a29"
+			"val": "67e4e2446a4aade705943fbc31eae20ca2efa521d684528d10fa469117aad2fe"
 		},
 		"from": "iso6523-actorid-upis::0184:12345674",
 		"to": "iso6523-actorid-upis::0184:88146328"
@@ -55,7 +55,10 @@
 					"code": "1000",
 					"country": "DK"
 				}
-			]
+			],
+			"ext": {
+				"dk-oioubl-address-scheme": "DK:CVR"
+			}
 		},
 		"customer": {
 			"name": "Kunde ApS",
@@ -99,7 +102,10 @@
 					"code": "8000",
 					"country": "DK"
 				}
-			]
+			],
+			"ext": {
+				"dk-oioubl-address-scheme": "DK:CVR"
+			}
 		},
 		"lines": [
 			{
