@@ -58,6 +58,13 @@ func billPaymentRules() *rules.Set {
 				rules.AssertIfPresent("10", "payee must have an ISO 6523 endpoint or inbox (F-REM034)",
 					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
 			),
+			rules.Field("methods",
+				rules.Each(
+					rules.When(is.Func("fik kortart 73 carrying a payment reference", fik73RecordWithReference),
+						rules.Assert("11", "FIK payment id 73 must not carry a payment reference, OIOUBL has no element for it (F-LIB275)", is.Func("never", neverTrue)),
+					),
+				),
+			),
 		),
 	)
 }

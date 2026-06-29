@@ -452,17 +452,31 @@ func structuredPaymentRefInvalid(val any) bool {
 	return false
 }
 
-// fik73WithReference reports whether a FIK (payment-means 93) instruction uses
-// the simple kortart 73, which forbids cbc:InstructionID, yet carries a payment
-// reference that OIOUBL has nowhere to put (F-LIB275).
+// fik73RefForbidden reports whether an OIOUBL payment using FIK kortart 73, which
+// forbids cbc:InstructionID, still carries a payment reference that OIOUBL has
+// nowhere to put (F-LIB275).
+func fik73RefForbidden(ext tax.Extensions, ref string) bool {
+	return ext.Get(untdid.ExtKeyPaymentMeans) == "93" &&
+		ext.Get(ExtKeyPaymentID) == "73" &&
+		ref != ""
+}
+
+// fik73WithReference applies fik73RefForbidden to an invoice payment instruction.
 func fik73WithReference(val any) bool {
 	instr, ok := val.(*pay.Instructions)
 	if !ok || instr == nil {
 		return false
 	}
-	return instr.Ext.Get(untdid.ExtKeyPaymentMeans) == "93" &&
-		instr.Ext.Get(ExtKeyPaymentID) == "73" &&
-		instr.Ref != ""
+	return fik73RefForbidden(instr.Ext, instr.Ref.String())
+}
+
+// fik73RecordWithReference applies fik73RefForbidden to a reminder payment method.
+func fik73RecordWithReference(val any) bool {
+	m, ok := val.(*pay.Record)
+	if !ok || m == nil {
+		return false
+	}
+	return fik73RefForbidden(m.Ext, m.Ref)
 }
 
 // giro01ReferenceTooLong reports whether a Giro (payment-means 50) instruction

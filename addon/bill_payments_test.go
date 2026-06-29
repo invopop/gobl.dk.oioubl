@@ -7,6 +7,7 @@ import (
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
@@ -151,5 +152,34 @@ func TestPaymentValidation(t *testing.T) {
 		p.Payee = &org.Party{Name: "Inkasso A/S"}
 		require.NoError(t, p.Calculate())
 		assert.ErrorContains(t, rules.Validate(p), "F-REM034")
+	})
+
+	t.Run("fik kortart 73 must not carry a payment reference (F-LIB275)", func(t *testing.T) {
+		p := testRequestPayment(t)
+		p.Methods = []*pay.Record{{
+			Key:            "other",
+			Ref:            "000000000012345",
+			CreditTransfer: &pay.CreditTransfer{Number: "12345678"},
+			Ext: tax.ExtensionsOf(cbc.CodeMap{
+				untdid.ExtKeyPaymentMeans: "93",
+				oioubl.ExtKeyPaymentID:    oioubl.ExtValuePaymentIDFIK73,
+			}),
+		}}
+		require.NoError(t, p.Calculate())
+		assert.ErrorContains(t, rules.Validate(p), "F-LIB275")
+	})
+
+	t.Run("fik kortart 73 without a payment reference is valid", func(t *testing.T) {
+		p := testRequestPayment(t)
+		p.Methods = []*pay.Record{{
+			Key:            "other",
+			CreditTransfer: &pay.CreditTransfer{Number: "12345678"},
+			Ext: tax.ExtensionsOf(cbc.CodeMap{
+				untdid.ExtKeyPaymentMeans: "93",
+				oioubl.ExtKeyPaymentID:    oioubl.ExtValuePaymentIDFIK73,
+			}),
+		}}
+		require.NoError(t, p.Calculate())
+		require.NoError(t, rules.Validate(p))
 	})
 }
