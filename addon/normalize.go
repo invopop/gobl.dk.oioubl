@@ -96,10 +96,13 @@ func hasLegalIdentity(p *org.Party) bool {
 	return false
 }
 
-// normalizePayInstructions records the OIOUBL paymentchannelcode-1.1 value in the
-// dk-oioubl-payment-channel extension, derived from the payment means, so the
-// gobl.ubl serializer emits cbc:PaymentChannelCode directly.
+// normalizePayInstructions prepares an invoice payment instruction for OIOUBL: it
+// rewrites the EN 16931 credit-transfer means to OIOUBL's code (see
+// oioublPaymentMeans) and records the paymentchannelcode-1.1 value in the
+// dk-oioubl-payment-channel extension, so the gobl.ubl serializer emits the means
+// code and cbc:PaymentChannelCode directly.
 func normalizePayInstructions(instr *pay.Instructions) {
+	instr.Ext = oioublPaymentMeans(instr.Ext)
 	ch := oioublPaymentChannel(instr.Ext.Get(untdid.ExtKeyPaymentMeans))
 	if ch == "" {
 		// Clear any channel left by a previous means: a stale DK:GIRO/DK:FIK on a
@@ -108,6 +111,16 @@ func normalizePayInstructions(instr *pay.Instructions) {
 		return
 	}
 	instr.Ext = instr.Ext.Set(ExtKeyPaymentChannel, ch)
+}
+
+// oioublPaymentMeans rewrites the EN 16931 credit-transfer means (UNTDID 4461 code
+// 30) to OIOUBL's bank-transfer code 31, which OIOUBL's PaymentMeansCode codelist
+// requires in its place (F-LIB100). Other means pass through unchanged.
+func oioublPaymentMeans(ext tax.Extensions) tax.Extensions {
+	if ext.Get(untdid.ExtKeyPaymentMeans) == "30" {
+		return ext.Set(untdid.ExtKeyPaymentMeans, "31")
+	}
+	return ext
 }
 
 // oioublPaymentChannel maps a UNTDID 4461 payment means to its OIOUBL payment
