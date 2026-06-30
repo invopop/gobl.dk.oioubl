@@ -1,0 +1,175 @@
+package addon_test
+
+import (
+	"testing"
+
+	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
+	en16931 "github.com/invopop/gobl/addons/eu/en16931"
+	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/catalogues/cef"
+	"github.com/invopop/gobl/catalogues/untdid"
+	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/pay"
+	"github.com/invopop/gobl/rules"
+	"github.com/invopop/gobl/tax"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func bankPayment() *bill.PaymentDetails {
+	return &bill.PaymentDetails{
+		Terms: &pay.Terms{Notes: "Net 30 days"},
+		Instructions: &pay.Instructions{
+			Key:            pay.MeansKeyCreditTransfer,
+			CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK5000400440116243", BIC: "DABADKKK"}},
+		},
+	}
+}
+
+// TestNormalizeExemptToZeroRated checks that a VAT-exempt line keeps its GOBL
+// exempt category while carrying the OIOUBL ZeroRated category in the
+// dk-oioubl-tax-category extension. A VATEX reason remains allowed (and is
+// carried through), even though OIOUBL no longer requires one.
+func TestNormalizeExemptToZeroRated(t *testing.T) {
+	inv := testInvoiceStandard(t)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	inv.Lines[0].Taxes = tax.Set{{
+		Category: "VAT",
+		Key:      tax.KeyExempt,
+		Ext:      tax.ExtensionsOf(cbc.CodeMap{cef.ExtKeyVATEX: "VATEX-EU-132"}),
+	}}
+	inv.Payment = bankPayment()
+	require.NoError(t, inv.Calculate())
+
+	assert.Equal(t, "E", inv.Lines[0].Taxes[0].Ext.Get(untdid.ExtKeyTaxCategory).String(),
+		"the GOBL category stays exempt")
+	assert.Equal(t, "ZeroRated", inv.Lines[0].Taxes[0].Ext.Get(oioubl.ExtKeyTaxCategory).String(),
+		"OIOUBL reports exempt as ZeroRated")
+	require.NoError(t, rules.Validate(inv))
+}
+
+// TestNormalizeExemptNeedsNoReason confirms that, with the OIOUBL addon present,
+// EN 16931's exemption-reason requirement is relaxed: OIOUBL 2.1 has no exempt
+// category (exempt is reported as ZeroRated, which requires no reason), so a
+// VAT-exempt line with neither a VATEX code nor an exemption note validates.
+func TestNormalizeExemptNeedsNoReason(t *testing.T) {
+	inv := testInvoiceStandard(t)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	inv.Lines[0].Taxes = tax.Set{{Category: "VAT", Key: tax.KeyExempt}}
+	inv.Payment = bankPayment()
+	require.NoError(t, inv.Calculate())
+	assert.NoError(t, rules.Validate(inv))
+}
+
+// TestNormalizeReverseChargeNeedsNoReason confirms the same relaxation for
+// reverse-charge: OIOUBL reports it as the ReverseCharge category, which carries
+// no exemption reason, so the EN 16931 exemption-note requirement is skipped.
+func TestNormalizeReverseChargeNeedsNoReason(t *testing.T) {
+	inv := testInvoiceStandard(t)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	inv.Lines[0].Taxes = tax.Set{{Category: "VAT", Key: tax.KeyReverseCharge}}
+	inv.Payment = bankPayment()
+	require.NoError(t, inv.Calculate())
+	assert.NoError(t, rules.Validate(inv))
+	assert.Equal(t, "ReverseCharge", inv.Lines[0].Taxes[0].Ext.Get(oioubl.ExtKeyTaxCategory).String())
+}
+
+// TestNormalizeStandardUnchanged confirms the normalizer only touches exempt.
+func TestNormalizeStandardUnchanged(t *testing.T) {
+	inv := testInvoiceStandard(t)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	inv.Payment = bankPayment()
+	require.NoError(t, inv.Calculate())
+	assert.Equal(t, "S", inv.Lines[0].Taxes[0].Ext.Get(untdid.ExtKeyTaxCategory).String())
+	assert.Equal(t, "StandardRated", inv.Lines[0].Taxes[0].Ext.Get(oioubl.ExtKeyTaxCategory).String())
+	assert.Equal(t, "IBAN", inv.Payment.Instructions.Ext.Get(oioubl.ExtKeyPaymentChannel).String(),
+		"a bank transfer should carry the IBAN payment channel")
+	require.NoError(t, rules.Validate(inv))
+}
+
+func TestNormalizeClearsStalePaymentChannel(t *testing.T) {
+	inv := testInvoiceStandard(t)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	// Cheque carries no payment channel, but a stale DK:GIRO lingers from a
+	// previous means; normalization must clear it (F-LIB321).
+	inv.Payment = &bill.PaymentDetails{
+		Instructions: &pay.Instructions{
+			Key: pay.MeansKeyCheque,
+			Ext: tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyPaymentChannel: oioubl.ExtValuePaymentChannelGiro}),
+		},
+	}
+	require.NoError(t, inv.Calculate())
+	assert.Empty(t, inv.Payment.Instructions.Ext.Get(oioubl.ExtKeyPaymentChannel).String(),
+		"a channel-less means must clear a stale payment channel")
+}
+
+func TestNormalizeStatusResponseCode(t *testing.T) {
+	t.Run("event maps to the OIOUBL response code (outbound)", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Lines[0].Key = bill.StatusLineAcknowledged
+		require.NoError(t, st.Calculate())
+		assert.Equal(t, "TechnicalAccept", st.Lines[0].Ext.Get(oioubl.ExtKeyResponseCode).String())
+	})
+
+	t.Run("parsed response code recovers the event (inbound)", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Lines[0].Key = ""
+		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "BusinessReject"})
+		require.NoError(t, st.Calculate())
+		assert.Equal(t, bill.StatusLineRejected, st.Lines[0].Key)
+	})
+
+	t.Run("stale response code is overwritten after the key changes", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Lines[0].Key = bill.StatusLineRejected
+		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "BusinessAccept"})
+		require.NoError(t, st.Calculate())
+		assert.Equal(t, "BusinessReject", st.Lines[0].Ext.Get(oioubl.ExtKeyResponseCode).String())
+	})
+
+	t.Run("inbound ProfileReject survives recalculation", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Lines[0].Key = ""
+		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "ProfileReject"})
+		require.NoError(t, st.Calculate())
+		assert.Equal(t, bill.StatusLineError, st.Lines[0].Key)
+		require.NoError(t, st.Calculate())
+		assert.Equal(t, "ProfileReject", st.Lines[0].Ext.Get(oioubl.ExtKeyResponseCode).String(),
+			"the lossy error event must not clobber the original wire code")
+	})
+}
+
+func TestNormalizePartyParticipant(t *testing.T) {
+	t.Run("DK party without participant derives the CVR endpoint", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Supplier.Inboxes = nil
+		inv.Supplier.Endpoints = nil
+		inv.Customer.Inboxes = nil
+		inv.Customer.Endpoints = nil
+		inv.Payment = bankPayment()
+		require.NoError(t, inv.Calculate())
+		require.Len(t, inv.Supplier.Endpoints, 1)
+		assert.Contains(t, inv.Supplier.Endpoints[0].URI.String(), "iso6523-actorid-upis::0184:")
+		require.NoError(t, rules.Validate(inv), "a bare DK party should validate via the derived participant")
+	})
+
+	t.Run("existing participant is left untouched", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		require.NoError(t, inv.Calculate())
+		supplier := inv.Supplier
+		if len(supplier.Endpoints) > 0 {
+			assert.Len(t, supplier.Endpoints, 1, "no duplicate endpoint may be added")
+		} else {
+			assert.Empty(t, supplier.Endpoints, "an inbox-modelled party must not gain endpoints")
+		}
+	})
+
+	t.Run("foreign party is left untouched", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Customer.TaxID = &tax.Identity{Country: "DE", Code: "129273398"}
+		inv.Customer.Inboxes = nil
+		inv.Customer.Endpoints = nil
+		require.NoError(t, inv.Calculate())
+		assert.Empty(t, inv.Customer.Endpoints, "no participant can be derived for non-DK parties")
+	})
+}
