@@ -4,10 +4,10 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "d96aa4ef3e4a18ba52f5d009e611e220b6f9c01758b4454576b195bc6ecd05e4"
+			"val": "e0fef9fcd520afc699178f7c5e7824ec5db556ddd1e62de7566489d6bfe7a9fa"
 		},
-		"from": "iso6523-actorid-upis::0184:12345674",
-		"to": "iso6523-actorid-upis::0184:88146328"
+		"from": "urn:oioubl:scheme:endpointid-1.1::DK:CVR:12345674",
+		"to": "urn:oioubl:scheme:endpointid-1.1::DK:CVR:88146328"
 	},
 	"doc": {
 		"$schema": "https://gobl.org/draft-0/bill/status",
@@ -37,12 +37,9 @@
 			],
 			"endpoints": [
 				{
-					"uri": "iso6523-actorid-upis::0184:88146328"
+					"uri": "urn:oioubl:scheme:endpointid-1.1::DK:CVR:88146328"
 				}
-			],
-			"ext": {
-				"dk-oioubl-address-scheme": "DK:CVR"
-			}
+			]
 		},
 		"customer": {
 			"name": "Eksempel A/S",
@@ -61,12 +58,9 @@
 			],
 			"endpoints": [
 				{
-					"uri": "iso6523-actorid-upis::0184:12345674"
+					"uri": "urn:oioubl:scheme:endpointid-1.1::DK:CVR:12345674"
 				}
-			],
-			"ext": {
-				"dk-oioubl-address-scheme": "DK:CVR"
-			}
+			]
 		},
 		"lines": [
 			{

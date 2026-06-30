@@ -8,6 +8,7 @@ import (
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/cef"
 	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/tax"
@@ -145,19 +146,20 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		inv.Payment = bankPayment()
 		require.NoError(t, inv.Calculate())
 		require.Len(t, inv.Supplier.Endpoints, 1)
-		assert.Contains(t, inv.Supplier.Endpoints[0].URI.String(), "iso6523-actorid-upis::0184:")
+		assert.Equal(t, "urn:oioubl:scheme:endpointid-1.1::DK:CVR:12345674", inv.Supplier.Endpoints[0].URI.String())
+		assert.Empty(t, inv.Supplier.Inboxes, "no Peppol endpoint URI is fabricated; the deprecated inbox is not used")
 		require.NoError(t, rules.Validate(inv), "a bare DK party should validate via the derived participant")
 	})
 
-	t.Run("existing participant is left untouched", func(t *testing.T) {
+	t.Run("an explicit inbox is migrated to an endpoint", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
+		inv.Supplier.Endpoints = nil
+		inv.Supplier.Inboxes = []*org.Inbox{{Scheme: "DK:SE", Code: "12345678"}}
 		require.NoError(t, inv.Calculate())
-		supplier := inv.Supplier
-		if len(supplier.Endpoints) > 0 {
-			assert.Len(t, supplier.Endpoints, 1, "no duplicate endpoint may be added")
-		} else {
-			assert.Empty(t, supplier.Endpoints, "an inbox-modelled party must not gain endpoints")
-		}
+		assert.Empty(t, inv.Supplier.Inboxes, "the deprecated inbox is migrated away")
+		require.Len(t, inv.Supplier.Endpoints, 1, "the inbox becomes the participant endpoint")
+		assert.Equal(t, "urn:oioubl:scheme:endpointid-1.1::DK:SE:12345678", inv.Supplier.Endpoints[0].URI.String(),
+			"an explicit DK:SE participant wins over the derived CVR")
 	})
 
 	t.Run("foreign party is left untouched", func(t *testing.T) {

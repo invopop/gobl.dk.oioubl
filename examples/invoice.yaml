@@ -13,8 +13,6 @@ supplier:
   tax_id:
     country: "DK"
     code: "12345674"
-  endpoints:
-    - uri: "iso6523-actorid-upis::0184:12345674"
   addresses:
     - num: "1"
       street: "Hovedgaden"
@@ -26,8 +24,6 @@ customer:
   tax_id:
     country: "DK"
     code: "88146328"
-  endpoints:
-    - uri: "iso6523-actorid-upis::0184:88146328"
   people:
     - name:
         given: "Anders"

@@ -12,28 +12,59 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// iso6523EndpointScheme is the URI scheme org.Endpoint uses for Peppol-style
-// participant identifiers.
-const iso6523EndpointScheme = "iso6523-actorid-upis"
+// oioublEndpointScheme is the OIOUBL endpoint-identifier scheme URI
+// (urn:oioubl:scheme:endpointid-1.1, the codelist's declared "Identification
+// Scheme"), the OIOUBL counterpart to Peppol's iso6523-actorid-upis. Participants
+// are carried as org.Endpoint URIs of the form
+// "urn:oioubl:scheme:endpointid-1.1::<scheme>:<value>" (e.g. DK:CVR:12345674),
+// where <scheme> is one of the nine symbolic codelist values (DK:CVR, DK:SE, GLN,
+// "ISO 6523" for OVT, …).
+const oioublEndpointScheme = "urn:oioubl:scheme:endpointid-1.1"
 
-// normalizeParty derives the NemHandel participant endpoint for a Danish party
-// from its tax identity: the Danish VAT number is the CVR number, which is the
-// ISO 6523 0184 participant code. Parties that already carry a participant —
-// an ISO 6523 endpoint or any inbox — are left untouched.
+// OIOUBLEndpointURI builds the OIOUBL participant endpoint URI for a symbolic
+// scheme and participant code. The value is colon-free (CVR/SE/GLN/IBAN/CPR/…),
+// so the scheme — which may itself contain a colon (DK:CVR) — is recovered on the
+// last colon when reading.
+func OIOUBLEndpointURI(scheme, code string) string {
+	return oioublEndpointScheme + "::" + scheme + ":" + code
+}
+
+// ParseOIOUBLEndpoint splits an OIOUBL endpoint URI into its symbolic scheme and
+// participant code, returning ok=false for any other URI. The participant code is
+// colon-free, so the scheme is recovered up to the last colon.
+func ParseOIOUBLEndpoint(uri string) (scheme, code string, ok bool) {
+	rest, found := strings.CutPrefix(uri, oioublEndpointScheme+"::")
+	if !found {
+		return "", "", false
+	}
+	i := strings.LastIndex(rest, ":")
+	if i <= 0 || i == len(rest)-1 {
+		return "", "", false
+	}
+	return rest[:i], rest[i+1:], true
+}
+
+// normalizeParty resolves a party's NemHandel participant to an org.Endpoint
+// under the OIOUBL endpoint-identifier scheme — the going-forward routing field,
+// since org.Inbox is deprecated. It (1) migrates a scheme/code inbox to the
+// equivalent endpoint, and (2) for a Danish party still lacking one, derives the
+// CVR participant (DK:CVR) from the tax identity. An explicit DK:SE, GLN or
+// foreign participant supplied by the producer is preserved.
 func normalizeParty(p *org.Party) {
+	if len(p.Endpoints) == 0 {
+		migrateInboxesToEndpoints(p)
+	}
 	if p.TaxID == nil || p.TaxID.Country != "DK" || p.TaxID.Code == cbc.CodeEmpty {
 		return
 	}
-	// Participant endpoint: the CVR is the ISO 6523 0184 participant code, unless
-	// the party already carries an endpoint or inbox.
-	if p.Endpoint(iso6523EndpointScheme) == nil && len(p.Inboxes) == 0 {
+	if len(p.Endpoints) == 0 {
 		p.Endpoints = append(p.Endpoints, &org.Endpoint{
-			URI: cbc.URI(iso6523EndpointScheme + "::" + icd0184 + ":" + p.TaxID.Code.String()),
+			URI: cbc.URI(OIOUBLEndpointURI(SchemeDKCVR, p.TaxID.Code.String())),
 		})
 	}
-	// Legal identity: OIOUBL's PartyLegalEntity/CompanyID is the CVR (ISO 6523
-	// 0184). Set it explicitly so the converter maps it rather than fabricating
-	// one from the tax ID. Left untouched if a legal identity already exists.
+	// Legal identity: OIOUBL's PartyLegalEntity/CompanyID is the CVR. Set it
+	// explicitly so the converter maps it rather than fabricating one from the tax
+	// ID. Left untouched if a legal identity already exists.
 	if !hasLegalIdentity(p) {
 		p.Identities = append(p.Identities, &org.Identity{
 			Scope: org.IdentityScopeLegal,
@@ -41,49 +72,38 @@ func normalizeParty(p *org.Party) {
 			Ext:   tax.ExtensionsOf(cbc.CodeMap{iso.ExtKeySchemeID: cbc.Code(icd0184)}),
 		})
 	}
-	// Endpoint identifier scheme: the converter emits the EndpointID schemeID 1:1
-	// from this extension. Derive the symbolic OIOUBL scheme (F-LIB179) from the
-	// Danish participant ICD; a foreign participant supplies it manually. A pre-set
-	// value is respected.
-	if p.Ext.Get(ExtKeyAddressScheme) == "" {
-		if s := danishParticipantScheme(p); s != "" {
-			p.Ext = p.Ext.Set(ExtKeyAddressScheme, s)
+}
+
+// migrateInboxesToEndpoints converts each scheme/code org.Inbox into the
+// equivalent OIOUBL org.Endpoint and drops it, since org.Inbox is deprecated in
+// favour of org.Endpoint. A numeric ISO 6523 ICD inbox scheme is mapped to its
+// symbolic OIOUBL scheme (0184→DK:CVR); email/URL inboxes carry no scheme/code
+// participant and are left untouched.
+func migrateInboxesToEndpoints(p *org.Party) {
+	kept := p.Inboxes[:0]
+	for _, in := range p.Inboxes {
+		if in == nil {
+			continue
 		}
-	}
-}
-
-// danishParticipantScheme derives the symbolic OIOUBL identifier scheme (F-LIB179)
-// from a party's participant ICD — the ISO 6523 endpoint ICD, or an inbox scheme
-// (the pre-endpoint routing model). Only the Danish schemes are derived; an
-// already-symbolic Danish value passes through.
-func danishParticipantScheme(p *org.Party) cbc.Code {
-	raw := participantICD(p)
-	if s := SchemeForICD(raw); s != "" {
-		return s
-	}
-	switch cbc.Code(raw) {
-	case SchemeDKCVR, SchemeDKSE, SchemeGLN:
-		return cbc.Code(raw)
-	}
-	return ""
-}
-
-// participantICD returns a party's participant scheme: the ISO 6523 ICD from its
-// endpoint URI, or the first inbox's scheme.
-func participantICD(p *org.Party) string {
-	if ep := p.Endpoint(iso6523EndpointScheme); ep != nil {
-		rest := strings.TrimPrefix(strings.TrimPrefix(string(ep.URI), iso6523EndpointScheme), "::")
-		if icd, _, ok := strings.Cut(rest, ":"); ok {
-			return icd
+		if in.Scheme == cbc.CodeEmpty || in.Code == cbc.CodeEmpty {
+			kept = append(kept, in)
+			continue
 		}
+		scheme := in.Scheme.String()
+		if s := SchemeForICD(scheme); s != "" {
+			scheme = s.String()
+		}
+		p.Endpoints = append(p.Endpoints, &org.Endpoint{
+			Label: in.Label,
+			URI:   cbc.URI(OIOUBLEndpointURI(scheme, in.Code.String())),
+		})
 	}
-	if len(p.Inboxes) > 0 {
-		return p.Inboxes[0].Scheme.String()
-	}
-	return ""
+	p.Inboxes = kept
 }
 
-// icd0184 is the ISO 6523 ICD for the Danish CVR register.
+// icd0184 is the ISO 6523 ICD for the Danish CVR register, carried on the legal
+// identity for the generic (non-OIOUBL) serializer; the OIOUBL converter emits
+// the symbolic DK:CVR scheme instead.
 const icd0184 = "0184"
 
 // hasLegalIdentity reports whether the party already carries a legal-scope identity.
