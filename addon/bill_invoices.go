@@ -45,6 +45,15 @@ var (
 // (covers both invoices and credit notes).
 func billInvoiceRules() *rules.Set {
 	return rules.For(new(bill.Invoice),
+		// OIOUBL relaxes EN 16931 carve-outs that its own schematron does not
+		// require: BR-E-10 needs no exemption reason (OIOUBL has no exempt
+		// category — exempt is reported as ZeroRated), and BR-CO-25 mandates
+		// neither payment means nor terms.
+		rules.Ignore(
+			"GOBL-EU-EN16931-BILL-INVOICE-06", // BR-CO-25: payment details required
+			"GOBL-EU-EN16931-BILL-INVOICE-07", // BR-CO-25: payment terms required
+			"GOBL-EU-EN16931-BILL-INVOICE-08", // BR-E-10: exemption reason required
+		),
 		rules.Field("code",
 			rules.Assert("05", "invoice code is required (F-INV009 / F-CRN006)", is.Present),
 		),

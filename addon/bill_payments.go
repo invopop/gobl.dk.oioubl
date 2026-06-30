@@ -2,10 +2,20 @@ package addon
 
 import (
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/rules/is"
 	"github.com/invopop/gobl/tax"
 )
+
+// billPayTermsRules relaxes the EN 16931 BR-CO-25 payment-terms shape for OIOUBL,
+// which allows bare terms (its official samples carry terms with only an ID and
+// amount), so the due-dates-or-notes requirement does not apply.
+func billPayTermsRules() *rules.Set {
+	return rules.For(new(pay.Terms),
+		rules.Ignore("GOBL-EU-EN16931-PAY-TERMS-01"),
+	)
+}
 
 // billPaymentRules returns the OIOUBL 2.1 rule set for bill.Payment. The rules
 // fire only for the "request" payment type, which is the GOBL document mapped to
