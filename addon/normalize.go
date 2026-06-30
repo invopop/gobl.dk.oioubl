@@ -142,53 +142,18 @@ func oioublPaymentChannel(means cbc.Code) cbc.Code {
 	}
 }
 
-// normalizeTaxCombo records the OIOUBL taxcategoryid-1.1 category for a VAT combo
-// in the dk-oioubl-tax-category extension, derived from the EN 16931 UNTDID
-// category. This moves the mapping out of the gobl.ubl serializer, which then
-// emits the value directly. The GOBL category itself is left untouched — in
-// particular VAT-exempt stays "exempt", so EN 16931 keeps requiring the
-// exemption reason (and allows the VATEX code), even though OIOUBL reports it as
-// ZeroRated (OIOUBL 2.1 has no exempt category).
-func normalizeTaxCombo(c *tax.Combo) {
-	if c.Category != tax.CategoryVAT {
-		return
+// taxCategoryMapsToOIOUBL reports whether a GOBL VAT key has an OIOUBL
+// taxcategoryid-1.1 equivalent. The gobl.ubl serializer maps the key to the
+// OIOUBL code directly (standard → StandardRated, zero/exempt → ZeroRated as
+// OIOUBL 2.1 has no exempt category, reverse-charge → ReverseCharge); this gates
+// the addon's own document-type and category rules. Export, intra-community and
+// outside-scope have no OIOUBL category.
+func taxCategoryMapsToOIOUBL(key cbc.Key) bool {
+	switch key {
+	case tax.KeyStandard, tax.KeyZero, tax.KeyExempt, tax.KeyReverseCharge, "":
+		return true
 	}
-	if oc := oioublTaxCategory(c.Ext.Get(untdid.ExtKeyTaxCategory)); oc != "" {
-		c.Ext = c.Ext.Set(ExtKeyTaxCategory, oc)
-	}
-}
-
-// oioublTaxCategory maps an EN 16931 UNTDID 5305 VAT category to its OIOUBL
-// taxcategoryid-1.1 equivalent. Exempt (E) has no OIOUBL counterpart and is
-// reported as ZeroRated, as both mean no VAT is charged.
-func oioublTaxCategory(untdidCat cbc.Code) cbc.Code {
-	switch untdidCat {
-	case "S":
-		return ExtValueTaxCategoryStandardRated
-	case "Z", "E":
-		return ExtValueTaxCategoryZeroRated
-	case "AE":
-		return ExtValueTaxCategoryReverseCharge
-	}
-	return ""
-}
-
-// GOBLTaxCategory is the inverse of oioublTaxCategory: it returns the EN 16931
-// UNTDID 5305 category for an OIOUBL taxcategoryid-1.1 value, used by the gobl.ubl
-// converter on parse so the codelist lives only here. It returns "" for a value
-// that is not an OIOUBL category (other profiles already carry the UNTDID code).
-// Exempt does not round-trip — OIOUBL has no exempt category, so both Z and E map
-// to ZeroRated, which reverses only to Z.
-func GOBLTaxCategory(taxCategoryID cbc.Code) cbc.Code {
-	switch taxCategoryID {
-	case ExtValueTaxCategoryStandardRated:
-		return "S"
-	case ExtValueTaxCategoryZeroRated:
-		return "Z"
-	case ExtValueTaxCategoryReverseCharge:
-		return "AE"
-	}
-	return ""
+	return false
 }
 
 // normalizeStatusLine records the OIOUBL responsecode-1.1 value in the

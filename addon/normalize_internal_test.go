@@ -4,15 +4,16 @@ import (
 	"testing"
 
 	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/tax"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOioublTaxCategory(t *testing.T) {
-	assert.Equal(t, ExtValueTaxCategoryStandardRated, oioublTaxCategory("S"))
-	assert.Equal(t, ExtValueTaxCategoryZeroRated, oioublTaxCategory("Z"))
-	assert.Equal(t, ExtValueTaxCategoryZeroRated, oioublTaxCategory("E"), "exempt reports as ZeroRated")
-	assert.Equal(t, ExtValueTaxCategoryReverseCharge, oioublTaxCategory("AE"))
-	assert.Equal(t, cbc.Code(""), oioublTaxCategory("X"))
+func TestTaxCategoryMapsToOIOUBL(t *testing.T) {
+	assert.True(t, taxCategoryMapsToOIOUBL(tax.KeyStandard))
+	assert.True(t, taxCategoryMapsToOIOUBL(tax.KeyZero))
+	assert.True(t, taxCategoryMapsToOIOUBL(tax.KeyExempt), "exempt reports as ZeroRated")
+	assert.True(t, taxCategoryMapsToOIOUBL(tax.KeyReverseCharge))
+	assert.False(t, taxCategoryMapsToOIOUBL(tax.KeyIntraCommunity))
 }
 
 func TestOioublPaymentChannel(t *testing.T) {

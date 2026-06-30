@@ -333,7 +333,7 @@ func TestInvoiceValidation(t *testing.T) {
 		// taxcategoryid-1.1 equivalent; in Denmark these are not OIOUBL traffic.
 		inv := testInvoiceStandard(t)
 		require.NoError(t, inv.Calculate())
-		inv.Lines[0].Taxes[0].Ext = inv.Lines[0].Taxes[0].Ext.Set(untdid.ExtKeyTaxCategory, "K")
+		inv.Lines[0].Taxes[0].Key = tax.KeyIntraCommunity
 		assert.ErrorContains(t, rules.Validate(inv), "F-LIB309")
 	})
 

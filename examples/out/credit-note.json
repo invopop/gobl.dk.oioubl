@@ -4,7 +4,7 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "fa507a8698157869fb611cf190116501e15a7406557e26219d4d58a34560d0d3"
+			"val": "c9194ea85537b8549a305660823b5ea9aaf0439d862339eb7203d3db9980a10b"
 		},
 		"from": "iso6523-actorid-upis::0184:12345674",
 		"to": "iso6523-actorid-upis::0184:88146328"
@@ -132,7 +132,6 @@
 						"rate": "general",
 						"percent": "25.0%",
 						"ext": {
-							"dk-oioubl-tax-category": "StandardRated",
 							"untdid-tax-category": "S"
 						}
 					}
@@ -151,7 +150,6 @@
 							{
 								"key": "standard",
 								"ext": {
-									"dk-oioubl-tax-category": "StandardRated",
 									"untdid-tax-category": "S"
 								},
 								"base": "100.00",

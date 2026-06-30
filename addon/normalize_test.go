@@ -7,7 +7,6 @@ import (
 	en16931 "github.com/invopop/gobl/addons/eu/en16931"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/cef"
-	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/rules"
@@ -41,10 +40,8 @@ func TestNormalizeExemptToZeroRated(t *testing.T) {
 	inv.Payment = bankPayment()
 	require.NoError(t, inv.Calculate())
 
-	assert.Equal(t, "E", inv.Lines[0].Taxes[0].Ext.Get(untdid.ExtKeyTaxCategory).String(),
-		"the GOBL category stays exempt")
-	assert.Equal(t, "ZeroRated", inv.Lines[0].Taxes[0].Ext.Get(oioubl.ExtKeyTaxCategory).String(),
-		"OIOUBL reports exempt as ZeroRated")
+	assert.Equal(t, tax.KeyExempt, inv.Lines[0].Taxes[0].Key,
+		"the GOBL category stays exempt; the converter maps it to OIOUBL ZeroRated")
 	require.NoError(t, rules.Validate(inv))
 }
 
@@ -71,7 +68,7 @@ func TestNormalizeReverseChargeNeedsNoReason(t *testing.T) {
 	inv.Payment = bankPayment()
 	require.NoError(t, inv.Calculate())
 	assert.NoError(t, rules.Validate(inv))
-	assert.Equal(t, "ReverseCharge", inv.Lines[0].Taxes[0].Ext.Get(oioubl.ExtKeyTaxCategory).String())
+	assert.Equal(t, tax.KeyReverseCharge, inv.Lines[0].Taxes[0].Key)
 }
 
 // TestNormalizeStandardUnchanged confirms the normalizer only touches exempt.
@@ -80,8 +77,7 @@ func TestNormalizeStandardUnchanged(t *testing.T) {
 	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
 	inv.Payment = bankPayment()
 	require.NoError(t, inv.Calculate())
-	assert.Equal(t, "S", inv.Lines[0].Taxes[0].Ext.Get(untdid.ExtKeyTaxCategory).String())
-	assert.Equal(t, "StandardRated", inv.Lines[0].Taxes[0].Ext.Get(oioubl.ExtKeyTaxCategory).String())
+	assert.Equal(t, tax.KeyStandard, inv.Lines[0].Taxes[0].Key)
 	assert.Equal(t, "IBAN", inv.Payment.Instructions.Ext.Get(oioubl.ExtKeyPaymentChannel).String(),
 		"a bank transfer should carry the IBAN payment channel")
 	require.NoError(t, rules.Validate(inv))

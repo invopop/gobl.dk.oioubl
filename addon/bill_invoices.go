@@ -228,11 +228,7 @@ func vatCategoryHasOIOUBLMapping(val any) bool {
 	if combo == nil || combo.Category != tax.CategoryVAT {
 		return true
 	}
-	cat := combo.Ext.Get(untdid.ExtKeyTaxCategory)
-	if cat == "" {
-		return true
-	}
-	return oioublTaxCategory(cat) != ""
+	return taxCategoryMapsToOIOUBL(combo.Key)
 }
 
 func invoiceWithLineOrderRef(val any) bool {
@@ -357,8 +353,9 @@ func firstCreditTransfer(instr *pay.Instructions) *pay.CreditTransfer {
 }
 
 // standardRatedHasPositivePercent reports whether a tax combo that maps to the
-// OIOUBL StandardRated category (UNTDID 5305 "S") carries a percent greater than
-// zero. OIOUBL rejects StandardRated with a zero or absent percent (F-LIB382).
+// OIOUBL StandardRated category (GOBL VAT key "standard") carries a percent
+// greater than zero. OIOUBL rejects StandardRated with a zero or absent percent
+// (F-LIB382).
 func standardRatedHasPositivePercent(val any) bool {
 	var combo *tax.Combo
 	switch c := val.(type) {
@@ -369,7 +366,7 @@ func standardRatedHasPositivePercent(val any) bool {
 	default:
 		return true
 	}
-	if combo == nil || combo.Ext.Get(untdid.ExtKeyTaxCategory) != "S" {
+	if combo == nil || combo.Key != tax.KeyStandard {
 		return true
 	}
 	return combo.Percent != nil && !combo.Percent.Base().IsZero() && !combo.Percent.Base().IsNegative()
