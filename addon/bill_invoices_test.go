@@ -23,7 +23,7 @@ func testInvoiceStandard(t *testing.T) *bill.Invoice {
 	t.Helper()
 	return &bill.Invoice{
 		Regime:    tax.WithRegime("DK"),
-		Addons:    tax.WithAddons(oioubl.V2_1),
+		Addons:    tax.WithAddons(oioubl.V2),
 		IssueDate: cal.MakeDate(2026, 1, 1),
 		Type:      "standard",
 		Currency:  "DKK",
@@ -512,9 +512,9 @@ func TestInvoiceValidation(t *testing.T) {
 	t.Run("standard-rated VAT with zero percent fails (F-LIB382)", func(t *testing.T) {
 		// The OIOUBL StandardRated category is derived from the eu-en16931
 		// untdid-tax-category extension, so this rule is exercised in the real
-		// [eu-en16931-v2017, dk-oioubl-v2-1] stack that DK invoices always use.
+		// [eu-en16931-v2017, dk-oioubl-v2] stack that DK invoices always use.
 		inv := testInvoiceStandard(t)
-		inv.Addons = tax.WithAddons("eu-en16931-v2017", oioubl.V2_1)
+		inv.Addons = tax.WithAddons("eu-en16931-v2017", oioubl.V2)
 		zero := num.MakePercentage(0, 3)
 		inv.Lines[0].Taxes = tax.Set{{Category: "VAT", Key: "standard", Percent: &zero}}
 		require.NoError(t, inv.Calculate())

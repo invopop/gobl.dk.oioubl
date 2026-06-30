@@ -19,7 +19,7 @@ func testStatusResponse(t *testing.T) *bill.Status {
 	t.Helper()
 	return &bill.Status{
 		Regime:    tax.WithRegime("DK"),
-		Addons:    tax.WithAddons(oioubl.V2_1),
+		Addons:    tax.WithAddons(oioubl.V2),
 		Type:      bill.StatusTypeResponse,
 		Code:      "RESP001",
 		IssueDate: cal.MakeDate(2026, 1, 15),
