@@ -32,7 +32,7 @@ func bankPayment() *bill.PaymentDetails {
 // carried through), even though OIOUBL no longer requires one.
 func TestNormalizeExemptToZeroRated(t *testing.T) {
 	inv := testInvoiceStandard(t)
-	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2)
 	inv.Lines[0].Taxes = tax.Set{{
 		Category: "VAT",
 		Key:      tax.KeyExempt,
@@ -54,7 +54,7 @@ func TestNormalizeExemptToZeroRated(t *testing.T) {
 // VAT-exempt line with neither a VATEX code nor an exemption note validates.
 func TestNormalizeExemptNeedsNoReason(t *testing.T) {
 	inv := testInvoiceStandard(t)
-	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2)
 	inv.Lines[0].Taxes = tax.Set{{Category: "VAT", Key: tax.KeyExempt}}
 	inv.Payment = bankPayment()
 	require.NoError(t, inv.Calculate())
@@ -66,7 +66,7 @@ func TestNormalizeExemptNeedsNoReason(t *testing.T) {
 // no exemption reason, so the EN 16931 exemption-note requirement is skipped.
 func TestNormalizeReverseChargeNeedsNoReason(t *testing.T) {
 	inv := testInvoiceStandard(t)
-	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2)
 	inv.Lines[0].Taxes = tax.Set{{Category: "VAT", Key: tax.KeyReverseCharge}}
 	inv.Payment = bankPayment()
 	require.NoError(t, inv.Calculate())
@@ -77,7 +77,7 @@ func TestNormalizeReverseChargeNeedsNoReason(t *testing.T) {
 // TestNormalizeStandardUnchanged confirms the normalizer only touches exempt.
 func TestNormalizeStandardUnchanged(t *testing.T) {
 	inv := testInvoiceStandard(t)
-	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2)
 	inv.Payment = bankPayment()
 	require.NoError(t, inv.Calculate())
 	assert.Equal(t, "S", inv.Lines[0].Taxes[0].Ext.Get(untdid.ExtKeyTaxCategory).String())
@@ -89,7 +89,7 @@ func TestNormalizeStandardUnchanged(t *testing.T) {
 
 func TestNormalizeClearsStalePaymentChannel(t *testing.T) {
 	inv := testInvoiceStandard(t)
-	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
+	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2)
 	// Cheque carries no payment channel, but a stale DK:GIRO lingers from a
 	// previous means; normalization must clear it (F-LIB321).
 	inv.Payment = &bill.PaymentDetails{

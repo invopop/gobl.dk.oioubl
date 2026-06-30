@@ -7,7 +7,7 @@ network.
 Released under the Apache 2.0 [LICENSE](https://github.com/invopop/gobl.dk.oioubl/blob/main/LICENSE), Copyright 2026 [Invopop S.L.](https://invopop.com).
 
 This module implements the OIOUBL 2.1 profile (schematron v1.17.2) as a GOBL tax
-addon (`dk-oioubl-v2-1`). It `Requires` the EN 16931 addon and layers the
+addon (`dk-oioubl-v2`). It `Requires` the EN 16931 addon and layers the
 OIOUBL-specific rules and extensions on top:
 
 - **Tax categories** — maps GOBL VAT to the OIOUBL `taxcategoryid` code list via
@@ -35,7 +35,7 @@ OIOUBL documents take on its weight. The XML serialization itself lives in
 ## Usage
 
 Import the addon for its side effects to register it, then declare the
-`dk-oioubl-v2-1` addon on a GOBL document:
+`dk-oioubl-v2` addon on a GOBL document:
 
 ```go
 import _ "github.com/invopop/gobl.dk.oioubl/addon"
@@ -45,7 +45,7 @@ import _ "github.com/invopop/gobl.dk.oioubl/addon"
 $schema: "https://gobl.org/draft-0/bill/invoice"
 $regime: "DK"
 $addons:
-  - "dk-oioubl-v2-1"
+  - "dk-oioubl-v2"
 supplier:
   name: "Eksempel A/S"
   tax_id:

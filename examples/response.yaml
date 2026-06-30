@@ -1,7 +1,7 @@
 $schema: "https://gobl.org/draft-0/bill/status"
 $regime: "DK"
 $addons:
-  - "dk-oioubl-v2-1"
+  - "dk-oioubl-v2"
 uuid: "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3"
 type: "response"
 code: "RESP001"

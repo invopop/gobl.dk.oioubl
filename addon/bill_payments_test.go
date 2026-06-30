@@ -24,7 +24,7 @@ func testRequestPayment(t *testing.T) *bill.Payment {
 	t.Helper()
 	return &bill.Payment{
 		Regime:    tax.WithRegime("DK"),
-		Addons:    tax.WithAddons(oioubl.V2_1),
+		Addons:    tax.WithAddons(oioubl.V2),
 		Type:      bill.PaymentTypeRequest,
 		IssueDate: cal.MakeDate(2026, 1, 1),
 		Currency:  "DKK",
