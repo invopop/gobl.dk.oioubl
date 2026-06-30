@@ -204,6 +204,10 @@ func billInvoiceRules() *rules.Set {
 // (line- and document-level), validated by type the way GOBL validates combos.
 func billTaxComboRules() *rules.Set {
 	return rules.For(new(tax.Combo),
+		// The OIOUBL category is mapped from the GOBL key, so the dk-oioubl
+		// normalizer strips the EN 16931 UNTDID tax-category extension. Ignore the
+		// EN 16931 rules that would otherwise require it and validate its code.
+		rules.Ignore("GOBL-EU-EN16931-TAX-COMBO-01", "GOBL-EU-EN16931-TAX-COMBO-02"),
 		rules.Assert("01", "standard-rated VAT must have a percent greater than zero (F-LIB382)",
 			is.Func("standard-rated has a positive percent", standardRatedHasPositivePercent)),
 		rules.Assert("32", "VAT category has no OIOUBL equivalent: only standard-rated, zero-rated, exempt and reverse-charge are supported (F-LIB309)",
@@ -211,10 +215,10 @@ func billTaxComboRules() *rules.Set {
 	)
 }
 
-// vatCategoryHasOIOUBLMapping reports whether a VAT combo's UNTDID 5305 category
-// maps to an OIOUBL taxcategoryid-1.1 value. OIOUBL supports only S, Z (and exempt
-// E as ZeroRated) and AE; K/G/O have no equivalent and would reach the wire as a
-// bare letter outside the codelist (F-LIB309). An un-normalized combo is left to en16931.
+// vatCategoryHasOIOUBLMapping reports whether a VAT combo's GOBL key maps to an
+// OIOUBL taxcategoryid-1.1 value. OIOUBL supports only standard, zero (and exempt
+// as ZeroRated) and reverse-charge; export/intra-community/outside-scope have no
+// equivalent and would reach the wire outside the codelist (F-LIB309).
 func vatCategoryHasOIOUBLMapping(val any) bool {
 	var combo *tax.Combo
 	switch c := val.(type) {

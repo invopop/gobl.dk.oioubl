@@ -39,6 +39,8 @@ func init() {
 	norm.RegisterWithGuard(
 		is.InContext(tax.AddonIn(V2_1)),
 		norm.For(normalizeParty),
+		norm.For(normalizeTaxCombo),
+		norm.For(normalizeTaxNote),
 		norm.For(normalizePayInstructions),
 		norm.For(normalizeStatusLine),
 	)

@@ -142,6 +142,25 @@ func oioublPaymentChannel(means cbc.Code) cbc.Code {
 	}
 }
 
+// normalizeTaxCombo strips the EN 16931 UNTDID tax-category extension from VAT
+// combos. The gobl.ubl serializer derives the OIOUBL taxcategoryid-1.1 code from
+// the GOBL VAT key, so the UNTDID code is redundant and only adds confusing noise
+// to an OIOUBL document. en16931 normalizes first (it is required), setting the
+// key, so removing the extension here is lossless.
+func normalizeTaxCombo(c *tax.Combo) {
+	if c.Category == tax.CategoryVAT {
+		c.Ext = c.Ext.Delete(untdid.ExtKeyTaxCategory)
+	}
+}
+
+// normalizeTaxNote strips the same UNTDID tax-category extension from a VAT tax
+// note; the note's key identifies the rate it applies to.
+func normalizeTaxNote(n *tax.Note) {
+	if n.Category == tax.CategoryVAT {
+		n.Ext = n.Ext.Delete(untdid.ExtKeyTaxCategory)
+	}
+}
+
 // taxCategoryMapsToOIOUBL reports whether a GOBL VAT key has an OIOUBL
 // taxcategoryid-1.1 equivalent. The gobl.ubl serializer maps the key to the
 // OIOUBL code directly (standard → StandardRated, zero/exempt → ZeroRated as
