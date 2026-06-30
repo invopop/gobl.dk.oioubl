@@ -55,13 +55,6 @@ const (
 	// region and country), so it travels on the party extension.
 	ExtKeyAddressDistrict cbc.Key = "dk-oioubl-address-district"
 
-	// ExtKeyAddressScheme carries the symbolic OIOUBL identifier scheme emitted as
-	// the schemeID attribute on a party's cbc:EndpointID (F-LIB179) and
-	// cac:PartyIdentification/cbc:ID (F-LIB183). The gobl.ubl converter derives the
-	// Danish schemes (DK:CVR, DK:SE, GLN) from the ISO 6523 ICD; this extension is
-	// the manual override for a foreign participant whose scheme GOBL cannot derive
-	// (e.g. DE:VAT), which the converter then emits verbatim.
-	ExtKeyAddressScheme cbc.Key = "dk-oioubl-address-scheme"
 )
 
 // OIOUBL remindertypecode-1.1 values (F-REM061).
@@ -284,23 +277,5 @@ var extensions = []*cbc.Definition{
 			`),
 		},
 		Pattern: `^.+$`,
-	},
-	{
-		Key: ExtKeyAddressScheme,
-		Name: i18n.String{
-			i18n.EN: "OIOUBL Identifier Scheme",
-			i18n.DA: "OIOUBL Identifikationsskema",
-		},
-		Desc: i18n.String{
-			i18n.EN: here.Doc(`
-				The symbolic OIOUBL identifier scheme emitted as the schemeID attribute
-				on ` + "`cbc:EndpointID`" + ` (codelist F-LIB179) and
-				` + "`cac:PartyIdentification/cbc:ID`" + ` (F-LIB183). The gobl.ubl
-				converter derives the Danish schemes (DK:CVR, DK:SE, GLN) from the
-				ISO 6523 ICD; set this extension to emit a scheme GOBL cannot derive,
-				such as a foreign VAT scheme (DE:VAT, ES:VAT, …). It is emitted verbatim.
-			`),
-		},
-		Pattern: `^[A-Za-z0-9:]+$`,
 	},
 }
