@@ -32,7 +32,6 @@ func testRequestPayment(t *testing.T) *bill.Payment {
 		Series:    "2026",
 		Code:      "R-1000",
 		Ext: tax.ExtensionsOf(cbc.CodeMap{
-			oioubl.ExtKeyReminderType:     oioubl.ExtValueReminderTypeReminder,
 			oioubl.ExtKeyReminderSequence: "1",
 		}),
 		Supplier: &org.Party{
@@ -87,11 +86,15 @@ func TestPaymentValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(p), "F-REM010")
 	})
 
-	t.Run("reminder type is required (F-REM006 / F-REM061)", func(t *testing.T) {
+	// The reminder type is a document-variant tag, not an extension: an untagged
+	// reminder is a formal "Reminder" and the advis tag marks it "Advis". Both are
+	// valid, so neither the default nor the tagged form imposes a requirement.
+	t.Run("advis tag is valid", func(t *testing.T) {
 		p := testRequestPayment(t)
-		p.Ext = p.Ext.Delete(oioubl.ExtKeyReminderType)
+		p.SetTags(oioubl.TagAdvis)
 		require.NoError(t, p.Calculate())
-		assert.ErrorContains(t, rules.Validate(p), "F-REM006")
+		require.NoError(t, rules.Validate(p))
+		assert.True(t, p.HasTags(oioubl.TagAdvis))
 	})
 
 	t.Run("reminder sequence is required (F-REM007)", func(t *testing.T) {

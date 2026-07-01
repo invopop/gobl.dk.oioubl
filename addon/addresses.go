@@ -55,14 +55,14 @@ func partyAddressFormatComplete(val any) bool {
 		// render into it.
 		return addr != nil && (addr.Street != "" || addr.StreetExtra != "" || addr.PostOfficeBox != "")
 	case ExtValueAddressFormatStructuredID:
-		// F-LIB037: the identifier is mandatory.
-		return p.Ext.Get(ExtKeyAddressID) != ""
+		// F-LIB037: the register identifier is mandatory. GOBL has no
+		// address-identifier field, so the GLN rides org.Address.Number (emitted as
+		// cbc:ID).
+		return addr != nil && addr.Number != ""
 	case ExtValueAddressFormatStructuredRegion:
-		// F-LIB039: region, district or country is required.
-		if p.Ext.Get(ExtKeyAddressDistrict) != "" {
-			return true
-		}
-		return addr != nil && (addr.Region != "" || addr.Country != "")
+		// F-LIB039: region, district or country is required. The district maps to
+		// org.Address.Locality ("village, town, district, or city").
+		return addr != nil && (addr.Region != "" || addr.Locality != "" || addr.Country != "")
 	}
 	// StructuredLax imposes no completeness requirement.
 	return true

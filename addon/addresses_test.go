@@ -79,11 +79,13 @@ func TestAddressFormatValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(inv), formatFail)
 	})
 
-	t.Run("StructuredID with an identifier passes", func(t *testing.T) {
+	t.Run("StructuredID with an identifier (number) passes", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Ext = tax.Extensions{}.
-			Set(oioubl.ExtKeyAddressFormat, oioubl.ExtValueAddressFormatStructuredID).
-			Set(oioubl.ExtKeyAddressID, "5790000000001")
+			Set(oioubl.ExtKeyAddressFormat, oioubl.ExtValueAddressFormatStructuredID)
+		// The register GLN rides org.Address.Number; en16931 still requires the
+		// address country (BR-9).
+		inv.Supplier.Addresses[0] = &org.Address{Number: "5790000000001", Country: "DK"}
 		require.NoError(t, inv.Calculate())
 		assert.NoError(t, rules.Validate(inv))
 	})
@@ -91,6 +93,7 @@ func TestAddressFormatValidation(t *testing.T) {
 	t.Run("StructuredID without an identifier fails (F-LIB037)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Ext = tax.Extensions{}.Set(oioubl.ExtKeyAddressFormat, oioubl.ExtValueAddressFormatStructuredID)
+		inv.Supplier.Addresses[0] = &org.Address{Country: "DK"}
 		require.NoError(t, inv.Calculate())
 		assert.ErrorContains(t, rules.Validate(inv), formatFail)
 	})
@@ -103,14 +106,13 @@ func TestAddressFormatValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(inv))
 	})
 
-	t.Run("StructuredRegion with a district extension passes", func(t *testing.T) {
+	t.Run("StructuredRegion with a district (locality) passes", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Ext = tax.Extensions{}.
-			Set(oioubl.ExtKeyAddressFormat, oioubl.ExtValueAddressFormatStructuredRegion).
-			Set(oioubl.ExtKeyAddressDistrict, "Nørrebro")
-		// en16931 still requires the address country (BR-9); the district extension
-		// is the data OIOUBL emits as cbc:District beyond it.
-		inv.Supplier.Addresses[0] = &org.Address{Country: "DK"}
+			Set(oioubl.ExtKeyAddressFormat, oioubl.ExtValueAddressFormatStructuredRegion)
+		// org.Address.Locality is the district OIOUBL emits as cbc:District; en16931
+		// still requires the address country (BR-9).
+		inv.Supplier.Addresses[0] = &org.Address{Locality: "Nørrebro", Country: "DK"}
 		require.NoError(t, inv.Calculate())
 		assert.NoError(t, rules.Validate(inv))
 	})
