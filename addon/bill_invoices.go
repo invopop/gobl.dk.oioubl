@@ -121,7 +121,7 @@ func billInvoiceRules() *rules.Set {
 		// OIOUBL output fails F-INV018 / F-CRN013.
 		rules.When(is.Func("foreign currency without an exchange rate to the regime currency", foreignCurrencyMissingExchangeRate),
 			rules.Field("exchange_rates",
-				rules.Assert("38", "a foreign-currency document requires an exchange rate to the regime currency (DKK) so the VAT can be stated in the accounting currency (F-INV018 / F-CRN013)", is.Func("never", neverTrue)),
+				rules.Assert("38", "a foreign-currency document requires an exchange rate to the regime currency (DKK) so VAT is stated in the national currency per EU VAT Directive 2006/112/EC art. 230 (F-INV018 / F-CRN013)", is.Func("never", neverTrue)),
 			),
 		),
 		rules.Field("totals",
