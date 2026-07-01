@@ -6,44 +6,36 @@ import (
 	"github.com/invopop/gobl/pkg/here"
 )
 
-// Extension keys for OIOUBL 2.1.
+// Extension keys for OIOUBL 2.1. Each carries an OIOUBL wire value that has no
+// native GOBL field; the user-facing docs live in the definitions below.
 const (
-	// ExtKeyPaymentID carries the OIOUBL cbc:PaymentID "kortart" code used with
-	// the Giro (PaymentMeansCode 50) and FIK (PaymentMeansCode 93) payment
-	// methods. The payment reference itself is carried separately in the GOBL
-	// payment instruction's Ref (emitted as cbc:InstructionID).
+	// ExtKeyPaymentID is the Giro/FIK kortart code (cbc:PaymentID); the payment
+	// reference itself rides the GOBL instruction Ref (cbc:InstructionID).
 	ExtKeyPaymentID cbc.Key = "dk-oioubl-payment-id"
 
-	// ExtKeyReminderSequence carries the OIOUBL cbc:ReminderSequenceNumeric, the
-	// 1-based position of this reminder within the dunning sequence (F-REM007).
-	// GOBL has no native field for it, so it is declared on the payment.
+	// ExtKeyReminderSequence is the reminder's position in the dunning sequence
+	// (cbc:ReminderSequenceNumeric).
 	ExtKeyReminderSequence cbc.Key = "dk-oioubl-reminder-sequence"
 
-	// ExtKeyAddressFormat carries the OIOUBL addressformatcode-1.1 value emitted
-	// as cbc:AddressFormatCode on a party's PostalAddress (F-LIB025/027). GOBL has
-	// no native address-format field, so it is declared on the party that owns the
-	// address; absent, the gobl.ubl serializer defaults to StructuredLax (the
-	// universally valid format that imposes no mandatory sub-fields).
+	// ExtKeyAddressFormat is the party's cbc:AddressFormatCode. It lives on the
+	// party, not the address, because org.Address has no extension slot.
 	ExtKeyAddressFormat cbc.Key = "dk-oioubl-address-format"
 )
 
-// OIOUBL addressformatcode-1.1 values (F-LIB027).
+// OIOUBL addressformatcode-1.1 values (F-LIB027); the schematron completeness
+// rule for each is enforced in addresses.go.
 const (
-	// ExtValueAddressFormatStructuredDK is the fully structured Danish address:
-	// PostalZone plus StreetName-or-Postbox and BuildingNumber-or-Postbox
-	// (F-LIB033/034/035), no AddressLine.
+	// StructuredDK needs PostalZone, a StreetName-or-Postbox and a
+	// BuildingNumber-or-Postbox (F-LIB033/034/035).
 	ExtValueAddressFormatStructuredDK cbc.Code = "StructuredDK"
-	// ExtValueAddressFormatStructuredLax is the lenient structured address with no
-	// mandatory sub-fields; the default when none is declared.
+	// StructuredLax has no mandatory sub-fields; the default when none is declared.
 	ExtValueAddressFormatStructuredLax cbc.Code = "StructuredLax"
-	// ExtValueAddressFormatStructuredID is an address reduced to a single register
-	// identifier (a GLN, carried on org.Address.Number); no postal fields.
+	// StructuredID carries only a register ID: a GLN on org.Address.Number
+	// (F-LIB037/038).
 	ExtValueAddressFormatStructuredID cbc.Code = "StructuredID"
-	// ExtValueAddressFormatStructuredRegion is a regional address carrying only
-	// Region, district and/or Country.
+	// StructuredRegion carries only Region, District and/or Country (F-LIB039/040).
 	ExtValueAddressFormatStructuredRegion cbc.Code = "StructuredRegion"
-	// ExtValueAddressFormatUnstructured carries the address as free-text
-	// AddressLine elements only.
+	// Unstructured carries only free-text AddressLine (F-LIB031).
 	ExtValueAddressFormatUnstructured cbc.Code = "Unstructured"
 )
 
