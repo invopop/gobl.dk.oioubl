@@ -79,61 +79,7 @@ func TestNormalizeStandardUnchanged(t *testing.T) {
 	inv.Payment = bankPayment()
 	require.NoError(t, inv.Calculate())
 	assert.Equal(t, tax.KeyStandard, inv.Lines[0].Taxes[0].Key)
-	assert.Equal(t, "IBAN", inv.Payment.Instructions.Ext.Get(oioubl.ExtKeyPaymentChannel).String(),
-		"a bank transfer should carry the IBAN payment channel")
 	require.NoError(t, rules.Validate(inv))
-}
-
-func TestNormalizeClearsStalePaymentChannel(t *testing.T) {
-	inv := testInvoiceStandard(t)
-	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2_1)
-	// Cheque carries no payment channel, but a stale DK:GIRO lingers from a
-	// previous means; normalization must clear it (F-LIB321).
-	inv.Payment = &bill.PaymentDetails{
-		Instructions: &pay.Instructions{
-			Key: pay.MeansKeyCheque,
-			Ext: tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyPaymentChannel: oioubl.ExtValuePaymentChannelGiro}),
-		},
-	}
-	require.NoError(t, inv.Calculate())
-	assert.Empty(t, inv.Payment.Instructions.Ext.Get(oioubl.ExtKeyPaymentChannel).String(),
-		"a channel-less means must clear a stale payment channel")
-}
-
-func TestNormalizeStatusResponseCode(t *testing.T) {
-	t.Run("event maps to the OIOUBL response code (outbound)", func(t *testing.T) {
-		st := testStatusResponse(t)
-		st.Lines[0].Key = bill.StatusLineAcknowledged
-		require.NoError(t, st.Calculate())
-		assert.Equal(t, "TechnicalAccept", st.Lines[0].Ext.Get(oioubl.ExtKeyResponseCode).String())
-	})
-
-	t.Run("parsed response code recovers the event (inbound)", func(t *testing.T) {
-		st := testStatusResponse(t)
-		st.Lines[0].Key = ""
-		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "BusinessReject"})
-		require.NoError(t, st.Calculate())
-		assert.Equal(t, bill.StatusLineRejected, st.Lines[0].Key)
-	})
-
-	t.Run("stale response code is overwritten after the key changes", func(t *testing.T) {
-		st := testStatusResponse(t)
-		st.Lines[0].Key = bill.StatusLineRejected
-		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "BusinessAccept"})
-		require.NoError(t, st.Calculate())
-		assert.Equal(t, "BusinessReject", st.Lines[0].Ext.Get(oioubl.ExtKeyResponseCode).String())
-	})
-
-	t.Run("inbound ProfileReject survives recalculation", func(t *testing.T) {
-		st := testStatusResponse(t)
-		st.Lines[0].Key = ""
-		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "ProfileReject"})
-		require.NoError(t, st.Calculate())
-		assert.Equal(t, bill.StatusLineError, st.Lines[0].Key)
-		require.NoError(t, st.Calculate())
-		assert.Equal(t, "ProfileReject", st.Lines[0].Ext.Get(oioubl.ExtKeyResponseCode).String(),
-			"the lossy error event must not clobber the original wire code")
-	})
 }
 
 func TestNormalizePartyParticipant(t *testing.T) {

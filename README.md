@@ -10,14 +10,15 @@ This module implements the OIOUBL 2.1 profile (schematron v1.17.2) as a GOBL tax
 addon (`dk-oioubl-v2-1`). It `Requires` the EN 16931 addon and layers the
 OIOUBL-specific rules and extensions on top:
 
-- **Tax categories** — maps GOBL VAT to the OIOUBL `taxcategoryid` code list via
-  the `dk-oioubl-tax-category` extension.
-- **Payment** — OIOUBL payment channels (IBAN / Giro / FIK) and the structured
-  Giro/FIK payment identifiers (`dk-oioubl-payment-channel`, `dk-oioubl-payment-id`).
-- **Participants** — parties are routed by ISO 6523 endpoints
-  (`iso6523-actorid-upis::0184:<CVR>`); a Danish party carrying only a tax
-  identity derives its CVR participant automatically, and explicit endpoints or
-  inboxes always win. On the OIOUBL wire these become the symbolic schemes
+- **Tax categories** — the gobl.ubl converter maps the GOBL VAT key to the OIOUBL
+  `taxcategoryid` code directly. Excise and other non-VAT duties are modelled as
+  charges (as in EN 16931 / Peppol BIS), not tax categories.
+- **Payment** — the OIOUBL payment channel (IBAN / Giro / FIK) is derived from the
+  payment means; the Giro/FIK kortart travels in `dk-oioubl-payment-id`.
+- **Participants** — parties are routed by OIOUBL endpoints
+  (`urn:oioubl:scheme:endpointid-1.1::DK:CVR:<CVR>`); a Danish party carrying only
+  a tax identity derives its CVR participant automatically, and explicit endpoints
+  or inboxes always win. The endpoint URI carries the symbolic scheme
   (`DK:CVR`, `GLN`, `DK:SE`).
 - **Invoice / credit note** — participant, contact and ordering references
   required by the OIOUBL schematron, plus the non-negative totals rule

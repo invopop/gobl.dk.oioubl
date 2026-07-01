@@ -33,6 +33,8 @@ func init() {
 		billInvoiceRules(),
 		billStatusRules(),
 		billTaxComboRules(),
+		billChargeRules(),
+		lineChargeRules(),
 		billPaymentRules(),
 		billPayTermsRules(),
 		partyRules(),
@@ -43,7 +45,6 @@ func init() {
 		norm.For(normalizeTaxCombo),
 		norm.For(normalizeTaxNote),
 		norm.For(normalizePayInstructions),
-		norm.For(normalizeStatusLine),
 	)
 }
 

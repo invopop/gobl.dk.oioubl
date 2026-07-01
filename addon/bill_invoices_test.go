@@ -118,6 +118,25 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(inv))
 	})
 
+	t.Run("excise duty charge without a reason is rejected (F-LIB066)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Charges = []*bill.LineCharge{
+			{Amount: num.MakeAmount(1000, 2), Ext: tax.Extensions{}.Set(oioubl.ExtKeyTaxScheme, "16")},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB066")
+	})
+
+	t.Run("excise duty charge with a reason passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Charges = []*bill.LineCharge{
+			{Reason: "Mineralvandsafgift", Amount: num.MakeAmount(1000, 2),
+				Ext: tax.Extensions{}.Set(oioubl.ExtKeyTaxScheme, "16")},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+
 	t.Run("foreign customer without a legal identity is rejected (F-LIB187)", func(t *testing.T) {
 		// A non-Danish party has no CVR to fabricate into the OIOUBL
 		// PartyLegalEntity/CompanyID, so it must carry a legal identity.

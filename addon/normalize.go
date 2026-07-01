@@ -3,8 +3,6 @@ package addon
 import (
 	"strings"
 
-	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
@@ -69,7 +67,6 @@ func normalizeParty(p *org.Party) {
 		p.Identities = append(p.Identities, &org.Identity{
 			Scope: org.IdentityScopeLegal,
 			Code:  p.TaxID.Code,
-			Ext:   tax.ExtensionsOf(cbc.CodeMap{iso.ExtKeySchemeID: cbc.Code(icd0184)}),
 		})
 	}
 }
@@ -101,11 +98,6 @@ func migrateInboxesToEndpoints(p *org.Party) {
 	p.Inboxes = kept
 }
 
-// icd0184 is the ISO 6523 ICD for the Danish CVR register, carried on the legal
-// identity for the generic (non-OIOUBL) serializer; the OIOUBL converter emits
-// the symbolic DK:CVR scheme instead.
-const icd0184 = "0184"
-
 // hasLegalIdentity reports whether the party already carries a legal-scope identity.
 func hasLegalIdentity(p *org.Party) bool {
 	for _, id := range p.Identities {
@@ -116,21 +108,13 @@ func hasLegalIdentity(p *org.Party) bool {
 	return false
 }
 
-// normalizePayInstructions prepares an invoice payment instruction for OIOUBL: it
-// rewrites the EN 16931 credit-transfer means to OIOUBL's code (see
-// oioublPaymentMeans) and records the paymentchannelcode-1.1 value in the
-// dk-oioubl-payment-channel extension, so the gobl.ubl serializer emits the means
-// code and cbc:PaymentChannelCode directly.
+// normalizePayInstructions rewrites the EN 16931 credit-transfer means to
+// OIOUBL's code (see oioublPaymentMeans) so the gobl.ubl serializer emits the
+// correct cbc:PaymentMeansCode. The paymentchannelcode-1.1 value is a pure
+// function of the means, so the converter derives it directly rather than from an
+// extension.
 func normalizePayInstructions(instr *pay.Instructions) {
 	instr.Ext = oioublPaymentMeans(instr.Ext)
-	ch := oioublPaymentChannel(instr.Ext.Get(untdid.ExtKeyPaymentMeans))
-	if ch == "" {
-		// Clear any channel left by a previous means: a stale DK:GIRO/DK:FIK on a
-		// channel-less means is wire-fatal (e.g. F-LIB321).
-		instr.Ext = instr.Ext.Delete(ExtKeyPaymentChannel)
-		return
-	}
-	instr.Ext = instr.Ext.Set(ExtKeyPaymentChannel, ch)
 }
 
 // oioublPaymentMeans rewrites the EN 16931 credit-transfer means (UNTDID 4461 code
@@ -143,42 +127,19 @@ func oioublPaymentMeans(ext tax.Extensions) tax.Extensions {
 	return ext
 }
 
-// oioublPaymentChannel maps a UNTDID 4461 payment means to its OIOUBL payment
-// channel: Giro (50) → DK:GIRO, FIK (93) → DK:FIK, and the account-transfer
-// means (30/31 bank transfers, 58 SEPA credit transfer) → IBAN. Every other
-// accepted means (cash, cheque, direct debit, cards, clearing) settles outside
-// a payment channel and carries none. (42 is not an accepted means — see
-// validPaymentMeansCodes.)
-func oioublPaymentChannel(means cbc.Code) cbc.Code {
-	switch means {
-	case "50":
-		return ExtValuePaymentChannelGiro
-	case "93":
-		return ExtValuePaymentChannelFIK
-	case "30", "31", "58":
-		return ExtValuePaymentChannelIBAN
-	default:
-		return ""
-	}
-}
-
-// normalizeTaxCombo strips the EN 16931 UNTDID tax-category extension from VAT
-// combos. The gobl.ubl serializer derives the OIOUBL taxcategoryid-1.1 code from
-// the GOBL VAT key, so the UNTDID code is redundant and only adds confusing noise
-// to an OIOUBL document. en16931 normalizes first (it is required), setting the
-// key, so removing the extension here is lossless.
+// normalizeTaxCombo strips the EN 16931 UNTDID tax-category extension. The
+// gobl.ubl serializer derives the OIOUBL taxcategoryid-1.1 code from the GOBL VAT
+// key, never from this extension, so it is always redundant noise in an OIOUBL
+// document. en16931 normalizes first (it is required), setting the key, so
+// removing it is lossless.
 func normalizeTaxCombo(c *tax.Combo) {
-	if c.Category == tax.CategoryVAT {
-		c.Ext = c.Ext.Delete(untdid.ExtKeyTaxCategory)
-	}
+	c.Ext = c.Ext.Delete(untdid.ExtKeyTaxCategory)
 }
 
-// normalizeTaxNote strips the same UNTDID tax-category extension from a VAT tax
-// note; the note's key identifies the rate it applies to.
+// normalizeTaxNote strips the same UNTDID tax-category extension from a tax note;
+// the note's key identifies the rate it applies to.
 func normalizeTaxNote(n *tax.Note) {
-	if n.Category == tax.CategoryVAT {
-		n.Ext = n.Ext.Delete(untdid.ExtKeyTaxCategory)
-	}
+	n.Ext = n.Ext.Delete(untdid.ExtKeyTaxCategory)
 }
 
 // taxCategoryMapsToOIOUBL reports whether a GOBL VAT key has an OIOUBL
@@ -195,58 +156,3 @@ func taxCategoryMapsToOIOUBL(key cbc.Key) bool {
 	return false
 }
 
-// normalizeStatusLine records the OIOUBL responsecode-1.1 value in the
-// dk-oioubl-response-code extension, derived from the GOBL status event, so the
-// gobl.ubl serializer emits cac:Response/cbc:ResponseCode directly. On an inbound
-// document the line carries the parsed extension but no event, so the mapping is
-// applied in reverse to recover the GOBL status event.
-//
-// An extension that still reverse-maps to the current key is left untouched, so
-// an inbound ProfileReject (which folds into the error event alongside
-// TechnicalReject) survives recalculation; an extension that no longer matches
-// the key — a stale value after the key was edited — is overwritten.
-func normalizeStatusLine(line *bill.StatusLine) {
-	if code := oioublResponseCode(line.Key); code != "" {
-		if cur := line.Ext.Get(ExtKeyResponseCode); cur == "" || goblStatusEvent(cur) != line.Key {
-			line.Ext = line.Ext.Set(ExtKeyResponseCode, code)
-		}
-	}
-	if line.Key == "" {
-		if event := goblStatusEvent(line.Ext.Get(ExtKeyResponseCode)); event != "" {
-			line.Key = event
-		}
-	}
-}
-
-// oioublResponseCode maps a GOBL status event to its OIOUBL responsecode-1.1
-// value. Events without an OIOUBL counterpart (issued, processing, paid, …) map
-// to nothing and are rejected by the addon validation rules (F-APR018).
-func oioublResponseCode(event cbc.Key) cbc.Code {
-	switch event {
-	case bill.StatusLineAccepted:
-		return ExtValueResponseCodeBusinessAccept
-	case bill.StatusLineRejected:
-		return ExtValueResponseCodeBusinessReject
-	case bill.StatusLineAcknowledged:
-		return ExtValueResponseCodeTechnicalAccept
-	case bill.StatusLineError:
-		return ExtValueResponseCodeTechnicalReject
-	}
-	return ""
-}
-
-// goblStatusEvent reverses oioublResponseCode for inbound documents. ProfileReject
-// has no dedicated GOBL event and folds into error, alongside TechnicalReject.
-func goblStatusEvent(code cbc.Code) cbc.Key {
-	switch code {
-	case ExtValueResponseCodeBusinessAccept:
-		return bill.StatusLineAccepted
-	case ExtValueResponseCodeBusinessReject:
-		return bill.StatusLineRejected
-	case ExtValueResponseCodeTechnicalAccept:
-		return bill.StatusLineAcknowledged
-	case ExtValueResponseCodeTechnicalReject, ExtValueResponseCodeProfileReject:
-		return bill.StatusLineError
-	}
-	return ""
-}

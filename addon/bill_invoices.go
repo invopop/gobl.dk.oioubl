@@ -224,6 +224,50 @@ func billTaxComboRules() *rules.Set {
 	)
 }
 
+// billChargeRules and lineChargeRules require an excise duty charge (one tagged
+// with the dk-oioubl-tax-scheme extension) to carry a reason: the gobl.ubl
+// serializer emits it as the OIOUBL tax-scheme name, which OIOUBL requires to be
+// non-empty (F-LIB066).
+func billChargeRules() *rules.Set {
+	return rules.For(new(bill.Charge),
+		rules.Assert("01", "an OIOUBL excise duty charge must have a reason for the tax-scheme name (F-LIB066)",
+			is.Func("excise charge has a reason", exciseChargeHasReason)),
+	)
+}
+
+func lineChargeRules() *rules.Set {
+	return rules.For(new(bill.LineCharge),
+		rules.Assert("01", "an OIOUBL excise duty charge must have a reason for the tax-scheme name (F-LIB066)",
+			is.Func("excise charge has a reason", exciseChargeHasReason)),
+	)
+}
+
+// exciseChargeHasReason reports whether a charge that carries the OIOUBL excise
+// tax-scheme extension also carries a reason. Ordinary charges (no extension)
+// always pass.
+func exciseChargeHasReason(val any) bool {
+	var ext tax.Extensions
+	var reason string
+	switch c := val.(type) {
+	case *bill.Charge:
+		if c == nil {
+			return true
+		}
+		ext, reason = c.Ext, c.Reason
+	case *bill.LineCharge:
+		if c == nil {
+			return true
+		}
+		ext, reason = c.Ext, c.Reason
+	default:
+		return true
+	}
+	if ext.Get(ExtKeyTaxScheme).String() == "" {
+		return true
+	}
+	return reason != ""
+}
+
 // vatCategoryHasOIOUBLMapping reports whether a VAT combo's GOBL key maps to an
 // OIOUBL taxcategoryid-1.1 value. OIOUBL supports only standard, zero (and exempt
 // as ZeroRated) and reverse-charge; export/intra-community/outside-scope have no

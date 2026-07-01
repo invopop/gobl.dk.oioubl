@@ -14,17 +14,16 @@ const (
 	// payment instruction's Ref (emitted as cbc:InstructionID).
 	ExtKeyPaymentID cbc.Key = "dk-oioubl-payment-id"
 
-	// ExtKeyPaymentChannel carries the OIOUBL paymentchannelcode-1.1 value
-	// emitted as cbc:PaymentChannelCode. The addon normalizer derives it from
-	// the payment means so the gobl.ubl serializer emits it directly.
-	ExtKeyPaymentChannel cbc.Key = "dk-oioubl-payment-channel"
-
-	// ExtKeyResponseCode carries the OIOUBL responsecode-1.1 value for an
-	// ApplicationResponse (Invoice Response) status line, emitted as
-	// cac:Response/cbc:ResponseCode. The addon normalizer derives it from the
-	// GOBL status event (and conversely derives the event from a parsed value)
-	// so the gobl.ubl serializer emits it directly instead of mapping the codes.
-	ExtKeyResponseCode cbc.Key = "dk-oioubl-response-code"
+	// ExtKeyTaxScheme carries the OIOUBL taxschemeid-1.1 duty-type code for a
+	// non-VAT excise duty (chocolate/sugar, mineral water, packaging, …) that GOBL
+	// models as a VAT-rated bill.Charge/LineCharge. Its presence routes the charge
+	// to a cac:TaxTotal/TaxSubtotal with cac:TaxCategory/cbc:ID "Excise" (the
+	// official ERST form) instead of a plain cac:AllowanceCharge; the gobl.ubl
+	// serializer takes the scheme Name from the charge reason and derives the
+	// cbc:TaxTypeCode from the amount (StandardRated when positive, ZeroRated when
+	// zero). GOBL has no native field for the OIOUBL duty-type code, so it is
+	// declared on the charge.
+	ExtKeyTaxScheme cbc.Key = "dk-oioubl-tax-scheme"
 
 	// ExtKeyReminderType carries the OIOUBL remindertypecode-1.1 value emitted as
 	// cbc:ReminderTypeCode on a Reminder, the Danish dunning document mapped from a
@@ -54,7 +53,6 @@ const (
 	// StructuredRegion address (F-LIB039). GOBL has no district field (it offers
 	// region and country), so it travels on the party extension.
 	ExtKeyAddressDistrict cbc.Key = "dk-oioubl-address-district"
-
 )
 
 // OIOUBL remindertypecode-1.1 values (F-REM061).
@@ -146,48 +144,25 @@ var extensions = []*cbc.Definition{
 		},
 	},
 	{
-		Key: ExtKeyPaymentChannel,
+		Key: ExtKeyTaxScheme,
 		Name: i18n.String{
-			i18n.EN: "OIOUBL Payment Channel",
-			i18n.DA: "OIOUBL Betalingskanal",
+			i18n.EN: "OIOUBL Tax Scheme (excise duty)",
+			i18n.DA: "OIOUBL Afgiftstype",
 		},
 		Desc: i18n.String{
 			i18n.EN: here.Doc(`
-				The OIOUBL ` + "`paymentchannelcode-1.1`" + ` value emitted as
-				` + "`cbc:PaymentChannelCode`" + `. Derived from the payment means
-				during normalization: Giro (50) → DK:GIRO, FIK (93) → DK:FIK, and
-				other settled means → IBAN (direct debit carries no channel).
+				The OIOUBL ` + "`taxschemeid-1.1`" + ` duty-type code identifying a
+				non-VAT excise duty (e.g. mineral-water, chocolate/sugar or packaging
+				tax) that GOBL models as a VAT-rated charge. Declared on a
+				` + "`bill.Charge`" + ` or ` + "`bill.LineCharge`" + `, it routes the
+				charge to a ` + "`cac:TaxTotal/cac:TaxSubtotal`" + ` with
+				` + "`cac:TaxCategory/cbc:ID`" + ` "Excise" instead of a plain
+				` + "`cac:AllowanceCharge`" + `; the serializer takes the scheme name
+				from the charge reason and derives ` + "`cbc:TaxTypeCode`" + ` from the
+				amount (StandardRated when positive, ZeroRated when zero).
 			`),
 		},
-		Values: []*cbc.Definition{
-			{Code: ExtValuePaymentChannelIBAN, Name: i18n.String{i18n.EN: "IBAN bank transfer"}},
-			{Code: ExtValuePaymentChannelGiro, Name: i18n.String{i18n.EN: "Danish Giro"}},
-			{Code: ExtValuePaymentChannelFIK, Name: i18n.String{i18n.EN: "Danish FIK"}},
-		},
-	},
-	{
-		Key: ExtKeyResponseCode,
-		Name: i18n.String{
-			i18n.EN: "OIOUBL Response Code",
-			i18n.DA: "OIOUBL Svarkode",
-		},
-		Desc: i18n.String{
-			i18n.EN: here.Doc(`
-				The OIOUBL ` + "`responsecode-1.1`" + ` value emitted as
-				` + "`cac:Response/cbc:ResponseCode`" + ` on an Invoice Response.
-				Derived from the GOBL status event during normalization (accepted →
-				BusinessAccept, rejected → BusinessReject, acknowledged →
-				TechnicalAccept, error → TechnicalReject); the reverse is applied
-				when parsing an inbound document.
-			`),
-		},
-		Values: []*cbc.Definition{
-			{Code: ExtValueResponseCodeBusinessAccept, Name: i18n.String{i18n.EN: "Business accept"}},
-			{Code: ExtValueResponseCodeBusinessReject, Name: i18n.String{i18n.EN: "Business reject"}},
-			{Code: ExtValueResponseCodeTechnicalAccept, Name: i18n.String{i18n.EN: "Technical accept"}},
-			{Code: ExtValueResponseCodeTechnicalReject, Name: i18n.String{i18n.EN: "Technical reject"}},
-			{Code: ExtValueResponseCodeProfileReject, Name: i18n.String{i18n.EN: "Profile reject"}},
-		},
+		Pattern: `^[0-9a-z]+$`,
 	},
 	{
 		Key: ExtKeyReminderType,
