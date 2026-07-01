@@ -73,9 +73,9 @@ func normalizeParty(p *org.Party) {
 
 // migrateInboxesToEndpoints converts each scheme/code org.Inbox into the
 // equivalent OIOUBL org.Endpoint and drops it, since org.Inbox is deprecated in
-// favour of org.Endpoint. A numeric ISO 6523 ICD inbox scheme is mapped to its
-// symbolic OIOUBL scheme (0184→DK:CVR); email/URL inboxes carry no scheme/code
-// participant and are left untouched.
+// favour of org.Endpoint. The inbox scheme is used as-is (it must already be an
+// OIOUBL scheme); email/URL inboxes carry no scheme/code participant and are
+// left untouched.
 func migrateInboxesToEndpoints(p *org.Party) {
 	kept := p.Inboxes[:0]
 	for _, in := range p.Inboxes {
@@ -87,9 +87,6 @@ func migrateInboxesToEndpoints(p *org.Party) {
 			continue
 		}
 		scheme := in.Scheme.String()
-		if s := SchemeForICD(scheme); s != "" {
-			scheme = s.String()
-		}
 		p.Endpoints = append(p.Endpoints, &org.Endpoint{
 			Label: in.Label,
 			URI:   cbc.URI(OIOUBLEndpointURI(scheme, in.Code.String())),
