@@ -88,10 +88,9 @@ func billInvoiceRules() *rules.Set {
 				is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
 		),
 		rules.Field("totals",
-			// OIOUBL rejects negative monetary totals outright (F-LIB016 on
-			// PayableAmount / TaxInclusiveAmount, F-LIB020 on amounts):
-			// over-discounted or over-advanced documents must be modelled as
-			// credit notes instead.
+			// OIOUBL rejects negative payable/due totals outright (F-LIB016 /
+			// F-LIB020): over-discounted or over-advanced documents must be
+			// modelled as credit notes instead.
 			rules.Assert("26", "payable and due totals must not be negative (F-LIB016 / F-LIB020)",
 				is.Func("non-negative totals", totalsNonNegative)),
 		),
@@ -404,10 +403,8 @@ func partyHasOIOUBLLegalID(val any) bool {
 	if p.Name == "" {
 		return true
 	}
-	// A Danish tax identity is fabricated into the CompanyID as the CVR.
-	if p.TaxID != nil && p.TaxID.Country == "DK" && p.TaxID.Code != "" {
-		return true
-	}
+	// normalizeParty derives a legal-scope identity from a Danish CVR, so a DK
+	// party is covered by the identity check below.
 	for _, id := range p.Identities {
 		if id.Scope == org.IdentityScopeLegal && !id.Code.IsEmpty() {
 			return true
