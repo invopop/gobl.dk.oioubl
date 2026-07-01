@@ -4,7 +4,7 @@ import (
 	"flag"
 	"testing"
 
-	// Register the OIOUBL addon so example documents declaring dk-oioubl-v2-1
+	// Register the OIOUBL addon so example documents declaring dk-oioubl-v2
 	// normalize and validate.
 	_ "github.com/invopop/gobl.dk.oioubl/addon"
 

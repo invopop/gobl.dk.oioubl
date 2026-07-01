@@ -4,7 +4,7 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "eae30803c9ab3f66c4bb948363980072daa84638e24d0b60aaa26a45ba90a7f8"
+			"val": "acedd714f93b865a1a9c4e88621a3e5b29f6b0c0eaaf1ea9df1c54a725692d62"
 		},
 		"from": "urn:oioubl:scheme:endpointid-1.1::DK:CVR:12345674",
 		"to": "urn:oioubl:scheme:endpointid-1.1::DK:CVR:88146328"
@@ -14,7 +14,7 @@
 		"$regime": "DK",
 		"$addons": [
 			"eu-en16931-v2017",
-			"dk-oioubl-v2-1"
+			"dk-oioubl-v2"
 		],
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3",
 		"type": "response",

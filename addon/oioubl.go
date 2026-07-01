@@ -19,9 +19,9 @@ const (
 	// so that rules carrying across versions keep stable codes.
 	Key cbc.Key = "dk-oioubl"
 
-	// V2_1 is the key for OIOUBL version 2.1, the current production version
+	// V2 is the key for OIOUBL version 2.1, the current production version
 	// used on the NemHandel network.
-	V2_1 cbc.Key = Key + "-v2-1"
+	V2 cbc.Key = Key + "-v2"
 )
 
 func init() {
@@ -29,7 +29,7 @@ func init() {
 	rules.RegisterWithGuard(
 		Key.String(),
 		rules.GOBL.Add("DK-OIOUBL"),
-		is.InContext(tax.AddonIn(V2_1)),
+		is.InContext(tax.AddonIn(V2)),
 		billInvoiceRules(),
 		billStatusRules(),
 		billTaxComboRules(),
@@ -40,7 +40,7 @@ func init() {
 		partyRules(),
 	)
 	norm.RegisterWithGuard(
-		is.InContext(tax.AddonIn(V2_1)),
+		is.InContext(tax.AddonIn(V2)),
 		norm.For(normalizeParty),
 		norm.For(normalizeTaxCombo),
 		norm.For(normalizeTaxNote),
@@ -50,7 +50,7 @@ func init() {
 
 func newAddon() *tax.AddonDef {
 	return &tax.AddonDef{
-		Key: V2_1,
+		Key: V2,
 		Name: i18n.String{
 			i18n.EN: "Danish OIOUBL 2.1",
 			i18n.DA: "Dansk OIOUBL 2.1",
