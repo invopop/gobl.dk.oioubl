@@ -22,7 +22,7 @@ func billStatusRules() *rules.Set {
 			// PartyLegalEntity). The citations below follow that mapping rather
 			// than the GOBL field name.
 			rules.Field("supplier",
-				rules.Assert("01", "supplier must have an ISO 6523 endpoint or inbox (F-APR012)",
+				rules.Assert("01", "supplier must have an endpoint or inbox (F-APR012)",
 					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
 				rules.Assert("06", "supplier must have a tax ID or identities (F-APR041)",
 					is.Func("has tax id or identities", partyHasTaxIDOrIdentities)),
@@ -31,7 +31,7 @@ func billStatusRules() *rules.Set {
 			),
 			rules.Field("customer",
 				rules.Assert("02", "customer is required for a response", is.Present),
-				rules.Assert("03", "customer must have an ISO 6523 endpoint or inbox (F-APR008)",
+				rules.Assert("03", "customer must have an endpoint or inbox (F-APR008)",
 					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
 				rules.Assert("08", "customer must have a name or legal identity (F-LIB022)",
 					is.Func("has name or legal identity", partyHasNameOrLegalIdentity)),
