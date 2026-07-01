@@ -39,23 +39,6 @@ const (
 	ExtValueAddressFormatUnstructured cbc.Code = "Unstructured"
 )
 
-// OIOUBL paymentchannelcode-1.1 values.
-const (
-	ExtValuePaymentChannelIBAN cbc.Code = "IBAN"
-	ExtValuePaymentChannelGiro cbc.Code = "DK:GIRO"
-	ExtValuePaymentChannelFIK  cbc.Code = "DK:FIK"
-)
-
-// OIOUBL responsecode-1.1 values accepted by the ApplicationResponse schematron
-// (F-APR018 allows five of the six codelist values; ProfileAccept is rejected).
-const (
-	ExtValueResponseCodeBusinessAccept  cbc.Code = "BusinessAccept"
-	ExtValueResponseCodeBusinessReject  cbc.Code = "BusinessReject"
-	ExtValueResponseCodeTechnicalAccept cbc.Code = "TechnicalAccept"
-	ExtValueResponseCodeTechnicalReject cbc.Code = "TechnicalReject"
-	ExtValueResponseCodeProfileReject   cbc.Code = "ProfileReject"
-)
-
 // OIOUBL Giro (code 50) PaymentID values.
 const (
 	ExtValuePaymentIDGiro01 cbc.Code = "01"
