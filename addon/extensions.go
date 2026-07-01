@@ -1,6 +1,8 @@
 package addon
 
 import (
+	"slices"
+
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/i18n"
 	"github.com/invopop/gobl/pkg/here"
@@ -53,12 +55,35 @@ const (
 	ExtValuePaymentIDFIK75 cbc.Code = "75"
 )
 
-// giroPaymentIDs and fikPaymentIDs are the PaymentID values OIOUBL allows for
-// each method (F-LIB147 for Giro, F-LIB152 family for FIK).
+// giroPaymentIDDefs and fikPaymentIDDefs are the PaymentID codes OIOUBL allows
+// for each method, named after the Nets "kortart" (payment-card type) each one
+// identifies.
 var (
-	giroPaymentIDs = []cbc.Code{ExtValuePaymentIDGiro01, ExtValuePaymentIDGiro04, ExtValuePaymentIDGiro15}
-	fikPaymentIDs  = []cbc.Code{ExtValuePaymentIDFIK71, ExtValuePaymentIDFIK73, ExtValuePaymentIDFIK75}
+	giroPaymentIDDefs = []*cbc.Definition{
+		{Code: ExtValuePaymentIDGiro01, Name: i18n.String{i18n.EN: "Giro card, free-text message", i18n.DA: "Girokort, fri tekst"}},
+		{Code: ExtValuePaymentIDGiro04, Name: i18n.String{i18n.EN: "Giro card with creditor number", i18n.DA: "Girokort med kreditornummer"}},
+		{Code: ExtValuePaymentIDGiro15, Name: i18n.String{i18n.EN: "Giro card with creditor number and payment ID", i18n.DA: "Girokort med kreditornummer og betalings-id"}},
+	}
+	fikPaymentIDDefs = []*cbc.Definition{
+		{Code: ExtValuePaymentIDFIK71, Name: i18n.String{i18n.EN: "FIK card, 15-digit payment ID", i18n.DA: "FIK-kort, 15-cifret betalings-id"}},
+		{Code: ExtValuePaymentIDFIK73, Name: i18n.String{i18n.EN: "FIK card, free-text message", i18n.DA: "FIK-kort, fri tekst"}},
+		{Code: ExtValuePaymentIDFIK75, Name: i18n.String{i18n.EN: "FIK card, 16-digit payment ID and message", i18n.DA: "FIK-kort, 16-cifret betalings-id og tekst"}},
+	}
+
+	// giroPaymentIDs and fikPaymentIDs are the codes alone, for the per-method
+	// value check (F-LIB147 for Giro, F-LIB155 for FIK).
+	giroPaymentIDs = paymentIDCodes(giroPaymentIDDefs)
+	fikPaymentIDs  = paymentIDCodes(fikPaymentIDDefs)
 )
+
+// paymentIDCodes returns just the codes from a set of PaymentID definitions.
+func paymentIDCodes(defs []*cbc.Definition) []cbc.Code {
+	codes := make([]cbc.Code, len(defs))
+	for i, d := range defs {
+		codes[i] = d.Code
+	}
+	return codes
+}
 
 var extensions = []*cbc.Definition{
 	{
@@ -75,14 +100,7 @@ var extensions = []*cbc.Definition{
 				(FIK, values 71/73/75), per the OIOUBL Common schematron.
 			`),
 		},
-		Values: []*cbc.Definition{
-			{Code: ExtValuePaymentIDGiro01, Name: i18n.String{i18n.EN: "Giro payment type 01"}},
-			{Code: ExtValuePaymentIDGiro04, Name: i18n.String{i18n.EN: "Giro payment type 04"}},
-			{Code: ExtValuePaymentIDGiro15, Name: i18n.String{i18n.EN: "Giro payment type 15"}},
-			{Code: ExtValuePaymentIDFIK71, Name: i18n.String{i18n.EN: "FIK payment type 71"}},
-			{Code: ExtValuePaymentIDFIK73, Name: i18n.String{i18n.EN: "FIK payment type 73"}},
-			{Code: ExtValuePaymentIDFIK75, Name: i18n.String{i18n.EN: "FIK payment type 75"}},
-		},
+		Values: slices.Concat(giroPaymentIDDefs, fikPaymentIDDefs),
 	},
 	{
 		Key: ExtKeyReminderSequence,
