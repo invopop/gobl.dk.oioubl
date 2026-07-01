@@ -1,0 +1,148 @@
+{
+	"$schema": "https://gobl.org/draft-0/envelope",
+	"head": {
+		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
+		"dig": {
+			"alg": "sha256",
+			"val": "98ed0ed7b58a9b991da36ef94a5f9103987213689d8f22baf355072b34bc57d3"
+		},
+		"from": "iso6523-actorid-upis::0184:12345674",
+		"to": "iso6523-actorid-upis::0184:88146328"
+	},
+	"doc": {
+		"$schema": "https://gobl.org/draft-0/bill/invoice",
+		"$regime": "DK",
+		"$addons": [
+			"eu-en16931-v2017",
+			"dk-oioubl-v2-1"
+		],
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+		"type": "credit-note",
+		"series": "2026",
+		"code": "1001",
+		"issue_date": "2026-01-15",
+		"currency": "DKK",
+		"preceding": [
+			{
+				"issue_date": "2026-01-01",
+				"series": "2026",
+				"code": "1000",
+				"reason": "Fakturafejl"
+			}
+		],
+		"tax": {
+			"ext": {
+				"untdid-document-type": "381"
+			}
+		},
+		"supplier": {
+			"name": "Eksempel A/S",
+			"tax_id": {
+				"country": "DK",
+				"code": "12345674"
+			},
+			"endpoints": [
+				{
+					"uri": "iso6523-actorid-upis::0184:12345674"
+				}
+			],
+			"addresses": [
+				{
+					"num": "1",
+					"street": "Hovedgaden",
+					"locality": "København",
+					"code": "1000",
+					"country": "DK"
+				}
+			]
+		},
+		"customer": {
+			"name": "Kunde ApS",
+			"tax_id": {
+				"country": "DK",
+				"code": "88146328"
+			},
+			"people": [
+				{
+					"name": {
+						"given": "Anders",
+						"surname": "Jensen"
+					},
+					"identities": [
+						{
+							"label": "Contact",
+							"code": "C-001"
+						}
+					]
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "iso6523-actorid-upis::0184:88146328"
+				}
+			],
+			"addresses": [
+				{
+					"num": "5",
+					"street": "Bygaden",
+					"locality": "Aarhus",
+					"code": "8000",
+					"country": "DK"
+				}
+			]
+		},
+		"lines": [
+			{
+				"i": 1,
+				"quantity": "1",
+				"item": {
+					"name": "Produkt",
+					"price": "100.00",
+					"unit": "one"
+				},
+				"sum": "100.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"rate": "general",
+						"percent": "25.0%",
+						"ext": {
+							"dk-oioubl-tax-category": "StandardRated",
+							"untdid-tax-category": "S"
+						}
+					}
+				],
+				"total": "100.00"
+			}
+		],
+		"totals": {
+			"sum": "100.00",
+			"total": "100.00",
+			"taxes": {
+				"categories": [
+					{
+						"code": "VAT",
+						"rates": [
+							{
+								"key": "standard",
+								"ext": {
+									"dk-oioubl-tax-category": "StandardRated",
+									"untdid-tax-category": "S"
+								},
+								"base": "100.00",
+								"percent": "25.0%",
+								"amount": "25.00"
+							}
+						],
+						"amount": "25.00"
+					}
+				],
+				"sum": "25.00"
+			},
+			"tax": "25.00",
+			"total_with_tax": "125.00",
+			"payable": "125.00"
+		}
+	}
+}

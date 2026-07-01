@@ -1,0 +1,150 @@
+package addon
+
+import (
+	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/catalogues/untdid"
+	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/org"
+	"github.com/invopop/gobl/pay"
+	"github.com/invopop/gobl/tax"
+)
+
+// iso6523EndpointScheme is the URI scheme org.Endpoint uses for Peppol-style
+// participant identifiers.
+const iso6523EndpointScheme = "iso6523-actorid-upis"
+
+// normalizeParty derives the NemHandel participant endpoint for a Danish party
+// from its tax identity: the Danish VAT number is the CVR number, which is the
+// ISO 6523 0184 participant code. Parties that already carry a participant —
+// an ISO 6523 endpoint or any inbox — are left untouched.
+func normalizeParty(p *org.Party) {
+	if p.TaxID == nil || p.TaxID.Country != "DK" || p.TaxID.Code == cbc.CodeEmpty {
+		return
+	}
+	if p.Endpoint(iso6523EndpointScheme) != nil || len(p.Inboxes) > 0 {
+		return
+	}
+	p.Endpoints = append(p.Endpoints, &org.Endpoint{
+		URI: cbc.URI(iso6523EndpointScheme + "::0184:" + p.TaxID.Code.String()),
+	})
+}
+
+// normalizePayInstructions records the OIOUBL paymentchannelcode-1.1 value in the
+// dk-oioubl-payment-channel extension, derived from the payment means, so the
+// gobl.ubl serializer emits cbc:PaymentChannelCode directly.
+func normalizePayInstructions(instr *pay.Instructions) {
+	ch := oioublPaymentChannel(instr.Ext.Get(untdid.ExtKeyPaymentMeans))
+	if ch == "" {
+		// Clear any channel left by a previous means: a stale DK:GIRO/DK:FIK on a
+		// channel-less means is wire-fatal (e.g. F-LIB321).
+		instr.Ext = instr.Ext.Delete(ExtKeyPaymentChannel)
+		return
+	}
+	instr.Ext = instr.Ext.Set(ExtKeyPaymentChannel, ch)
+}
+
+// oioublPaymentChannel maps a UNTDID 4461 payment means to its OIOUBL payment
+// channel: Giro (50) → DK:GIRO, FIK (93) → DK:FIK, and the account-transfer
+// means (30/31 bank transfers, 58 SEPA credit transfer) → IBAN. Every other
+// accepted means (cash, cheque, direct debit, cards, clearing) settles outside
+// a payment channel and carries none. (42 is not an accepted means — see
+// validPaymentMeansCodes.)
+func oioublPaymentChannel(means cbc.Code) cbc.Code {
+	switch means {
+	case "50":
+		return ExtValuePaymentChannelGiro
+	case "93":
+		return ExtValuePaymentChannelFIK
+	case "30", "31", "58":
+		return ExtValuePaymentChannelIBAN
+	default:
+		return ""
+	}
+}
+
+// normalizeTaxCombo records the OIOUBL taxcategoryid-1.1 category for a VAT combo
+// in the dk-oioubl-tax-category extension, derived from the EN 16931 UNTDID
+// category. This moves the mapping out of the gobl.ubl serializer, which then
+// emits the value directly. The GOBL category itself is left untouched — in
+// particular VAT-exempt stays "exempt", so EN 16931 keeps requiring the
+// exemption reason (and allows the VATEX code), even though OIOUBL reports it as
+// ZeroRated (OIOUBL 2.1 has no exempt category).
+func normalizeTaxCombo(c *tax.Combo) {
+	if c.Category != tax.CategoryVAT {
+		return
+	}
+	if oc := oioublTaxCategory(c.Ext.Get(untdid.ExtKeyTaxCategory)); oc != "" {
+		c.Ext = c.Ext.Set(ExtKeyTaxCategory, oc)
+	}
+}
+
+// oioublTaxCategory maps an EN 16931 UNTDID 5305 VAT category to its OIOUBL
+// taxcategoryid-1.1 equivalent. Exempt (E) has no OIOUBL counterpart and is
+// reported as ZeroRated, as both mean no VAT is charged.
+func oioublTaxCategory(untdidCat cbc.Code) cbc.Code {
+	switch untdidCat {
+	case "S":
+		return ExtValueTaxCategoryStandardRated
+	case "Z", "E":
+		return ExtValueTaxCategoryZeroRated
+	case "AE":
+		return ExtValueTaxCategoryReverseCharge
+	}
+	return ""
+}
+
+// normalizeStatusLine records the OIOUBL responsecode-1.1 value in the
+// dk-oioubl-response-code extension, derived from the GOBL status event, so the
+// gobl.ubl serializer emits cac:Response/cbc:ResponseCode directly. On an inbound
+// document the line carries the parsed extension but no event, so the mapping is
+// applied in reverse to recover the GOBL status event.
+//
+// An extension that still reverse-maps to the current key is left untouched, so
+// an inbound ProfileReject (which folds into the error event alongside
+// TechnicalReject) survives recalculation; an extension that no longer matches
+// the key — a stale value after the key was edited — is overwritten.
+func normalizeStatusLine(line *bill.StatusLine) {
+	if code := oioublResponseCode(line.Key); code != "" {
+		if cur := line.Ext.Get(ExtKeyResponseCode); cur == "" || goblStatusEvent(cur) != line.Key {
+			line.Ext = line.Ext.Set(ExtKeyResponseCode, code)
+		}
+	}
+	if line.Key == "" {
+		if event := goblStatusEvent(line.Ext.Get(ExtKeyResponseCode)); event != "" {
+			line.Key = event
+		}
+	}
+}
+
+// oioublResponseCode maps a GOBL status event to its OIOUBL responsecode-1.1
+// value. Events without an OIOUBL counterpart (issued, processing, paid, …) map
+// to nothing and are rejected by the addon validation rules (F-APR018).
+func oioublResponseCode(event cbc.Key) cbc.Code {
+	switch event {
+	case bill.StatusLineAccepted:
+		return ExtValueResponseCodeBusinessAccept
+	case bill.StatusLineRejected:
+		return ExtValueResponseCodeBusinessReject
+	case bill.StatusLineAcknowledged:
+		return ExtValueResponseCodeTechnicalAccept
+	case bill.StatusLineError:
+		return ExtValueResponseCodeTechnicalReject
+	}
+	return ""
+}
+
+// goblStatusEvent reverses oioublResponseCode for inbound documents. ProfileReject
+// has no dedicated GOBL event and folds into error, alongside TechnicalReject.
+func goblStatusEvent(code cbc.Code) cbc.Key {
+	switch code {
+	case ExtValueResponseCodeBusinessAccept:
+		return bill.StatusLineAccepted
+	case ExtValueResponseCodeBusinessReject:
+		return bill.StatusLineRejected
+	case ExtValueResponseCodeTechnicalAccept:
+		return bill.StatusLineAcknowledged
+	case ExtValueResponseCodeTechnicalReject, ExtValueResponseCodeProfileReject:
+		return bill.StatusLineError
+	}
+	return ""
+}
