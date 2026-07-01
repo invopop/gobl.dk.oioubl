@@ -14,17 +14,6 @@ const (
 	// payment instruction's Ref (emitted as cbc:InstructionID).
 	ExtKeyPaymentID cbc.Key = "dk-oioubl-payment-id"
 
-	// ExtKeyTaxScheme carries the OIOUBL taxschemeid-1.1 duty-type code for a
-	// non-VAT excise duty (chocolate/sugar, mineral water, packaging, …) that GOBL
-	// models as a VAT-rated bill.Charge/LineCharge. Its presence routes the charge
-	// to a cac:TaxTotal/TaxSubtotal with cac:TaxCategory/cbc:ID "Excise" (the
-	// official ERST form) instead of a plain cac:AllowanceCharge; the gobl.ubl
-	// serializer takes the scheme Name from the charge reason and derives the
-	// cbc:TaxTypeCode from the amount (StandardRated when positive, ZeroRated when
-	// zero). GOBL has no native field for the OIOUBL duty-type code, so it is
-	// declared on the charge.
-	ExtKeyTaxScheme cbc.Key = "dk-oioubl-tax-scheme"
-
 	// ExtKeyReminderSequence carries the OIOUBL cbc:ReminderSequenceNumeric, the
 	// 1-based position of this reminder within the dunning sequence (F-REM007).
 	// GOBL has no native field for it, so it is declared on the payment.
@@ -119,27 +108,6 @@ var extensions = []*cbc.Definition{
 			{Code: ExtValuePaymentIDFIK73, Name: i18n.String{i18n.EN: "FIK payment type 73"}},
 			{Code: ExtValuePaymentIDFIK75, Name: i18n.String{i18n.EN: "FIK payment type 75"}},
 		},
-	},
-	{
-		Key: ExtKeyTaxScheme,
-		Name: i18n.String{
-			i18n.EN: "OIOUBL Tax Scheme (excise duty)",
-			i18n.DA: "OIOUBL Afgiftstype",
-		},
-		Desc: i18n.String{
-			i18n.EN: here.Doc(`
-				The OIOUBL ` + "`taxschemeid-1.1`" + ` duty-type code identifying a
-				non-VAT excise duty (e.g. mineral-water, chocolate/sugar or packaging
-				tax) that GOBL models as a VAT-rated charge. Declared on a
-				` + "`bill.Charge`" + ` or ` + "`bill.LineCharge`" + `, it routes the
-				charge to a ` + "`cac:TaxTotal/cac:TaxSubtotal`" + ` with
-				` + "`cac:TaxCategory/cbc:ID`" + ` "Excise" instead of a plain
-				` + "`cac:AllowanceCharge`" + `; the serializer takes the scheme name
-				from the charge reason and derives ` + "`cbc:TaxTypeCode`" + ` from the
-				amount (StandardRated when positive, ZeroRated when zero).
-			`),
-		},
-		Pattern: `^[0-9a-z]+$`,
 	},
 	{
 		Key: ExtKeyReminderSequence,

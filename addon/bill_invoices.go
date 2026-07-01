@@ -224,8 +224,8 @@ func billTaxComboRules() *rules.Set {
 	)
 }
 
-// billChargeRules and lineChargeRules require an excise duty charge (one tagged
-// with the dk-oioubl-tax-scheme extension) to carry a reason: the gobl.ubl
+// billChargeRules and lineChargeRules require an excise duty charge (one whose
+// Key is a numeric OIOUBL taxschemeid duty code) to carry a reason: the gobl.ubl
 // serializer emits it as the OIOUBL tax-scheme name, which OIOUBL requires to be
 // non-empty (F-LIB066).
 func billChargeRules() *rules.Set {
@@ -242,30 +242,46 @@ func lineChargeRules() *rules.Set {
 	)
 }
 
-// exciseChargeHasReason reports whether a charge that carries the OIOUBL excise
-// tax-scheme extension also carries a reason. Ordinary charges (no extension)
-// always pass.
+// exciseChargeHasReason reports whether an excise duty charge (one whose Key is a
+// numeric OIOUBL taxschemeid code) also carries a reason. Ordinary charges (a
+// non-numeric key, or none) always pass.
 func exciseChargeHasReason(val any) bool {
-	var ext tax.Extensions
+	var key cbc.Key
 	var reason string
 	switch c := val.(type) {
 	case *bill.Charge:
 		if c == nil {
 			return true
 		}
-		ext, reason = c.Ext, c.Reason
+		key, reason = c.Key, c.Reason
 	case *bill.LineCharge:
 		if c == nil {
 			return true
 		}
-		ext, reason = c.Ext, c.Reason
+		key, reason = c.Key, c.Reason
 	default:
 		return true
 	}
-	if ext.Get(ExtKeyTaxScheme).String() == "" {
+	if !isExciseKey(key) {
 		return true
 	}
 	return reason != ""
+}
+
+// isExciseKey reports whether a charge Key is an OIOUBL taxschemeid duty code.
+// Excise duties are keyed with their numeric code; GOBL's own charge keys are
+// alphabetic slugs (stamp-duty, handling, …), so an all-digit key marks the duty.
+func isExciseKey(key cbc.Key) bool {
+	s := key.String()
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // vatCategoryHasOIOUBLMapping reports whether a VAT combo's GOBL key maps to an

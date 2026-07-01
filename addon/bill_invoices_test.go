@@ -121,7 +121,7 @@ func TestInvoiceValidation(t *testing.T) {
 	t.Run("excise duty charge without a reason is rejected (F-LIB066)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Charges = []*bill.LineCharge{
-			{Amount: num.MakeAmount(1000, 2), Ext: tax.Extensions{}.Set(oioubl.ExtKeyTaxScheme, "16")},
+			{Key: "16", Amount: num.MakeAmount(1000, 2)},
 		}
 		require.NoError(t, inv.Calculate())
 		assert.ErrorContains(t, rules.Validate(inv), "F-LIB066")
@@ -130,8 +130,7 @@ func TestInvoiceValidation(t *testing.T) {
 	t.Run("excise duty charge with a reason passes", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Charges = []*bill.LineCharge{
-			{Reason: "Mineralvandsafgift", Amount: num.MakeAmount(1000, 2),
-				Ext: tax.Extensions{}.Set(oioubl.ExtKeyTaxScheme, "16")},
+			{Key: "16", Reason: "Mineralvandsafgift", Amount: num.MakeAmount(1000, 2)},
 		}
 		require.NoError(t, inv.Calculate())
 		assert.NoError(t, rules.Validate(inv))
