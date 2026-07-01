@@ -4,6 +4,7 @@ import (
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/currency"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
@@ -110,6 +111,17 @@ func billInvoiceRules() *rules.Set {
 		rules.When(is.Func("non-credit-note invoice with line order ref", invoiceWithLineOrderRef),
 			rules.Field("ordering",
 				rules.Assert("07", "ordering is required when any invoice line has an order reference (F-INV142)", is.Present),
+			),
+		),
+		// EU VAT Directive 2006/112/EC art. 230 requires the VAT amount in the
+		// national currency (DKK). A foreign-currency document makes gobl.ubl emit
+		// cbc:TaxCurrencyCode, which then obliges a
+		// cac:TaxSubtotal/cbc:TransactionCurrencyTaxAmount stating the tax in DKK;
+		// that amount can only be derived from an exchange rate, so without one the
+		// OIOUBL output fails F-INV018 / F-CRN013.
+		rules.When(is.Func("foreign currency without an exchange rate to the regime currency", foreignCurrencyMissingExchangeRate),
+			rules.Field("exchange_rates",
+				rules.Assert("38", "a foreign-currency document requires an exchange rate to the regime currency (DKK) so the VAT can be stated in the accounting currency (F-INV018 / F-CRN013)", is.Func("never", neverTrue)),
 			),
 		),
 		rules.Field("totals",
@@ -297,6 +309,18 @@ func invoiceWithLineOrderRef(val any) bool {
 		}
 	}
 	return false
+}
+
+func foreignCurrencyMissingExchangeRate(val any) bool {
+	inv, ok := val.(*bill.Invoice)
+	if !ok || inv == nil {
+		return false
+	}
+	rd := inv.RegimeDef()
+	if rd == nil || inv.Currency == currency.CodeEmpty || inv.Currency == rd.Currency {
+		return false
+	}
+	return currency.MatchExchangeRate(inv.ExchangeRates, inv.Currency, rd.Currency) == nil
 }
 
 func quantityNonZero(val any) bool {

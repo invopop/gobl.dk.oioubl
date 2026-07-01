@@ -9,6 +9,7 @@ import (
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/currency"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
@@ -134,6 +135,27 @@ func TestInvoiceValidation(t *testing.T) {
 		}
 		require.NoError(t, inv.Calculate())
 		assert.NoError(t, rules.Validate(inv))
+	})
+
+	t.Run("foreign-currency document without an exchange rate is rejected (F-INV018)", func(t *testing.T) {
+		// A non-DKK invoice makes gobl.ubl emit cbc:TaxCurrencyCode, which then
+		// requires a TransactionCurrencyTaxAmount derived from an exchange rate.
+		inv := testInvoiceStandard(t)
+		inv.Currency = "EUR"
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-INV018")
+	})
+
+	t.Run("foreign-currency document with an exchange rate passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Currency = "EUR"
+		inv.ExchangeRates = []*currency.ExchangeRate{
+			{From: "EUR", To: "DKK", Amount: num.MakeAmount(745, 2)},
+		}
+		require.NoError(t, inv.Calculate())
+		if err := rules.Validate(inv); err != nil {
+			assert.NotContains(t, err.Error(), "F-INV018")
+		}
 	})
 
 	t.Run("foreign customer without a legal identity is rejected (F-LIB187)", func(t *testing.T) {
