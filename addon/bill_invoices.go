@@ -41,6 +41,23 @@ var (
 	roundingMax = num.MakeAmount(1000, 2)
 )
 
+// forbidWhen builds the "reject the document as soon as a guard matches" rule
+// shared by the OIOUBL payment-instruction checks: when cond reports the
+// instruction invalid, assert an always-failing test carrying id/msg.
+func forbidWhen(desc string, cond func(any) bool, id rules.Code, msg string) rules.Def {
+	return rules.When(is.Func(desc, cond),
+		rules.Assert(id, msg, is.Func("never", neverTrue)),
+	)
+}
+
+// positiveAmountRule builds the shared "amount must be greater than zero" field
+// rule used by the line/document discount, charge and advance amount checks.
+func positiveAmountRule(id rules.Code, msg string) rules.Def {
+	return rules.Field("amount",
+		rules.Assert(id, msg, is.Func("positive amount", amountPositive)),
+	)
+}
+
 // billInvoiceRules returns the OIOUBL 2.1 rule set for bill.Invoice
 // (covers both invoices and credit notes).
 func billInvoiceRules() *rules.Set {
@@ -115,33 +132,24 @@ func billInvoiceRules() *rules.Set {
 					rules.AssertIfPresent("12", "payment-means code must be one of the OIOUBL allowed values (F-LIB100)",
 						tax.ExtensionsHasCodes(untdid.ExtKeyPaymentMeans, validPaymentMeansCodes...)),
 				),
-				rules.When(is.Func("bank-transfer payment means without a payee account", bankTransferMissingAccount),
-					rules.Assert("13", "a credit transfer account (IBAN or number) is required for bank-transfer payment means (F-LIB107 / F-LIB126)", is.Func("never", neverTrue)),
-				),
-				rules.When(is.Func("iban bank-transfer credit transfer without a BIC", ibanTransferMissingBIC),
-					rules.Assert("18", "a BIC is required on the credit transfer for IBAN bank-transfer payment means 30/31 (F-LIB113)", is.Func("never", neverTrue)),
-				),
-				rules.When(is.Func("giro payment means without a valid OIOUBL payment id", giroPaymentIDInvalid),
-					rules.Assert("14", "Giro (payment-means 50) requires a dk-oioubl-payment-id of 01, 04 or 15 (F-LIB144 / F-LIB147)", is.Func("never", neverTrue)),
-				),
-				rules.When(is.Func("fik payment means without a valid OIOUBL payment id", fikPaymentIDInvalid),
-					rules.Assert("15", "FIK (payment-means 93) requires a dk-oioubl-payment-id of 71, 73 or 75 (F-LIB152)", is.Func("never", neverTrue)),
-				),
-				rules.When(is.Func("structured giro/fik payment id without a valid reference", structuredPaymentRefInvalid),
-					rules.Assert("23", "structured Giro/FIK payment id (04/15/71/75) requires a numeric payment reference of the required length (F-LIB145 / F-LIB153 / F-LIB156 / F-LIB157 / F-LIB312 / F-LIB336)", is.Func("never", neverTrue)),
-				),
-				rules.When(is.Func("fik kortart 73 carrying a payment reference", fik73WithReference),
-					rules.Assert("24", "FIK payment id 73 must not carry a payment reference, OIOUBL has no element for it (F-LIB275)", is.Func("never", neverTrue)),
-				),
-				rules.When(is.Func("giro kortart 01 with an over-long payment reference", giro01ReferenceTooLong),
-					rules.Assert("25", "Giro payment id 01 payment reference must be at most 16 characters (F-LIB149)", is.Func("never", neverTrue)),
-				),
-				rules.When(is.Func("giro payment means without a 7-8 digit payee account", giroAccountInvalid),
-					rules.Assert("21", "Giro (payment-means 50) requires a 7 or 8 digit payee account (F-LIB319 / F-LIB320 / F-LIB321)", is.Func("never", neverTrue)),
-				),
-				rules.When(is.Func("fik payment means without an 8-character creditor account", fikAccountInvalid),
-					rules.Assert("22", "FIK (payment-means 93) requires an 8-character creditor account (F-LIB305)", is.Func("never", neverTrue)),
-				),
+				forbidWhen("bank-transfer payment means without a payee account", bankTransferMissingAccount,
+					"13", "a credit transfer account (IBAN or number) is required for bank-transfer payment means (F-LIB107 / F-LIB126)"),
+				forbidWhen("iban bank-transfer credit transfer without a BIC", ibanTransferMissingBIC,
+					"18", "a BIC is required on the credit transfer for IBAN bank-transfer payment means 30/31 (F-LIB113)"),
+				forbidWhen("giro payment means without a valid OIOUBL payment id", giroPaymentIDInvalid,
+					"14", "Giro (payment-means 50) requires a dk-oioubl-payment-id of 01, 04 or 15 (F-LIB144 / F-LIB147)"),
+				forbidWhen("fik payment means without a valid OIOUBL payment id", fikPaymentIDInvalid,
+					"15", "FIK (payment-means 93) requires a dk-oioubl-payment-id of 71, 73 or 75 (F-LIB152)"),
+				forbidWhen("structured giro/fik payment id without a valid reference", structuredPaymentRefInvalid,
+					"23", "structured Giro/FIK payment id (04/15/71/75) requires a numeric payment reference of the required length (F-LIB145 / F-LIB153 / F-LIB156 / F-LIB157 / F-LIB312 / F-LIB336)"),
+				forbidWhen("fik kortart 73 carrying a payment reference", fik73WithReference,
+					"24", "FIK payment id 73 must not carry a payment reference, OIOUBL has no element for it (F-LIB275)"),
+				forbidWhen("giro kortart 01 with an over-long payment reference", giro01ReferenceTooLong,
+					"25", "Giro payment id 01 payment reference must be at most 16 characters (F-LIB149)"),
+				forbidWhen("giro payment means without a 7-8 digit payee account", giroAccountInvalid,
+					"21", "Giro (payment-means 50) requires a 7 or 8 digit payee account (F-LIB319 / F-LIB320 / F-LIB321)"),
+				forbidWhen("fik payment means without an 8-character creditor account", fikAccountInvalid,
+					"22", "FIK (payment-means 93) requires an 8-character creditor account (F-LIB305)"),
 			),
 		),
 		rules.Field("lines",
@@ -155,18 +163,10 @@ func billInvoiceRules() *rules.Set {
 					rules.Assert("06", "line quantity must not be zero (F-INV147 / F-CRN088)", is.Func("non-zero amount", quantityNonZero)),
 				),
 				rules.Field("discounts",
-					rules.Each(
-						rules.Field("amount",
-							rules.Assert("09", "line discount amount must be greater than zero (F-LIB019)", is.Func("positive amount", amountPositive)),
-						),
-					),
+					rules.Each(positiveAmountRule("09", "line discount amount must be greater than zero (F-LIB019)")),
 				),
 				rules.Field("charges",
-					rules.Each(
-						rules.Field("amount",
-							rules.Assert("10", "line charge amount must be greater than zero (F-LIB019)", is.Func("positive amount", amountPositive)),
-						),
-					),
+					rules.Each(positiveAmountRule("10", "line charge amount must be greater than zero (F-LIB019)")),
 				),
 			),
 		),
@@ -174,11 +174,7 @@ func billInvoiceRules() *rules.Set {
 		// must be greater than zero (F-LIB019). A zero-amount allowance —
 		// including one promoted from a zero line discount — is wire-fatal.
 		rules.Field("discounts",
-			rules.Each(
-				rules.Field("amount",
-					rules.Assert("33", "document-level discount amount must be greater than zero (F-LIB019)", is.Func("positive amount", amountPositive)),
-				),
-			),
+			rules.Each(positiveAmountRule("33", "document-level discount amount must be greater than zero (F-LIB019)")),
 		),
 		// A document-level charge emits cac:AllowanceCharge, which OIOUBL
 		// requires to carry a TaxCategory (F-LIB226) and a cbc:Amount greater
@@ -187,9 +183,7 @@ func billInvoiceRules() *rules.Set {
 		// reason/type), so the taxes rule closes that gap.
 		rules.Field("charges",
 			rules.Each(
-				rules.Field("amount",
-					rules.Assert("34", "document-level charge amount must be greater than zero (F-LIB019)", is.Func("positive amount", amountPositive)),
-				),
+				positiveAmountRule("34", "document-level charge amount must be greater than zero (F-LIB019)"),
 				rules.Field("taxes",
 					rules.Assert("28", "document-level charge taxes are required for the OIOUBL TaxCategory (F-LIB226)", is.Present),
 				),
@@ -199,11 +193,7 @@ func billInvoiceRules() *rules.Set {
 		// be greater than zero (F-LIB013).
 		rules.Field("payment",
 			rules.Field("advances",
-				rules.Each(
-					rules.Field("amount",
-						rules.Assert("35", "advance amount must be greater than zero (F-LIB013)", is.Func("positive amount", amountPositive)),
-					),
-				),
+				rules.Each(positiveAmountRule("35", "advance amount must be greater than zero (F-LIB013)")),
 			),
 		),
 	)
@@ -228,18 +218,15 @@ func billTaxComboRules() *rules.Set {
 // Key is a numeric OIOUBL taxschemeid duty code) to carry a reason: the gobl.ubl
 // serializer emits it as the OIOUBL tax-scheme name, which OIOUBL requires to be
 // non-empty (F-LIB066).
-func billChargeRules() *rules.Set {
-	return rules.For(new(bill.Charge),
-		rules.Assert("01", "an OIOUBL excise duty charge must have a reason for the tax-scheme name (F-LIB066)",
-			is.Func("excise charge has a reason", exciseChargeHasReason)),
-	)
-}
+func billChargeRules() *rules.Set { return rules.For(new(bill.Charge), exciseReasonAssert()) }
 
-func lineChargeRules() *rules.Set {
-	return rules.For(new(bill.LineCharge),
-		rules.Assert("01", "an OIOUBL excise duty charge must have a reason for the tax-scheme name (F-LIB066)",
-			is.Func("excise charge has a reason", exciseChargeHasReason)),
-	)
+func lineChargeRules() *rules.Set { return rules.For(new(bill.LineCharge), exciseReasonAssert()) }
+
+// exciseReasonAssert is the shared F-LIB066 assertion for document- and
+// line-level charges (which bind to different types and so need separate sets).
+func exciseReasonAssert() rules.Def {
+	return rules.Assert("01", "an OIOUBL excise duty charge must have a reason for the tax-scheme name (F-LIB066)",
+		is.Func("excise charge has a reason", exciseChargeHasReason))
 }
 
 // exciseChargeHasReason reports whether an excise duty charge (one whose Key is a
@@ -289,15 +276,7 @@ func isExciseKey(key cbc.Key) bool {
 // as ZeroRated) and reverse-charge; export/intra-community/outside-scope have no
 // equivalent and would reach the wire outside the codelist (F-LIB309).
 func vatCategoryHasOIOUBLMapping(val any) bool {
-	var combo *tax.Combo
-	switch c := val.(type) {
-	case *tax.Combo:
-		combo = c
-	case tax.Combo:
-		combo = &c
-	default:
-		return true
-	}
+	combo := extractCombo(val)
 	if combo == nil || combo.Category != tax.CategoryVAT {
 		return true
 	}
@@ -321,13 +300,8 @@ func invoiceWithLineOrderRef(val any) bool {
 }
 
 func quantityNonZero(val any) bool {
-	switch a := val.(type) {
-	case num.Amount:
-		return !a.IsZero()
-	case *num.Amount:
-		return a == nil || !a.IsZero()
-	}
-	return true
+	a := extractAmount(val)
+	return a == nil || !a.IsZero()
 }
 
 // amountPositive backs the allowance, charge and advance amount rules: OIOUBL
@@ -335,13 +309,8 @@ func quantityNonZero(val any) bool {
 // cbc:PaidAmount on a cac:PrepaidPayment (F-LIB013). Rejecting zero is safe —
 // corrections are modelled as credit notes, so negative line amounts don't arise.
 func amountPositive(val any) bool {
-	switch a := val.(type) {
-	case num.Amount:
-		return a.IsPositive()
-	case *num.Amount:
-		return a == nil || a.IsPositive()
-	}
-	return true
+	a := extractAmount(val)
+	return a == nil || a.IsPositive()
 }
 
 func deliveryReceiverWithoutLocationData(val any) bool {
@@ -359,6 +328,29 @@ func deliveryReceiverWithoutLocationData(val any) bool {
 
 func neverTrue(any) bool {
 	return false
+}
+
+// extractCombo and extractAmount unwrap the value/pointer forms GOBL passes to a
+// rule test into a single pointer (nil when the value is neither), so the
+// predicates can share one nil-tolerant path instead of repeating the type switch.
+func extractCombo(val any) *tax.Combo {
+	switch c := val.(type) {
+	case *tax.Combo:
+		return c
+	case tax.Combo:
+		return &c
+	}
+	return nil
+}
+
+func extractAmount(val any) *num.Amount {
+	switch a := val.(type) {
+	case num.Amount:
+		return &a
+	case *num.Amount:
+		return a
+	}
+	return nil
 }
 
 // firstPersonHasIdentityCode reports whether the first contact person carries an
@@ -430,15 +422,7 @@ func firstCreditTransfer(instr *pay.Instructions) *pay.CreditTransfer {
 // greater than zero. OIOUBL rejects StandardRated with a zero or absent percent
 // (F-LIB382).
 func standardRatedHasPositivePercent(val any) bool {
-	var combo *tax.Combo
-	switch c := val.(type) {
-	case *tax.Combo:
-		combo = c
-	case tax.Combo:
-		combo = &c
-	default:
-		return true
-	}
+	combo := extractCombo(val)
 	if combo == nil || combo.Key != tax.KeyStandard {
 		return true
 	}
@@ -595,19 +579,8 @@ func paymentIDInvalidFor(val any, code cbc.Code, allowed []cbc.Code) bool {
 }
 
 func roundingInRange(val any) bool {
-	var a num.Amount
-	switch v := val.(type) {
-	case num.Amount:
-		a = v
-	case *num.Amount:
-		if v == nil {
-			return true
-		}
-		a = *v
-	default:
-		return true
-	}
-	return a.Compare(roundingMin) >= 0 && a.Compare(roundingMax) <= 0
+	a := extractAmount(val)
+	return a == nil || (a.Compare(roundingMin) >= 0 && a.Compare(roundingMax) <= 0)
 }
 
 func totalsNonNegative(val any) bool {
