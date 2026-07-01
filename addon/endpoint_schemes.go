@@ -16,8 +16,8 @@ const (
 
 // endpointSchemes maps the Danish ISO 6523 ICDs to their symbolic OIOUBL
 // EndpointID schemeID (F-LIB179) — the only schemes derived automatically. A
-// foreign participant carries its scheme explicitly via the
-// dk-oioubl-address-scheme extension, so the foreign EAS codes are not listed.
+// foreign participant carries its scheme explicitly in the endpoint URI, so
+// the foreign EAS codes are not listed.
 // This is the single source of the codelist; the converter holds none of it and
 // goes through SchemeForICD / ICDForScheme instead.
 var endpointSchemes = map[string]string{

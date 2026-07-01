@@ -76,7 +76,7 @@ func billInvoiceRules() *rules.Set {
 		),
 		rules.Field("tax",
 			rules.Field("ext",
-				rules.AssertIfPresent("31", "document type must be an OIOUBL-supported code: invoice 325/380/393 or credit note 381 (F-INV011 / F-CRN011)",
+				rules.AssertIfPresent("31", "document type must be an OIOUBL-supported code: invoice 325/380/393 or credit note 381 (F-INV011)",
 					tax.ExtensionsHasCodes(untdid.ExtKeyDocumentType, validDocumentTypes...)),
 			),
 		),
