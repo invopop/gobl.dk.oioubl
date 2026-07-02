@@ -37,7 +37,7 @@ func testInvoiceStandard(t *testing.T) *bill.Invoice {
 				Code:    "12345674",
 			},
 			Inboxes: []*org.Inbox{
-				{Scheme: "0184", Code: "12345674"},
+				{Scheme: "DK:CVR", Code: "12345674"},
 			},
 			Addresses: []*org.Address{
 				{Number: "1", Street: "Hovedgaden", Locality: "København", Code: "1000", Country: "DK"},
@@ -50,7 +50,7 @@ func testInvoiceStandard(t *testing.T) *bill.Invoice {
 				Code:    "88146328",
 			},
 			Inboxes: []*org.Inbox{
-				{Scheme: "0184", Code: "88146328"},
+				{Scheme: "DK:CVR", Code: "88146328"},
 			},
 			People: []*org.Person{
 				{

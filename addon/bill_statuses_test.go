@@ -76,7 +76,7 @@ func TestStatusValidation(t *testing.T) {
 	t.Run("inbox-only supplier still passes (pre-endpoint documents)", func(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Supplier.Endpoints = nil
-		st.Supplier.Inboxes = []*org.Inbox{{Scheme: "0184", Code: "88146328"}}
+		st.Supplier.Inboxes = []*org.Inbox{{Scheme: "DK:CVR", Code: "88146328"}}
 		require.NoError(t, st.Calculate())
 		assert.NoError(t, rules.Validate(st))
 	})

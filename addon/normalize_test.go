@@ -92,7 +92,7 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		inv.Payment = bankPayment()
 		require.NoError(t, inv.Calculate())
 		require.Len(t, inv.Supplier.Endpoints, 1)
-		assert.Equal(t, "urn:oioubl:scheme:endpointid-1.1::DK:CVR:12345674", inv.Supplier.Endpoints[0].URI.String())
+		assert.Equal(t, "DK:CVR:12345674", inv.Supplier.Endpoints[0].URI.String())
 		assert.Empty(t, inv.Supplier.Inboxes, "no Peppol endpoint URI is fabricated; the deprecated inbox is not used")
 		require.NoError(t, rules.Validate(inv), "a bare DK party should validate via the derived participant")
 	})
@@ -104,7 +104,7 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		require.NoError(t, inv.Calculate())
 		assert.Empty(t, inv.Supplier.Inboxes, "the deprecated inbox is migrated away")
 		require.Len(t, inv.Supplier.Endpoints, 1, "the inbox becomes the participant endpoint")
-		assert.Equal(t, "urn:oioubl:scheme:endpointid-1.1::DK:SE:12345678", inv.Supplier.Endpoints[0].URI.String(),
+		assert.Equal(t, "DK:SE:12345678", inv.Supplier.Endpoints[0].URI.String(),
 			"an explicit DK:SE participant wins over the derived CVR")
 	})
 
