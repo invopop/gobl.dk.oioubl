@@ -110,9 +110,13 @@ var extensions = []*cbc.Definition{
 		},
 		Desc: i18n.String{
 			i18n.EN: here.Doc(`
-				The OIOUBL ` + "`cbc:ReminderSequenceNumeric`" + `, the 1-based position
-				of this reminder within the dunning sequence (the first reminder is 1,
-				the second 2, and so on). Required by F-REM007.
+				How many times this bill has been reminded, emitted as the OIOUBL
+				cbc:ReminderSequenceNumeric. A reminder (a bill.Payment tagged advis)
+				restates an unpaid invoice, and OIOUBL records its position in the dunning
+				sequence: 1 for the first reminder, 2 for the second, and so on. The count
+				is stateful — it depends on how many prior reminders were sent, not on
+				anything in the document — so it has no native GOBL field and must be
+				supplied here. Mandatory on every reminder (F-REM007); a positive integer.
 			`),
 		},
 		Pattern: `^[0-9]+$`,
