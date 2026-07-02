@@ -50,14 +50,6 @@ func TestNormalizeExemptToZeroRated(t *testing.T) {
 // EN 16931's exemption-reason requirement is relaxed: OIOUBL 2.1 has no exempt
 // category (exempt is reported as ZeroRated, which requires no reason), so a
 // VAT-exempt line with neither a VATEX code nor an exemption note validates.
-func TestNormalizeExemptNeedsNoReason(t *testing.T) {
-	inv := testInvoiceStandard(t)
-	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2)
-	inv.Lines[0].Taxes = tax.Set{{Category: "VAT", Key: tax.KeyExempt}}
-	inv.Payment = bankPayment()
-	require.NoError(t, inv.Calculate())
-	assert.NoError(t, rules.Validate(inv))
-}
 
 // TestNormalizeReverseChargeNeedsNoReason confirms the same relaxation for
 // reverse-charge: OIOUBL reports it as the ReverseCharge category, which carries

@@ -2,6 +2,7 @@ package addon
 
 import (
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/catalogues/cef"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/currency"
@@ -61,11 +62,12 @@ func positiveAmountRule(id rules.Code, msg string) rules.Def {
 // (covers both invoices and credit notes).
 func billInvoiceRules() *rules.Set {
 	return rules.For(new(bill.Invoice),
-		// OIOUBL relaxes EN 16931 
+		// Relax the EN 16931 carve-outs OIOUBL's schematron doesn't require
+		// (BR-CO-25 payment means/terms). BR-E-10 stays enforced, via rule 39.
 		rules.Ignore(
 			"GOBL-EU-EN16931-BILL-INVOICE-06", // BR-CO-25: payment details required
 			"GOBL-EU-EN16931-BILL-INVOICE-07", // BR-CO-25: payment terms required
-			"GOBL-EU-EN16931-BILL-INVOICE-08", // BR-E-10: exemption reason required
+			"GOBL-EU-EN16931-BILL-INVOICE-08", // BR-E-10: re-enforced by rule 39
 		),
 		rules.Field("code",
 			rules.Assert("05", "invoice code is required (F-INV009 / F-CRN006)", is.Present),
@@ -113,6 +115,10 @@ func billInvoiceRules() *rules.Set {
 				rules.Assert("38", "a foreign-currency document requires an exchange rate to the regime currency (DKK) so VAT is stated in the national currency per EU VAT Directive 2006/112/EC art. 230 (F-INV018 / F-CRN013)", is.Func("never", neverTrue)),
 			),
 		),
+		// exempt maps to ZeroRated, so it needs a VATEX reason
+		// (cbc:TaxExemptionReasonCode) to stay distinct from a true zero-rated line.
+		forbidWhen("exempt VAT category without a CEF VATEX exemption reason", exemptVATMissingReason,
+			"39", "an exempt VAT category requires a CEF VATEX exemption reason for the OIOUBL cbc:TaxExemptionReasonCode (BR-E-10)"),
 		rules.Field("totals",
 			rules.Field("rounding",
 				rules.AssertIfPresent("08", "rounding must be between -10.00 and 10.00 (F-INV338 / F-CRN208)", is.Func("in rounding range", roundingInRange)),
@@ -317,6 +323,27 @@ func invoiceHasStandardRatedVAT(inv *bill.Invoice) bool {
 		}
 		for _, r := range cat.Rates {
 			if r.Key == tax.KeyStandard {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// exemptVATMissingReason reports whether the invoice carries an exempt VAT combo
+// with no CEF VATEX exemption reason. Keyed on the GOBL exempt key (not the UNTDID
+// tax-category marker, which normalizeTaxCombo strips) so it holds for OIOUBL.
+func exemptVATMissingReason(val any) bool {
+	inv, ok := val.(*bill.Invoice)
+	if !ok || inv == nil || inv.Totals == nil || inv.Totals.Taxes == nil {
+		return false
+	}
+	for _, cat := range inv.Totals.Taxes.Categories {
+		if cat.Code != tax.CategoryVAT {
+			continue
+		}
+		for _, r := range cat.Rates {
+			if r.Key == tax.KeyExempt && r.Ext.Get(cef.ExtKeyVATEX).IsEmpty() {
 				return true
 			}
 		}
