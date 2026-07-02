@@ -1,0 +1,595 @@
+package dkoioubl
+
+import (
+	"fmt"
+	"strings"
+
+	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
+	"github.com/invopop/gobl/catalogues/iso"
+	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/l10n"
+	"github.com/invopop/gobl/org"
+)
+
+// SupplierParty represents the supplier party in a transaction
+type SupplierParty struct {
+	Party *Party `xml:"cac:Party"`
+}
+
+// CustomerParty represents the customer party in a transaction
+type CustomerParty struct {
+	Party *Party `xml:"cac:Party"`
+}
+
+// Party represents a party involved in a transaction
+type Party struct {
+	EndpointID          *EndpointID       `xml:"cbc:EndpointID"`
+	PartyIdentification []Identification  `xml:"cac:PartyIdentification"`
+	PartyName           *PartyName        `xml:"cac:PartyName"`
+	PostalAddress       *PostalAddress    `xml:"cac:PostalAddress"`
+	PartyTaxScheme      []PartyTaxScheme  `xml:"cac:PartyTaxScheme"`
+	PartyLegalEntity    *PartyLegalEntity `xml:"cac:PartyLegalEntity"`
+	Contact             *Contact          `xml:"cac:Contact"`
+}
+
+// EndpointID represents an endpoint identifier
+type EndpointID struct {
+	SchemeID string `xml:"schemeID,attr"`
+	Value    string `xml:",chardata"`
+}
+
+// Identification represents an identification
+type Identification struct {
+	ID *IDType `xml:"cbc:ID"`
+}
+
+// PartyName represents the name of a party
+type PartyName struct {
+	Name string `xml:"cbc:Name"`
+}
+
+// PostalAddress represents a postal address
+type PostalAddress struct {
+	ID                   *IDType             `xml:"cbc:ID,omitempty"`
+	AddressFormatCode    *IDType             `xml:"cbc:AddressFormatCode"`
+	Postbox              *string             `xml:"cbc:Postbox,omitempty"`
+	StreetName           *string             `xml:"cbc:StreetName"`
+	AdditionalStreetName *string             `xml:"cbc:AdditionalStreetName"`
+	BuildingNumber       *string             `xml:"cbc:BuildingNumber,omitempty"`
+	PlotIdentification   *string             `xml:"cbc:PlotIdentification,omitempty"`
+	CitySubdivisionName  *string             `xml:"cbc:CitySubdivisionName,omitempty"`
+	CityName             *string             `xml:"cbc:CityName"`
+	PostalZone           *string             `xml:"cbc:PostalZone"`
+	CountrySubentity     *string             `xml:"cbc:CountrySubentity"`
+	Region               *string             `xml:"cbc:Region,omitempty"`
+	District             *string             `xml:"cbc:District,omitempty"`
+	AddressLine          []AddressLine       `xml:"cac:AddressLine"`
+	Country              *Country            `xml:"cac:Country"`
+	LocationCoordinate   *LocationCoordinate `xml:"cac:LocationCoordinate"`
+}
+
+// LocationCoordinate represents a location coordinate
+type LocationCoordinate struct {
+	LatitudeDegreesMeasure  *string `xml:"cbc:LatitudeDegreesMeasure"`
+	LatitudeMinutesMeasure  *string `xml:"cbc:LatitudeMinutesMeasure"`
+	LongitudeDegreesMeasure *string `xml:"cbc:LongitudeDegreesMeasure"`
+	LongitudeMinutesMeasure *string `xml:"cbc:LongitudeMinutesMeasure"`
+}
+
+// AddressLine represents a line in an address
+type AddressLine struct {
+	Line string `xml:"cbc:Line"`
+}
+
+// Country represents a country
+type Country struct {
+	IdentificationCode string `xml:"cbc:IdentificationCode"`
+}
+
+// PartyTaxScheme represents a party's tax scheme
+type PartyTaxScheme struct {
+	CompanyID *IDType    `xml:"cbc:CompanyID"`
+	TaxScheme *TaxScheme `xml:"cac:TaxScheme"`
+}
+
+// TaxScheme represents a tax scheme
+type TaxScheme struct {
+	ID          IDType  `xml:"cbc:ID"`
+	Name        *string `xml:"cbc:Name"`
+	TaxTypeCode *IDType `xml:"cbc:TaxTypeCode,omitempty"`
+}
+
+// PartyLegalEntity represents the legal entity of a party
+type PartyLegalEntity struct {
+	RegistrationName *string `xml:"cbc:RegistrationName"`
+	CompanyID        *IDType `xml:"cbc:CompanyID"`
+	CompanyLegalForm *string `xml:"cbc:CompanyLegalForm"`
+}
+
+// Contact represents contact information
+type Contact struct {
+	ID             *string `xml:"cbc:ID"`
+	Name           *string `xml:"cbc:Name"`
+	Telephone      *string `xml:"cbc:Telephone"`
+	ElectronicMail *string `xml:"cbc:ElectronicMail"`
+}
+
+// CountryCode tries to determine the most appropriate tax country code
+// for the party.
+func (p *Party) CountryCode() string {
+	if pa := p.PostalAddress; pa != nil {
+		if c := pa.Country; c != nil {
+			return c.IdentificationCode
+		}
+	}
+	return ""
+}
+
+func newParty(party *org.Party) *Party {
+	if party == nil {
+		return nil
+	}
+	p := &Party{
+		PostalAddress: newAddress(party.Addresses),
+	}
+	if party.Name != "" {
+		p.PartyName = &PartyName{Name: party.Name}
+		p.PartyLegalEntity = &PartyLegalEntity{RegistrationName: &party.Name}
+	}
+	addPartyTaxScheme(p, party)
+	p.Contact = newPartyContact(party)
+	addPartyEndpoint(p, party)
+	if party.Alias != "" {
+		p.PartyName = &PartyName{Name: party.Alias}
+	}
+	addPartyIdentities(p, party)
+	return p
+}
+
+// addPartyTaxScheme maps the party's primary tax identity to a PartyTaxScheme and
+// stamps its country onto the postal address.
+func addPartyTaxScheme(p *Party, party *org.Party) {
+	tID := party.TaxID
+	if tID == nil || tID.Code == "" {
+		return
+	}
+	code := tID.String()
+	// Norwegian VAT numbers require the MVA suffix on the wire
+	// (PEPPOL-EN16931 NO-R-001), which GOBL normalization may strip.
+	if tID.Country.Code() == l10n.NO && !strings.HasSuffix(code, "MVA") {
+		code += "MVA"
+	}
+	id := tID.GetScheme()
+	if id == cbc.CodeEmpty {
+		id = TaxSchemeVAT
+	}
+	p.PartyTaxScheme = []PartyTaxScheme{{
+		CompanyID: &IDType{Value: code},
+		TaxScheme: &TaxScheme{ID: IDType{Value: id.String()}},
+	}}
+	// Override the company address's country code.
+	if p.PostalAddress == nil {
+		p.PostalAddress = new(PostalAddress)
+	}
+	p.PostalAddress.Country = &Country{IdentificationCode: tID.Country.String()}
+}
+
+// newPartyContact builds the cac:Contact from the party's emails, phones and
+// first person, returning nil when none are present. The mandatory cbc:ID
+// (F-INV051) is sourced from the person's identity rather than fabricated.
+func newPartyContact(party *org.Party) *Contact {
+	contact := &Contact{}
+	if len(party.Emails) > 0 {
+		contact.ElectronicMail = &party.Emails[0].Address
+	}
+	if len(party.Telephones) > 0 {
+		contact.Telephone = &party.Telephones[0].Number
+	}
+	if len(party.People) > 0 {
+		if n := contactName(party.People[0].Name); n != "" {
+			contact.Name = &n
+		}
+		if ids := party.People[0].Identities; len(ids) > 0 && ids[0].Code != "" {
+			code := ids[0].Code.String()
+			contact.ID = &code
+		}
+	}
+	if contact.Name == nil && contact.Telephone == nil && contact.ElectronicMail == nil && contact.ID == nil {
+		return nil
+	}
+	return contact
+}
+
+// addPartyEndpoint derives the cbc:EndpointID. The participant scheme and code
+// are carried in the OIOUBL endpoint URI and emitted 1:1; a party without one
+// falls back to the first inbox using its raw scheme.
+func addPartyEndpoint(p *Party, party *org.Party) {
+	for _, ep := range party.Endpoints {
+		if ep == nil {
+			continue
+		}
+		if scheme, value, ok := oioubl.ParseOIOUBLEndpoint(ep.URI.String()); ok {
+			p.EndpointID = &EndpointID{SchemeID: scheme.String(), Value: value.String()}
+			break
+		}
+	}
+	if p.EndpointID == nil && len(party.Inboxes) > 0 {
+		ib := party.Inboxes[0]
+		if ib.Email != "" {
+			p.EndpointID = &EndpointID{SchemeID: SchemeIDEmail, Value: ib.Email}
+		} else if ib.Scheme != "" {
+			p.EndpointID = &EndpointID{SchemeID: ib.Scheme.String(), Value: ib.Code.String()}
+		}
+	}
+}
+
+// addPartyIdentities classifies the party identities: the first legal-scope one
+// becomes PartyLegalEntity.CompanyID, tax-scope ones become additional
+// PartyTaxScheme entries, and the rest become PartyIdentification entries.
+func addPartyIdentities(p *Party, party *org.Party) {
+	firstLegalIdx := -1
+	for i, id := range party.Identities {
+		if id.Scope != org.IdentityScopeLegal {
+			continue
+		}
+		if p.PartyLegalEntity == nil {
+			p.PartyLegalEntity = &PartyLegalEntity{}
+		}
+		p.PartyLegalEntity.CompanyID = &IDType{Value: id.Code.String()}
+		if s := id.Ext.Get(iso.ExtKeySchemeID).String(); s != "" {
+			p.PartyLegalEntity.CompanyID.SchemeID = &s
+		}
+		firstLegalIdx = i
+		break
+	}
+	for _, id := range party.Identities {
+		if id.Scope != org.IdentityScopeTax {
+			continue
+		}
+		companyID := &IDType{Value: id.Code.String()}
+		if s := id.Ext.Get(iso.ExtKeySchemeID).String(); s != "" {
+			companyID.SchemeID = &s
+		}
+		p.PartyTaxScheme = append(p.PartyTaxScheme, PartyTaxScheme{
+			CompanyID: companyID,
+			TaxScheme: &TaxScheme{ID: IDType{Value: id.Type.String()}},
+		})
+	}
+	for i, id := range party.Identities {
+		if (id.Scope == org.IdentityScopeLegal && i == firstLegalIdx) || id.Scope == org.IdentityScopeTax {
+			continue
+		}
+		idType := &IDType{Value: id.Code.String()}
+		if s := id.Ext.Get(iso.ExtKeySchemeID).String(); s != "" {
+			idType.SchemeID = &s
+		} else if id.Ext.IsZero() {
+			if t := id.Type.String(); t != "" {
+				idType.SchemeID = &t
+			}
+		}
+		p.PartyIdentification = append(p.PartyIdentification, Identification{ID: idType})
+	}
+}
+
+// newDeliveryParty creates a Party structure for delivery parties
+// according to UBL rules:
+//   - UBL-CR-394: A UBL invoice should not include the DeliveryParty PostalAddress
+//     (it's already in DeliveryLocation)
+func newDeliveryParty(party *org.Party) *Party {
+	if party == nil {
+		return nil
+	}
+
+	p := &Party{}
+	hasContent := false
+
+	// Only add PartyName if name is not empty
+	if party.Name != "" {
+		p.PartyName = &PartyName{
+			Name: party.Name,
+		}
+		// Only add PartyLegalEntity if name is not empty
+		p.PartyLegalEntity = &PartyLegalEntity{
+			RegistrationName: &party.Name,
+		}
+		hasContent = true
+	}
+
+	// Note: Intentionally NOT including PostalAddress per UBL-CR-394
+	// The address is already in DeliveryLocation
+
+	contact := &Contact{}
+
+	if len(party.Emails) > 0 {
+		contact.ElectronicMail = &party.Emails[0].Address
+	}
+
+	if len(party.Telephones) > 0 {
+		contact.Telephone = &party.Telephones[0].Number
+	}
+
+	if len(party.People) > 0 {
+		n := contactName(party.People[0].Name)
+		if n != "" {
+			contact.Name = &n
+		}
+	}
+
+	if contact.Name != nil || contact.Telephone != nil || contact.ElectronicMail != nil {
+		p.Contact = contact
+		hasContent = true
+	}
+
+	// Return nil if party would be completely empty to avoid empty XML elements
+	if !hasContent {
+		return nil
+	}
+
+	return p
+}
+
+// newPayeeParty creates a minimal Party structure for the Payee
+// according to UBL rules which state:
+// - BR-17: The Payee name shall be provided
+// - UBL-SR-20: Payee identifier shall occur maximum once
+// - UBL-CR-272: A UBL invoice should not include the PayeeParty PostalAddress
+// - UBL-CR-275: A UBL invoice should not include the PayeeParty PartyLegalEntity RegistrationName
+func newPayeeParty(party *org.Party) *Party {
+	if party == nil {
+		return nil
+	}
+	p := &Party{
+		PartyName: &PartyName{
+			Name: party.Name,
+		},
+	}
+
+	// Add only the first identity with a valid scheme as PartyIdentification (UBL-SR-20: maximum once)
+	// Prefer identities with Ext[iso.ExtKeySchemeID] or 4-digit labels (ISO 6523 ICD codes)
+	if len(party.Identities) > 0 {
+		for _, id := range party.Identities {
+			var schemeID *string
+			// First check if there's an explicit scheme in Ext
+			if s := id.Ext.Get(iso.ExtKeySchemeID).String(); s != "" {
+				schemeID = &s
+			}
+			// If no Ext scheme, check if label looks like a valid ICD code (4 digits)
+			if schemeID == nil && id.Label != "" && len(id.Label) == 4 {
+				// Assume 4-digit labels are ISO 6523 ICD codes
+				schemeID = &id.Label
+			}
+			// Only add the identity if we have a valid scheme
+			if schemeID != nil {
+				code := id.Code.String()
+				p.PartyIdentification = []Identification{
+					{ID: &IDType{
+						Value:    code,
+						SchemeID: schemeID,
+					}},
+				}
+				break
+			}
+		}
+	}
+
+	// Only add PartyLegalEntity if there's a legal identity, but without RegistrationName
+	for _, id := range party.Identities {
+		if id.Scope == org.IdentityScopeLegal {
+			code := id.Code.String()
+			p.PartyLegalEntity = &PartyLegalEntity{
+				CompanyID: &IDType{
+					Value: code,
+				},
+			}
+			if s := id.Ext.Get(iso.ExtKeySchemeID).String(); s != "" {
+				p.PartyLegalEntity.CompanyID.SchemeID = &s
+			}
+			break
+		}
+	}
+
+	return p
+}
+
+// newAddressFormatCode builds the cbc:AddressFormatCode (codelist
+// addressformatcode-1.1) required on every OIOUBL address (F-LIB025).
+func newAddressFormatCode(value string) *IDType {
+	return &IDType{
+		ListID:       ptr(listAddressFormat),
+		ListAgencyID: ptr(agencyID),
+		Value:        value,
+	}
+}
+
+// OIOUBL addressformatcode-1.1 values. Outbound the converter always emits
+// StructuredLax (it imposes no mandatory sub-fields); StructuredID is recognized
+// when parsing an inbound identifier-only address.
+const (
+	addressStructuredLax = "StructuredLax"
+	addressStructuredID  = "StructuredID"
+)
+
+func newAddress(addresses []*org.Address) *PostalAddress {
+	if len(addresses) == 0 {
+		return nil
+	}
+	// Only return the first a
+	a := addresses[0]
+
+	addr := &PostalAddress{}
+
+	// Every OIOUBL address needs an AddressFormatCode (F-LIB025). Stamping it
+	// here covers delivery and payee addresses too, not just the supplier and
+	// customer handled by applyParty.
+	addr.AddressFormatCode = newAddressFormatCode(addressStructuredLax)
+	// OIOUBL keeps the street number and PO box in their own elements when
+	// GOBL provides them; under StructuredLax these are emitted but not
+	// required, so an inline street number is preserved as-is in StreetName.
+	if a.Street != "" {
+		addr.StreetName = &a.Street
+	}
+	if a.Number != "" {
+		addr.BuildingNumber = &a.Number
+	}
+	if a.PostOfficeBox != "" {
+		addr.Postbox = &a.PostOfficeBox
+	}
+
+	if a.StreetExtra != "" {
+		l := a.LineTwo()
+		addr.AdditionalStreetName = &l
+	}
+
+	if a.Locality != "" {
+		addr.CityName = &a.Locality
+	}
+
+	if a.Region != "" {
+		addr.CountrySubentity = &a.Region
+	}
+
+	if a.Code != cbc.CodeEmpty {
+		code := a.Code.String()
+		addr.PostalZone = &code
+	}
+
+	if a.Block != "" {
+		addr.PlotIdentification = &a.Block
+	}
+
+	if a.Country != "" {
+		addr.Country = &Country{IdentificationCode: string(a.Country)}
+	}
+
+	// OIOUBL forbids cac:LocationCoordinate on an address (F-LIB212), so
+	// coordinates are never emitted.
+
+	return addr
+}
+
+func contactName(n *org.Name) string {
+	given := n.Given
+	surname := n.Surname
+
+	if given == "" && surname == "" {
+		return ""
+	}
+	if given == "" {
+		return surname
+	}
+	if surname == "" {
+		return given
+	}
+
+	return fmt.Sprintf("%s %s", given, surname)
+}
+
+// OIOUBL symbolic schemes (F-LIB179), defined by the dk-oioubl addon (the single
+// source of truth).
+const (
+	schemeDKCVR = oioubl.SchemeDKCVR
+	schemeDKSE  = oioubl.SchemeDKSE
+	schemeZZZ   = oioubl.SchemeZZZ
+)
+
+// dkPrefixed adds the "DK" country prefix the OIOUBL schematron mandates on
+// DK:CVR/DK:SE identifier values (F-LIB180/F-LIB184), only when absent.
+func dkPrefixed(value string) string {
+	if strings.HasPrefix(value, "DK") {
+		return value
+	}
+	return "DK" + value
+}
+
+// applyCompanyID stamps a CompanyID's OIOUBL scheme: a Danish party gets the
+// given Danish scheme with the DK-prefixed value the schematron mandates
+// (F-LIB190/196); a foreign party gets the "other" scheme ZZZ with its value left
+// as-is, since forcing a DK scheme + prefix onto a foreign identifier is wire-fatal.
+// A nil CompanyID is ignored.
+func applyCompanyID(id *IDType, danishScheme string, danish bool) {
+	if id == nil {
+		return
+	}
+	if danish {
+		id.SchemeID = &danishScheme
+		id.Value = dkPrefixed(id.Value)
+		return
+	}
+	scheme := schemeZZZ
+	id.SchemeID = &scheme
+}
+
+// applyParty rewrites an assembled party into OIOUBL 2.1 form: symbolic
+// endpoint scheme + DK-prefixed CVR (F-LIB179/F-LIB180), a fallback PartyName,
+// the StructuredLax address format, and the DK:SE/DK:CVR company-ID schemes.
+func applyParty(p *Party) {
+	if p == nil {
+		return
+	}
+	if p.EndpointID != nil && p.EndpointID.SchemeID == schemeDKCVR {
+		// OIOUBL CVR endpoints must carry the DK-prefixed form (F-LIB180).
+		p.EndpointID.Value = dkPrefixed(p.EndpointID.Value)
+	}
+	if p.PartyName == nil && len(p.PartyIdentification) == 0 {
+		if p.PartyLegalEntity != nil && p.PartyLegalEntity.RegistrationName != nil {
+			p.PartyName = &PartyName{
+				Name: *p.PartyLegalEntity.RegistrationName,
+			}
+		}
+	}
+	if p.PostalAddress != nil && p.PostalAddress.AddressFormatCode == nil {
+		// Covers a party that has a tax identity but no address (newAddress
+		// returns nil, so the bare PostalAddress is created without a format code).
+		p.PostalAddress.AddressFormatCode = newAddressFormatCode(addressStructuredLax)
+	}
+	danish := partyIsDanish(p)
+	for i := range p.PartyTaxScheme {
+		pts := &p.PartyTaxScheme[i]
+		applyCompanyID(pts.CompanyID, schemeDKSE, danish)
+		applyTaxScheme(pts.TaxScheme)
+	}
+	if p.PartyLegalEntity != nil {
+		applyCompanyID(p.PartyLegalEntity.CompanyID, schemeDKCVR, danish)
+	}
+	applyPartyIdentifications(p)
+}
+
+// applyTaxRepParty drops the elements OIOUBL forbids on a
+// cac:TaxRepresentativeParty (EndpointID, PartyIdentification, PartyLegalEntity,
+// Contact) and runs the standard OIOUBL party pass on what remains.
+func applyTaxRepParty(p *Party) {
+	if p == nil {
+		return
+	}
+	p.EndpointID = nil
+	p.PartyIdentification = nil
+	p.PartyLegalEntity = nil
+	p.Contact = nil
+	applyParty(p)
+}
+
+// applyPartyIdentifications DK-prefixes DK:CVR/DK:SE PartyIdentification
+// values (F-LIB184), mirroring the company-ID handling. Schemes are expected to
+// be OIOUBL-symbolic already (F-LIB183); an ISO 6523 identifier must be supplied
+// pre-formatted as an OIOUBL scheme.
+func applyPartyIdentifications(p *Party) {
+	for i := range p.PartyIdentification {
+		id := p.PartyIdentification[i].ID
+		if id == nil || id.SchemeID == nil {
+			continue
+		}
+		if s := *id.SchemeID; s == schemeDKCVR || s == schemeDKSE {
+			id.Value = dkPrefixed(id.Value)
+		}
+	}
+}
+
+// partyIsDanish reports whether an assembled OIOUBL party is Danish, the signal
+// that decides DK:SE/DK:CVR vs the ZZZ "other" scheme. newParty stamps the tax
+// identity's country onto the postal address, so the country code is the
+// reliable marker even when an identifier value carries no country prefix.
+func partyIsDanish(p *Party) bool {
+	return p.PostalAddress != nil &&
+		p.PostalAddress.Country != nil &&
+		p.PostalAddress.Country.IdentificationCode == "DK"
+}
