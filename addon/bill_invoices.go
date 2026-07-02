@@ -147,16 +147,6 @@ func billInvoiceRules() *rules.Set {
 					"13", "a credit transfer account (IBAN or number) is required for bank-transfer payment means (F-LIB107 / F-LIB126)"),
 				forbidWhen("iban bank-transfer credit transfer without a BIC", ibanTransferMissingBIC,
 					"18", "a BIC is required on the credit transfer for IBAN bank-transfer payment means 30/31 (F-LIB113)"),
-				forbidWhen("giro payment means without a valid OIOUBL payment id", giroPaymentIDInvalid,
-					"14", "Giro (payment-means 50) requires a dk-oioubl-payment-id of 01, 04 or 15 (F-LIB144 / F-LIB147)"),
-				forbidWhen("fik payment means without a valid OIOUBL payment id", fikPaymentIDInvalid,
-					"15", "FIK (payment-means 93) requires a dk-oioubl-payment-id of 71, 73 or 75 (F-LIB152)"),
-				forbidWhen("structured giro/fik payment id without a valid reference", structuredPaymentRefInvalid,
-					"23", "structured Giro/FIK payment id (04/15/71/75) requires a numeric payment reference of the required length (F-LIB145 / F-LIB153 / F-LIB156 / F-LIB157 / F-LIB312 / F-LIB336)"),
-				forbidWhen("fik kortart 73 carrying a payment reference", fik73WithReference,
-					"24", "FIK payment id 73 must not carry a payment reference, OIOUBL has no element for it (F-LIB275)"),
-				forbidWhen("giro kortart 01 with an over-long payment reference", giro01ReferenceTooLong,
-					"25", "Giro payment id 01 payment reference must be at most 16 characters (F-LIB149)"),
 				forbidWhen("giro payment means without a 7-8 digit payee account", giroAccountInvalid,
 					"21", "Giro (payment-means 50) requires a 7 or 8 digit payee account (F-LIB319 / F-LIB320 / F-LIB321)"),
 				forbidWhen("fik payment means without an 8-character creditor account", fikAccountInvalid,
@@ -495,13 +485,7 @@ func bankTransferMissingAccount(val any) bool {
 	return ct == nil || (ct.IBAN == "" && ct.Number == "")
 }
 
-func giroPaymentIDInvalid(val any) bool {
-	return paymentIDInvalidFor(val, "50", giroPaymentIDs)
-}
 
-func fikPaymentIDInvalid(val any) bool {
-	return paymentIDInvalidFor(val, "93", fikPaymentIDs)
-}
 
 // giroAccountInvalid reports whether a Giro (payment-means 50) instruction's
 // payee account is missing or not 7-8 numeric digits (F-LIB319/320/321).
@@ -529,68 +513,10 @@ func accountLengthInvalid(val any, code cbc.Code, ok func(string) bool) bool {
 	return ct == nil || !ok(ct.Number)
 }
 
-// structuredPaymentRefInvalid reports whether a structured Giro/FIK kortart (Giro
-// 04/15, FIK 71/75) is missing the numeric cbc:InstructionID reference or has the
-// wrong length: F-LIB145/153 (mandatory), F-LIB312/336 (numeric), F-LIB149 (Giro
-// ≤16), F-LIB156 (FIK 71 = 15), F-LIB157 (FIK 75 = 16). Simple kortart (Giro 01,
-// FIK 73) carry no reference.
-func structuredPaymentRefInvalid(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil {
-		return false
-	}
-	means := instr.Ext.Get(untdid.ExtKeyPaymentMeans)
-	ref := instr.Ref.String()
-	switch instr.Ext.Get(ExtKeyPaymentID) {
-	case "04", "15":
-		return means == "50" && !isNumericOfLen(ref, 1, 16)
-	case "71":
-		return means == "93" && !isNumericOfLen(ref, 15, 15)
-	case "75":
-		return means == "93" && !isNumericOfLen(ref, 16, 16)
-	}
-	return false
-}
 
-// fik73RefForbidden reports whether an OIOUBL payment using FIK kortart 73, which
-// forbids cbc:InstructionID, still carries a payment reference that OIOUBL has
-// nowhere to put (F-LIB275).
-func fik73RefForbidden(ext tax.Extensions, ref string) bool {
-	return ext.Get(untdid.ExtKeyPaymentMeans) == "93" &&
-		ext.Get(ExtKeyPaymentID) == "73" &&
-		ref != ""
-}
 
-// fik73WithReference applies fik73RefForbidden to an invoice payment instruction.
-func fik73WithReference(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil {
-		return false
-	}
-	return fik73RefForbidden(instr.Ext, instr.Ref.String())
-}
 
-// fik73RecordWithReference applies fik73RefForbidden to a reminder payment method.
-func fik73RecordWithReference(val any) bool {
-	m, ok := val.(*pay.Record)
-	if !ok || m == nil {
-		return false
-	}
-	return fik73RefForbidden(m.Ext, m.Ref)
-}
 
-// giro01ReferenceTooLong reports whether a Giro (payment-means 50) instruction
-// using kortart 01 carries a payment reference longer than the 16 characters
-// OIOUBL allows in cbc:InstructionID (F-LIB149).
-func giro01ReferenceTooLong(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil {
-		return false
-	}
-	return instr.Ext.Get(untdid.ExtKeyPaymentMeans) == "50" &&
-		instr.Ext.Get(ExtKeyPaymentID) == "01" &&
-		len(instr.Ref.String()) > 16
-}
 
 // isNumericOfLen reports whether s consists only of ASCII digits and has a
 // length within [minLen, maxLen].
@@ -610,19 +536,6 @@ func isGiroAccountNumber(s string) bool {
 	return isNumericOfLen(s, 7, 8)
 }
 
-// paymentIDInvalidFor reports whether the instruction uses the given OIOUBL
-// payment-means code but lacks a dk-oioubl-payment-id from the allowed set
-// (covering both the mandatory-presence and the codelist checks).
-func paymentIDInvalidFor(val any, code cbc.Code, allowed []cbc.Code) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil {
-		return false
-	}
-	if instr.Ext.Get(untdid.ExtKeyPaymentMeans) != code {
-		return false
-	}
-	return !instr.Ext.Get(ExtKeyPaymentID).In(allowed...)
-}
 
 func roundingInRange(val any) bool {
 	a := extractAmount(val)
