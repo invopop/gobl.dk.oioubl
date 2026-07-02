@@ -26,15 +26,15 @@ func billStatusRules() *rules.Set {
 					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
 				rules.Assert("06", "supplier must have a tax ID or identities (F-APR041)",
 					is.Func("has tax id or identities", partyHasTaxIDOrIdentities)),
-				rules.Assert("07", "supplier must have a name or legal identity (F-LIB022)",
-					is.Func("has name or legal identity", partyHasNameOrLegalIdentity)),
+				rules.Assert("07", "supplier must have a name or identification (F-LIB022)",
+					is.Func("has name or identification", partyHasNameOrIdentification)),
 			),
 			rules.Field("customer",
 				rules.Assert("02", "customer is required for a response", is.Present),
 				rules.Assert("03", "customer must have an endpoint or inbox (F-APR008)",
 					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
-				rules.Assert("08", "customer must have a name or legal identity (F-LIB022)",
-					is.Func("has name or legal identity", partyHasNameOrLegalIdentity)),
+				rules.Assert("08", "customer must have a name or identification (F-LIB022)",
+					is.Func("has name or identification", partyHasNameOrIdentification)),
 			),
 			rules.Field("lines",
 				// An OIOUBL ApplicationResponse carries exactly one Response for one
@@ -87,12 +87,13 @@ func partyHasTaxIDOrIdentities(val any) bool {
 	return p.TaxID != nil || len(p.Identities) > 0
 }
 
-// partyHasNameOrLegalIdentity mirrors what the gobl.ubl converter can turn into
-// a cac:PartyLegalEntity (F-APR040/044/048): a registration name (from the party
-// name) or a CompanyID (from a legal-scope identity). A party carrying only a
-// tax-scope identity and no name produces no PartyLegalEntity and would fail the
-// schematron, so it must be rejected here.
-func partyHasNameOrLegalIdentity(val any) bool {
+// partyHasNameOrIdentification reports whether the gobl.ubl converter can produce
+// a cac:PartyName or cac:PartyIdentification for the party, one of which F-LIB022
+// requires (cac:PartyLegalEntity does not satisfy it). A registration name yields
+// PartyName; an identity that is neither the legal CompanyID nor a tax-scheme
+// identity yields a PartyIdentification. A single legal or a tax identity alone
+// produces only CompanyID/PartyTaxScheme, which F-LIB022 does not accept.
+func partyHasNameOrIdentification(val any) bool {
 	p, ok := val.(*org.Party)
 	if !ok || p == nil {
 		return true
@@ -100,10 +101,21 @@ func partyHasNameOrLegalIdentity(val any) bool {
 	if p.Name != "" {
 		return true
 	}
+	legalSeen := false
 	for _, id := range p.Identities {
-		if id != nil && id.Scope == org.IdentityScopeLegal {
-			return true
+		if id == nil || id.Scope == org.IdentityScopeTax {
+			continue
 		}
+		if id.Scope == org.IdentityScopeLegal {
+			// The first legal-scope identity becomes the CompanyID; a further one
+			// falls through to a PartyIdentification.
+			if legalSeen {
+				return true
+			}
+			legalSeen = true
+			continue
+		}
+		return true
 	}
 	return false
 }

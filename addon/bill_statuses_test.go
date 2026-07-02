@@ -123,10 +123,24 @@ func TestStatusValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "F-LIB022")
 	})
 
-	t.Run("name-less supplier with a legal identity passes", func(t *testing.T) {
+	t.Run("name-less supplier with only a legal identity fails (F-LIB022)", func(t *testing.T) {
+		// A single legal-scope identity becomes cac:PartyLegalEntity/CompanyID, not
+		// a PartyName or PartyIdentification, so it does not satisfy F-LIB022.
 		st := testStatusResponse(t)
 		st.Supplier.Name = ""
 		st.Supplier.Identities = []*org.Identity{{Scope: org.IdentityScopeLegal, Code: "88146328"}}
+		require.NoError(t, st.Calculate())
+		err := rules.Validate(st)
+		assert.ErrorContains(t, err, "F-LIB022")
+	})
+
+	t.Run("name-less supplier with a party-identification identity passes", func(t *testing.T) {
+		// A non-legal, non-tax identity converts to cac:PartyIdentification, which
+		// satisfies F-LIB022 without a name.
+		st := testStatusResponse(t)
+		st.Supplier.Name = ""
+		st.Supplier.TaxID = nil
+		st.Supplier.Identities = []*org.Identity{{Code: "88146328"}}
 		require.NoError(t, st.Calculate())
 		assert.NoError(t, rules.Validate(st))
 	})
