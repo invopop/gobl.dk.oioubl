@@ -13,13 +13,7 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// validPaymentMeansCodes are the UNTDID 4461 means accepted for OIOUBL (F-LIB100).
-// EN 16931's credit-transfer code "30" is absent on purpose: normalizePayInstructions
-// rewrites it to OIOUBL's "31" during calculation, before this rule runs, so the
-// value seen here is always "31". "42" is excluded: OIOUBL settles it via the
-// DK:BANK channel with a branch number + domestic account (F-LIB127/128/131/311),
-// which the converter's IBAN mapping can't produce — re-add once DK:BANK modelling
-// exists.
+
 
 // validDocumentTypes are the UNTDID 1001 codes OIOUBL accepts: {325, 380, 393} on
 // the Invoice root and 381 on the CreditNote (F-INV011 / F-CRN011). en16931 stamps
@@ -27,6 +21,8 @@ import (
 // those are modelled as credit notes.
 var validDocumentTypes = []cbc.Code{"325", "380", "381", "393"}
 
+
+// validPaymentMeansCodes are the UNTDID 4461 means accepted for OIOUBL (F-LIB100).
 var validPaymentMeansCodes = []cbc.Code{
 	"1", "10", "20", "31", "48", "49", "50", "58", "59", "93", "97",
 }
@@ -65,10 +61,7 @@ func positiveAmountRule(id rules.Code, msg string) rules.Def {
 // (covers both invoices and credit notes).
 func billInvoiceRules() *rules.Set {
 	return rules.For(new(bill.Invoice),
-		// OIOUBL relaxes EN 16931 carve-outs that its own schematron does not
-		// require: BR-E-10 needs no exemption reason (OIOUBL has no exempt
-		// category — exempt is reported as ZeroRated), and BR-CO-25 mandates
-		// neither payment means nor terms.
+		// OIOUBL relaxes EN 16931 
 		rules.Ignore(
 			"GOBL-EU-EN16931-BILL-INVOICE-06", // BR-CO-25: payment details required
 			"GOBL-EU-EN16931-BILL-INVOICE-07", // BR-CO-25: payment terms required
@@ -114,12 +107,7 @@ func billInvoiceRules() *rules.Set {
 				rules.Assert("07", "ordering is required when any invoice line has an order reference (F-INV142)", is.Present),
 			),
 		),
-		// EU VAT Directive 2006/112/EC art. 230 requires the VAT amount in the
-		// national currency (DKK). A foreign-currency document makes gobl.ubl emit
-		// cbc:TaxCurrencyCode, which then obliges a
-		// cac:TaxSubtotal/cbc:TransactionCurrencyTaxAmount stating the tax in DKK;
-		// that amount can only be derived from an exchange rate, so without one the
-		// OIOUBL output fails F-INV018 / F-CRN013.
+
 		rules.When(is.Func("foreign currency without an exchange rate to the regime currency", foreignCurrencyMissingExchangeRate),
 			rules.Field("exchange_rates",
 				rules.Assert("38", "a foreign-currency document requires an exchange rate to the regime currency (DKK) so VAT is stated in the national currency per EU VAT Directive 2006/112/EC art. 230 (F-INV018 / F-CRN013)", is.Func("never", neverTrue)),
@@ -130,10 +118,7 @@ func billInvoiceRules() *rules.Set {
 				rules.AssertIfPresent("08", "rounding must be between -10.00 and 10.00 (F-INV338 / F-CRN208)", is.Func("in rounding range", roundingInRange)),
 			),
 		),
-		// F-INV239 / F-CRN158: gobl.ubl emits cac:DeliveryLocation whenever
-		// delivery.receiver is set; the schematron then requires either an ID
-		// (sourced from delivery.identities[0].code) or an Address (sourced
-		// from receiver.addresses).
+
 		rules.Field("delivery",
 			rules.When(is.Func("receiver set without identities or addresses", deliveryReceiverWithoutLocationData),
 				rules.Assert("11", "delivery requires either identities or receiver.addresses (F-INV239 / F-CRN158)", is.Func("never", neverTrue)),
