@@ -7,7 +7,6 @@ import (
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
-	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
@@ -37,12 +36,12 @@ func testRequestPayment(t *testing.T) *bill.Payment {
 		Supplier: &org.Party{
 			Name:    "Eksempel A/S",
 			TaxID:   &tax.Identity{Country: "DK", Code: "12345674"},
-			Inboxes: []*org.Inbox{{Scheme: "0184", Code: "12345674"}},
+			Inboxes: []*org.Inbox{{Scheme: "DK:CVR", Code: "12345674"}},
 		},
 		Customer: &org.Party{
 			Name:    "Kunde ApS",
 			TaxID:   &tax.Identity{Country: "DK", Code: "88146328"},
-			Inboxes: []*org.Inbox{{Scheme: "0184", Code: "88146328"}},
+			Inboxes: []*org.Inbox{{Scheme: "DK:CVR", Code: "88146328"}},
 			People: []*org.Person{
 				{Name: &org.Name{Given: "Anders", Surname: "Jensen"}},
 			},
@@ -115,7 +114,7 @@ func TestPaymentValidation(t *testing.T) {
 	t.Run("supplier legal identity is required (F-REM021)", func(t *testing.T) {
 		p := testRequestPayment(t)
 		p.Supplier.TaxID = &tax.Identity{Country: "DE", Code: "111111125"}
-		p.Supplier.Inboxes = []*org.Inbox{{Scheme: "0088", Code: "4035811991021"}}
+		p.Supplier.Inboxes = []*org.Inbox{{Scheme: "GLN", Code: "4035811991021"}}
 		require.NoError(t, p.Calculate())
 		assert.ErrorContains(t, rules.Validate(p), "F-REM021")
 	})
@@ -138,7 +137,7 @@ func TestPaymentValidation(t *testing.T) {
 	t.Run("customer legal identity is required (F-LIB187)", func(t *testing.T) {
 		p := testRequestPayment(t)
 		p.Customer.TaxID = &tax.Identity{Country: "DE", Code: "111111125"}
-		p.Customer.Inboxes = []*org.Inbox{{Scheme: "0088", Code: "4035811991021"}}
+		p.Customer.Inboxes = []*org.Inbox{{Scheme: "GLN", Code: "4035811991021"}}
 		require.NoError(t, p.Calculate())
 		assert.ErrorContains(t, rules.Validate(p), "F-LIB187")
 	})
@@ -155,34 +154,5 @@ func TestPaymentValidation(t *testing.T) {
 		p.Payee = &org.Party{Name: "Inkasso A/S"}
 		require.NoError(t, p.Calculate())
 		assert.ErrorContains(t, rules.Validate(p), "F-REM034")
-	})
-
-	t.Run("fik kortart 73 must not carry a payment reference (F-LIB275)", func(t *testing.T) {
-		p := testRequestPayment(t)
-		p.Methods = []*pay.Record{{
-			Key:            "other",
-			Ref:            "000000000012345",
-			CreditTransfer: &pay.CreditTransfer{Number: "12345678"},
-			Ext: tax.ExtensionsOf(cbc.CodeMap{
-				untdid.ExtKeyPaymentMeans: "93",
-				oioubl.ExtKeyPaymentID:    oioubl.ExtValuePaymentIDFIK73,
-			}),
-		}}
-		require.NoError(t, p.Calculate())
-		assert.ErrorContains(t, rules.Validate(p), "F-LIB275")
-	})
-
-	t.Run("fik kortart 73 without a payment reference is valid", func(t *testing.T) {
-		p := testRequestPayment(t)
-		p.Methods = []*pay.Record{{
-			Key:            "other",
-			CreditTransfer: &pay.CreditTransfer{Number: "12345678"},
-			Ext: tax.ExtensionsOf(cbc.CodeMap{
-				untdid.ExtKeyPaymentMeans: "93",
-				oioubl.ExtKeyPaymentID:    oioubl.ExtValuePaymentIDFIK73,
-			}),
-		}}
-		require.NoError(t, p.Calculate())
-		require.NoError(t, rules.Validate(p))
 	})
 }

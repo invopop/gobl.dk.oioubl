@@ -10,32 +10,23 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// oioublEndpointScheme is the OIOUBL endpoint-identifier scheme URI, the
-// counterpart to Peppol's iso6523-actorid-upis. Participants are carried as
-// org.Endpoint URIs of the form
-// "urn:oioubl:scheme:endpointid-1.1::<scheme>:<value>" (e.g. DK:CVR:12345674).
-const oioublEndpointScheme = "urn:oioubl:scheme:endpointid-1.1"
-
-// OIOUBLEndpointURI builds the OIOUBL participant endpoint URI for a symbolic
-// scheme and participant code. The value is colon-free (CVR/SE/GLN/IBAN/CPR/…),
-// so the scheme — which may itself contain a colon (DK:CVR) — is recovered on the
-// last colon when reading.
+// OIOUBLEndpointURI builds a NemHandel participant endpoint: the symbolic scheme
+// and code joined by a colon (e.g. "DK:CVR:12345674"). Unlike Peppol's endpoint,
+// this is not a resolvable URI — NemHandel identifies participants by DK:CVR,
+// DK:SE or GLN. The code is colon-free, so the scheme (which may itself contain a
+// colon, e.g. DK:CVR) is recovered on the last colon when reading.
 func OIOUBLEndpointURI(scheme, code string) string {
-	return oioublEndpointScheme + "::" + scheme + ":" + code
+	return scheme + ":" + code
 }
 
-// ParseOIOUBLEndpoint splits an OIOUBL endpoint URI into its symbolic scheme and
-// participant code, returning ok=false for any other URI.
-func ParseOIOUBLEndpoint(uri string) (scheme, code string, ok bool) {
-	rest, found := strings.CutPrefix(uri, oioublEndpointScheme+"::")
-	if !found {
+// ParseOIOUBLEndpoint splits a participant endpoint into its scheme and code on
+// the last colon, returning ok=false for a value without one.
+func ParseOIOUBLEndpoint(uri string) (scheme, code cbc.Code, ok bool) {
+	i := strings.LastIndex(uri, ":")
+	if i <= 0 || i == len(uri)-1 {
 		return "", "", false
 	}
-	i := strings.LastIndex(rest, ":")
-	if i <= 0 || i == len(rest)-1 {
-		return "", "", false
-	}
-	return rest[:i], rest[i+1:], true
+	return cbc.Code(uri[:i]), cbc.Code(uri[i+1:]), true
 }
 
 // normalizeParty resolves a party's NemHandel participant to an org.Endpoint

@@ -4,10 +4,10 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "2775f92d25d5a5b88f0b65326cc53fcd6e8562e616814d129d68256fb00bdf67"
+			"val": "dde055c6410852e7cfb8c50110e3cec71f884264b5176470c7638ed283ee1264"
 		},
-		"from": "urn:oioubl:scheme:endpointid-1.1::DK:CVR:12345674",
-		"to": "urn:oioubl:scheme:endpointid-1.1::DK:CVR:88146328"
+		"from": "DK:CVR:12345674",
+		"to": "DK:CVR:88146328"
 	},
 	"doc": {
 		"$schema": "https://gobl.org/draft-0/bill/invoice",
@@ -41,7 +41,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "urn:oioubl:scheme:endpointid-1.1::DK:CVR:12345674"
+					"uri": "DK:CVR:12345674"
 				}
 			],
 			"addresses": [
@@ -82,7 +82,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "urn:oioubl:scheme:endpointid-1.1::DK:CVR:88146328"
+					"uri": "DK:CVR:88146328"
 				}
 			],
 			"addresses": [

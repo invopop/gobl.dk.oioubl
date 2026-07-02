@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/catalogues/cef"
+	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/tax"
@@ -45,14 +47,24 @@ func TestEN16931CarveOuts(t *testing.T) {
 		}
 	})
 
-	t.Run("exempt without reason skips the exemption rules (BR-E-10)", func(t *testing.T) {
-		// OIOUBL has no exempt tax category (exempt maps to ZeroRated), so the
-		// EN 16931 rules requiring an exemption reason must not fire.
+	t.Run("exempt without a reason is rejected (BR-E-10 kept)", func(t *testing.T) {
+		// exempt maps to OIOUBL ZeroRated, but the exemption reason must accompany
+		// it (emitted as cbc:TaxExemptionReasonCode) so an exempt supply stays
+		// distinguishable from a true zero-rated one — so BR-E-10 is enforced.
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Taxes = tax.Set{{Category: tax.CategoryVAT, Key: tax.KeyExempt}}
 		require.NoError(t, inv.Calculate())
-		if err := rules.Validate(inv); err != nil {
-			assert.NotContains(t, err.Error(), "exempt tax categories require")
-		}
+		assert.ErrorContains(t, rules.Validate(inv), "VATEX exemption reason")
+	})
+
+	t.Run("exempt with a VATEX reason passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Taxes = tax.Set{{
+			Category: tax.CategoryVAT,
+			Key:      tax.KeyExempt,
+			Ext:      tax.ExtensionsOf(cbc.CodeMap{cef.ExtKeyVATEX: "VATEX-EU-132"}),
+		}}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
 	})
 }

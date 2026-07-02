@@ -50,14 +50,6 @@ func TestNormalizeExemptToZeroRated(t *testing.T) {
 // EN 16931's exemption-reason requirement is relaxed: OIOUBL 2.1 has no exempt
 // category (exempt is reported as ZeroRated, which requires no reason), so a
 // VAT-exempt line with neither a VATEX code nor an exemption note validates.
-func TestNormalizeExemptNeedsNoReason(t *testing.T) {
-	inv := testInvoiceStandard(t)
-	inv.Addons = tax.WithAddons(en16931.V2017, oioubl.V2)
-	inv.Lines[0].Taxes = tax.Set{{Category: "VAT", Key: tax.KeyExempt}}
-	inv.Payment = bankPayment()
-	require.NoError(t, inv.Calculate())
-	assert.NoError(t, rules.Validate(inv))
-}
 
 // TestNormalizeReverseChargeNeedsNoReason confirms the same relaxation for
 // reverse-charge: OIOUBL reports it as the ReverseCharge category, which carries
@@ -92,7 +84,7 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		inv.Payment = bankPayment()
 		require.NoError(t, inv.Calculate())
 		require.Len(t, inv.Supplier.Endpoints, 1)
-		assert.Equal(t, "urn:oioubl:scheme:endpointid-1.1::DK:CVR:12345674", inv.Supplier.Endpoints[0].URI.String())
+		assert.Equal(t, "DK:CVR:12345674", inv.Supplier.Endpoints[0].URI.String())
 		assert.Empty(t, inv.Supplier.Inboxes, "no Peppol endpoint URI is fabricated; the deprecated inbox is not used")
 		require.NoError(t, rules.Validate(inv), "a bare DK party should validate via the derived participant")
 	})
@@ -104,7 +96,7 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		require.NoError(t, inv.Calculate())
 		assert.Empty(t, inv.Supplier.Inboxes, "the deprecated inbox is migrated away")
 		require.Len(t, inv.Supplier.Endpoints, 1, "the inbox becomes the participant endpoint")
-		assert.Equal(t, "urn:oioubl:scheme:endpointid-1.1::DK:SE:12345678", inv.Supplier.Endpoints[0].URI.String(),
+		assert.Equal(t, "DK:SE:12345678", inv.Supplier.Endpoints[0].URI.String(),
 			"an explicit DK:SE participant wins over the derived CVR")
 	})
 
