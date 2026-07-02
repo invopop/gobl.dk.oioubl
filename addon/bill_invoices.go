@@ -14,10 +14,12 @@ import (
 )
 
 // validPaymentMeansCodes are the UNTDID 4461 means accepted for OIOUBL (F-LIB100).
-// "30" is included because the converter maps it to OIOUBL's "31". "42" is excluded:
-// OIOUBL settles it via the DK:BANK channel with a branch number + domestic account
-// (F-LIB127/128/131/311), which the converter's IBAN mapping can't produce — re-add
-// once DK:BANK modelling exists.
+// EN 16931's credit-transfer code "30" is absent on purpose: normalizePayInstructions
+// rewrites it to OIOUBL's "31" during calculation, before this rule runs, so the
+// value seen here is always "31". "42" is excluded: OIOUBL settles it via the
+// DK:BANK channel with a branch number + domestic account (F-LIB127/128/131/311),
+// which the converter's IBAN mapping can't produce — re-add once DK:BANK modelling
+// exists.
 
 // validDocumentTypes are the UNTDID 1001 codes OIOUBL accepts: {325, 380, 393} on
 // the Invoice root and 381 on the CreditNote (F-INV011 / F-CRN011). en16931 stamps
@@ -26,7 +28,7 @@ import (
 var validDocumentTypes = []cbc.Code{"325", "380", "381", "393"}
 
 var validPaymentMeansCodes = []cbc.Code{
-	"1", "10", "20", "30", "31", "48", "49", "50", "58", "59", "93", "97",
+	"1", "10", "20", "31", "48", "49", "50", "58", "59", "93", "97",
 }
 
 // Rule citations reference the OIOUBL Invoice schematron (F-INV) first and the
