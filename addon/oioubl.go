@@ -37,7 +37,6 @@ func init() {
 		lineChargeRules(),
 		billPaymentRules(),
 		billPayTermsRules(),
-		partyRules(),
 	)
 	norm.RegisterWithGuard(
 		is.InContext(tax.AddonIn(V2)),

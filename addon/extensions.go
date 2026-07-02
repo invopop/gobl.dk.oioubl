@@ -18,27 +18,6 @@ const (
 	// ExtKeyReminderSequence is the reminder's position in the dunning sequence
 	// (cbc:ReminderSequenceNumeric).
 	ExtKeyReminderSequence cbc.Key = "dk-oioubl-reminder-sequence"
-
-	// ExtKeyAddressFormat is the party's cbc:AddressFormatCode. It lives on the
-	// party, not the address, because org.Address has no extension slot.
-	ExtKeyAddressFormat cbc.Key = "dk-oioubl-address-format"
-)
-
-// OIOUBL addressformatcode-1.1 values (F-LIB027); the schematron completeness
-// rule for each is enforced in addresses.go.
-const (
-	// StructuredDK needs PostalZone, a StreetName-or-Postbox and a
-	// BuildingNumber-or-Postbox (F-LIB033/034/035).
-	ExtValueAddressFormatStructuredDK cbc.Code = "StructuredDK"
-	// StructuredLax has no mandatory sub-fields; the default when none is declared.
-	ExtValueAddressFormatStructuredLax cbc.Code = "StructuredLax"
-	// StructuredID carries only a register ID: a GLN on org.Address.Number
-	// (F-LIB037/038).
-	ExtValueAddressFormatStructuredID cbc.Code = "StructuredID"
-	// StructuredRegion carries only Region, District and/or Country (F-LIB039/040).
-	ExtValueAddressFormatStructuredRegion cbc.Code = "StructuredRegion"
-	// Unstructured carries only free-text AddressLine (F-LIB031).
-	ExtValueAddressFormatUnstructured cbc.Code = "Unstructured"
 )
 
 // OIOUBL Giro (code 50) PaymentID values.
@@ -110,38 +89,14 @@ var extensions = []*cbc.Definition{
 		},
 		Desc: i18n.String{
 			i18n.EN: here.Doc(`
-				How many times this bill has been reminded, emitted as the OIOUBL
-				cbc:ReminderSequenceNumeric. A reminder (a bill.Payment tagged advis)
+				How many times this bill has been reminded. A reminder (a bill.Payment)
 				restates an unpaid invoice, and OIOUBL records its position in the dunning
 				sequence: 1 for the first reminder, 2 for the second, and so on. The count
 				is stateful — it depends on how many prior reminders were sent, not on
 				anything in the document — so it has no native GOBL field and must be
-				supplied here. Mandatory on every reminder (F-REM007); a positive integer.
+				supplied here. Mandatory on every reminder (F-REM007);.
 			`),
 		},
 		Pattern: `^[0-9]+$`,
-	},
-	{
-		Key: ExtKeyAddressFormat,
-		Name: i18n.String{
-			i18n.EN: "OIOUBL Address Format",
-			i18n.DA: "OIOUBL Adresseformat",
-		},
-		Desc: i18n.String{
-			i18n.EN: here.Doc(`
-				The OIOUBL ` + "`addressformatcode-1.1`" + ` value emitted as
-				` + "`cbc:AddressFormatCode`" + ` on a party's postal address. GOBL has no
-				native address-format field, so it is declared on the party. When absent,
-				the gobl.ubl serializer emits StructuredLax, which imposes no mandatory
-				sub-fields.
-			`),
-		},
-		Values: []*cbc.Definition{
-			{Code: ExtValueAddressFormatStructuredDK, Name: i18n.String{i18n.EN: "Structured Danish address"}},
-			{Code: ExtValueAddressFormatStructuredLax, Name: i18n.String{i18n.EN: "Lenient structured address"}},
-			{Code: ExtValueAddressFormatStructuredID, Name: i18n.String{i18n.EN: "Identifier-only address"}},
-			{Code: ExtValueAddressFormatStructuredRegion, Name: i18n.String{i18n.EN: "Regional address"}},
-			{Code: ExtValueAddressFormatUnstructured, Name: i18n.String{i18n.EN: "Unstructured address"}},
-		},
 	},
 }
