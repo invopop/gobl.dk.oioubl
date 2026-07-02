@@ -21,12 +21,12 @@ func OIOUBLEndpointURI(scheme, code string) string {
 
 // ParseOIOUBLEndpoint splits a participant endpoint into its scheme and code on
 // the last colon, returning ok=false for a value without one.
-func ParseOIOUBLEndpoint(uri string) (scheme, code string, ok bool) {
+func ParseOIOUBLEndpoint(uri string) (scheme, code cbc.Code, ok bool) {
 	i := strings.LastIndex(uri, ":")
 	if i <= 0 || i == len(uri)-1 {
 		return "", "", false
 	}
-	return uri[:i], uri[i+1:], true
+	return cbc.Code(uri[:i]), cbc.Code(uri[i+1:]), true
 }
 
 // normalizeParty resolves a party's NemHandel participant to an org.Endpoint
