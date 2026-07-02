@@ -319,7 +319,32 @@ func foreignCurrencyMissingExchangeRate(val any) bool {
 	if rd == nil || inv.Currency == currency.CodeEmpty || inv.Currency == rd.Currency {
 		return false
 	}
+	// Only StandardRated VAT is restated in the national currency, so the rate is
+	// obligatory only when such VAT is present; a purely zero-rated/exempt foreign
+	// invoice carries no VAT to express in DKK.
+	if !invoiceHasStandardRatedVAT(inv) {
+		return false
+	}
 	return currency.MatchExchangeRate(inv.ExchangeRates, inv.Currency, rd.Currency) == nil
+}
+
+// invoiceHasStandardRatedVAT reports whether the invoice carries a StandardRated
+// VAT combo (GOBL key "standard").
+func invoiceHasStandardRatedVAT(inv *bill.Invoice) bool {
+	if inv.Totals == nil || inv.Totals.Taxes == nil {
+		return false
+	}
+	for _, cat := range inv.Totals.Taxes.Categories {
+		if cat.Code != tax.CategoryVAT {
+			continue
+		}
+		for _, r := range cat.Rates {
+			if r.Key == tax.KeyStandard {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func quantityNonZero(val any) bool {
