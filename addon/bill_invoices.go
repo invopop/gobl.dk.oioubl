@@ -32,10 +32,9 @@ var validPaymentMeansCodes = []cbc.Code{
 // CreditNote equivalent (F-CRN) second. F-INV142 is invoice-only (OIOUBL CreditNote
 // uses BillingReference, not OrderLineReference).
 // Reference: https://git.erst.dk/openebusiness/common/-/tree/master/resources/Schematrons/OIOUBL?ref_type=heads
-//
+
 // Deliberately NOT enforced: F-LIB318 (unit code must be in OIOUBL's UN/ECE Rec 20
-// subset). The ~1100-code allowlist is a codelist-value check that belongs in
-// gobl.ubl, not here; phive rejects an out-of-list unit downstream.
+// subset) ~1100-code list.
 
 var (
 	roundingMin = num.MakeAmount(-1000, 2)
