@@ -2,6 +2,7 @@ package addon
 
 import (
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/catalogues/cef"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/currency"
@@ -13,11 +14,7 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// validPaymentMeansCodes are the UNTDID 4461 means accepted for OIOUBL (F-LIB100).
-// "30" is included because the converter maps it to OIOUBL's "31". "42" is excluded:
-// OIOUBL settles it via the DK:BANK channel with a branch number + domestic account
-// (F-LIB127/128/131/311), which the converter's IBAN mapping can't produce — re-add
-// once DK:BANK modelling exists.
+
 
 // validDocumentTypes are the UNTDID 1001 codes OIOUBL accepts: {325, 380, 393} on
 // the Invoice root and 381 on the CreditNote (F-INV011 / F-CRN011). en16931 stamps
@@ -25,13 +22,16 @@ import (
 // those are modelled as credit notes.
 var validDocumentTypes = []cbc.Code{"325", "380", "381", "393"}
 
+
+// validPaymentMeansCodes are the UNTDID 4461 means accepted for OIOUBL (F-LIB100).
 var validPaymentMeansCodes = []cbc.Code{
-	"1", "10", "20", "30", "31", "48", "49", "50", "58", "59", "93", "97",
+	"1", "10", "20", "31", "48", "49", "50", "58", "59", "93", "97",
 }
 
 // Rule citations reference the OIOUBL Invoice schematron (F-INV) first and the
 // CreditNote equivalent (F-CRN) second. F-INV142 is invoice-only (OIOUBL CreditNote
 // uses BillingReference, not OrderLineReference).
+// Reference: https://git.erst.dk/openebusiness/common/-/tree/master/resources/Schematrons/OIOUBL?ref_type=heads
 //
 // Deliberately NOT enforced: F-LIB318 (unit code must be in OIOUBL's UN/ECE Rec 20
 // subset). The ~1100-code allowlist is a codelist-value check that belongs in
@@ -61,14 +61,12 @@ func positiveAmountRule(id rules.Code, msg string) rules.Def {
 
 func billInvoiceRules() *rules.Set {
 	return rules.For(new(bill.Invoice),
-		// OIOUBL relaxes EN 16931 carve-outs that its own schematron does not
-		// require: BR-E-10 needs no exemption reason (OIOUBL has no exempt
-		// category — exempt is reported as ZeroRated), and BR-CO-25 mandates
-		// neither payment means nor terms.
+		// Relax the EN 16931 carve-outs OIOUBL's schematron doesn't require
+		// (BR-CO-25 payment means/terms). BR-E-10 stays enforced, via rule 39.
 		rules.Ignore(
 			"GOBL-EU-EN16931-BILL-INVOICE-06", // BR-CO-25: payment details required
 			"GOBL-EU-EN16931-BILL-INVOICE-07", // BR-CO-25: payment terms required
-			"GOBL-EU-EN16931-BILL-INVOICE-08", // BR-E-10: exemption reason required
+			"GOBL-EU-EN16931-BILL-INVOICE-08", // BR-E-10: re-enforced by rule 39
 		),
 		rules.Field("code",
 			rules.Assert("05", "invoice code is required (F-INV009 / F-CRN006)", is.Present),
@@ -110,26 +108,22 @@ func billInvoiceRules() *rules.Set {
 				rules.Assert("07", "ordering is required when any invoice line has an order reference (F-INV142)", is.Present),
 			),
 		),
-		// EU VAT Directive 2006/112/EC art. 230 requires the VAT amount in the
-		// national currency (DKK). A foreign-currency document makes gobl.ubl emit
-		// cbc:TaxCurrencyCode, which then obliges a
-		// cac:TaxSubtotal/cbc:TransactionCurrencyTaxAmount stating the tax in DKK;
-		// that amount can only be derived from an exchange rate, so without one the
-		// OIOUBL output fails F-INV018 / F-CRN013.
+
 		rules.When(is.Func("foreign currency without an exchange rate to the regime currency", foreignCurrencyMissingExchangeRate),
 			rules.Field("exchange_rates",
 				rules.Assert("38", "a foreign-currency document requires an exchange rate to the regime currency (DKK) so VAT is stated in the national currency per EU VAT Directive 2006/112/EC art. 230 (F-INV018 / F-CRN013)", is.Func("never", neverTrue)),
 			),
 		),
+		// exempt maps to ZeroRated, so it needs a VATEX reason
+		// (cbc:TaxExemptionReasonCode) to stay distinct from a true zero-rated line.
+		forbidWhen("exempt VAT category without a CEF VATEX exemption reason", exemptVATMissingReason,
+			"39", "an exempt VAT category requires a CEF VATEX exemption reason for the OIOUBL cbc:TaxExemptionReasonCode (BR-E-10)"),
 		rules.Field("totals",
 			rules.Field("rounding",
 				rules.AssertIfPresent("08", "rounding must be between -10.00 and 10.00 (F-INV338 / F-CRN208)", is.Func("in rounding range", roundingInRange)),
 			),
 		),
-		// F-INV239 / F-CRN158: gobl.ubl emits cac:DeliveryLocation whenever
-		// delivery.receiver is set; the schematron then requires either an ID
-		// (sourced from delivery.identities[0].code) or an Address (sourced
-		// from receiver.addresses).
+
 		rules.Field("delivery",
 			rules.When(is.Func("receiver set without identities or addresses", deliveryReceiverWithoutLocationData),
 				rules.Assert("11", "delivery requires either identities or receiver.addresses (F-INV239 / F-CRN158)", is.Func("never", neverTrue)),
@@ -145,16 +139,6 @@ func billInvoiceRules() *rules.Set {
 					"13", "a credit transfer account (IBAN or number) is required for bank-transfer payment means (F-LIB107 / F-LIB126)"),
 				forbidWhen("iban bank-transfer credit transfer without a BIC", ibanTransferMissingBIC,
 					"18", "a BIC is required on the credit transfer for IBAN bank-transfer payment means 30/31 (F-LIB113)"),
-				forbidWhen("giro payment means without a valid OIOUBL payment id", giroPaymentIDInvalid,
-					"14", "Giro (payment-means 50) requires a dk-oioubl-payment-id of 01, 04 or 15 (F-LIB144 / F-LIB147)"),
-				forbidWhen("fik payment means without a valid OIOUBL payment id", fikPaymentIDInvalid,
-					"15", "FIK (payment-means 93) requires a dk-oioubl-payment-id of 71, 73 or 75 (F-LIB152)"),
-				forbidWhen("structured giro/fik payment id without a valid reference", structuredPaymentRefInvalid,
-					"23", "structured Giro/FIK payment id (04/15/71/75) requires a numeric payment reference of the required length (F-LIB145 / F-LIB153 / F-LIB156 / F-LIB157 / F-LIB312 / F-LIB336)"),
-				forbidWhen("fik kortart 73 carrying a payment reference", fik73WithReference,
-					"24", "FIK payment id 73 must not carry a payment reference, OIOUBL has no element for it (F-LIB275)"),
-				forbidWhen("giro kortart 01 with an over-long payment reference", giro01ReferenceTooLong,
-					"25", "Giro payment id 01 payment reference must be at most 16 characters (F-LIB149)"),
 				forbidWhen("giro payment means without a 7-8 digit payee account", giroAccountInvalid,
 					"21", "Giro (payment-means 50) requires a 7 or 8 digit payee account (F-LIB319 / F-LIB320 / F-LIB321)"),
 				forbidWhen("fik payment means without an 8-character creditor account", fikAccountInvalid,
@@ -335,15 +319,33 @@ func invoiceHasStandardRatedVAT(inv *bill.Invoice) bool {
 	return false
 }
 
+// exemptVATMissingReason reports whether the invoice carries an exempt VAT combo
+// with no CEF VATEX exemption reason. Keyed on the GOBL exempt key (not the UNTDID
+// tax-category marker, which normalizeTaxCombo strips) so it holds for OIOUBL.
+func exemptVATMissingReason(val any) bool {
+	inv, ok := val.(*bill.Invoice)
+	if !ok || inv == nil || inv.Totals == nil || inv.Totals.Taxes == nil {
+		return false
+	}
+	for _, cat := range inv.Totals.Taxes.Categories {
+		if cat.Code != tax.CategoryVAT {
+			continue
+		}
+		for _, r := range cat.Rates {
+			if r.Key == tax.KeyExempt && r.Ext.Get(cef.ExtKeyVATEX).IsEmpty() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func quantityNonZero(val any) bool {
 	a := extractAmount(val)
 	return a == nil || !a.IsZero()
 }
 
-// amountPositive backs the allowance, charge and advance amount rules: OIOUBL
-// rejects a zero or negative cbc:Amount on a cac:AllowanceCharge (F-LIB019) and
-// cbc:PaidAmount on a cac:PrepaidPayment (F-LIB013). Rejecting zero is safe —
-// corrections are modelled as credit notes, so negative line amounts don't arise.
+
 func amountPositive(val any) bool {
 	a := extractAmount(val)
 	return a == nil || a.IsPositive()
@@ -390,8 +392,7 @@ func extractAmount(val any) *num.Amount {
 }
 
 // firstPersonHasIdentityCode reports whether the first contact person carries an
-// identity code, mapped to the OIOUBL cac:Contact/cbc:ID (mandatory for the
-// customer, F-INV051). An empty people set passes (rule 03 governs presence).
+// identity code, mapped to the OIOUBL cac:Contact/cbc:ID 
 func firstPersonHasIdentityCode(val any) bool {
 	people, ok := val.([]*org.Person)
 	if !ok || len(people) == 0 {
@@ -483,13 +484,7 @@ func bankTransferMissingAccount(val any) bool {
 	return ct == nil || (ct.IBAN == "" && ct.Number == "")
 }
 
-func giroPaymentIDInvalid(val any) bool {
-	return paymentIDInvalidFor(val, "50", giroPaymentIDs)
-}
 
-func fikPaymentIDInvalid(val any) bool {
-	return paymentIDInvalidFor(val, "93", fikPaymentIDs)
-}
 
 // giroAccountInvalid reports whether a Giro (payment-means 50) instruction's
 // payee account is missing or not 7-8 numeric digits (F-LIB319/320/321).
@@ -517,68 +512,10 @@ func accountLengthInvalid(val any, code cbc.Code, ok func(string) bool) bool {
 	return ct == nil || !ok(ct.Number)
 }
 
-// structuredPaymentRefInvalid reports whether a structured Giro/FIK kortart (Giro
-// 04/15, FIK 71/75) is missing the numeric cbc:InstructionID reference or has the
-// wrong length: F-LIB145/153 (mandatory), F-LIB312/336 (numeric), F-LIB149 (Giro
-// ≤16), F-LIB156 (FIK 71 = 15), F-LIB157 (FIK 75 = 16). Simple kortart (Giro 01,
-// FIK 73) carry no reference.
-func structuredPaymentRefInvalid(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil {
-		return false
-	}
-	means := instr.Ext.Get(untdid.ExtKeyPaymentMeans)
-	ref := instr.Ref.String()
-	switch instr.Ext.Get(ExtKeyPaymentID) {
-	case "04", "15":
-		return means == "50" && !isNumericOfLen(ref, 1, 16)
-	case "71":
-		return means == "93" && !isNumericOfLen(ref, 15, 15)
-	case "75":
-		return means == "93" && !isNumericOfLen(ref, 16, 16)
-	}
-	return false
-}
 
-// fik73RefForbidden reports whether an OIOUBL payment using FIK kortart 73, which
-// forbids cbc:InstructionID, still carries a payment reference that OIOUBL has
-// nowhere to put (F-LIB275).
-func fik73RefForbidden(ext tax.Extensions, ref string) bool {
-	return ext.Get(untdid.ExtKeyPaymentMeans) == "93" &&
-		ext.Get(ExtKeyPaymentID) == "73" &&
-		ref != ""
-}
 
-// fik73WithReference applies fik73RefForbidden to an invoice payment instruction.
-func fik73WithReference(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil {
-		return false
-	}
-	return fik73RefForbidden(instr.Ext, instr.Ref.String())
-}
 
-// fik73RecordWithReference applies fik73RefForbidden to a reminder payment method.
-func fik73RecordWithReference(val any) bool {
-	m, ok := val.(*pay.Record)
-	if !ok || m == nil {
-		return false
-	}
-	return fik73RefForbidden(m.Ext, m.Ref)
-}
 
-// giro01ReferenceTooLong reports whether a Giro (payment-means 50) instruction
-// using kortart 01 carries a payment reference longer than the 16 characters
-// OIOUBL allows in cbc:InstructionID (F-LIB149).
-func giro01ReferenceTooLong(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil {
-		return false
-	}
-	return instr.Ext.Get(untdid.ExtKeyPaymentMeans) == "50" &&
-		instr.Ext.Get(ExtKeyPaymentID) == "01" &&
-		len(instr.Ref.String()) > 16
-}
 
 // isNumericOfLen reports whether s consists only of ASCII digits and has a
 // length within [minLen, maxLen].
@@ -598,19 +535,6 @@ func isGiroAccountNumber(s string) bool {
 	return isNumericOfLen(s, 7, 8)
 }
 
-// paymentIDInvalidFor reports whether the instruction uses the given OIOUBL
-// payment-means code but lacks a dk-oioubl-payment-id from the allowed set
-// (covering both the mandatory-presence and the codelist checks).
-func paymentIDInvalidFor(val any, code cbc.Code, allowed []cbc.Code) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil {
-		return false
-	}
-	if instr.Ext.Get(untdid.ExtKeyPaymentMeans) != code {
-		return false
-	}
-	return !instr.Ext.Get(ExtKeyPaymentID).In(allowed...)
-}
 
 func roundingInRange(val any) bool {
 	a := extractAmount(val)
