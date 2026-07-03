@@ -31,6 +31,7 @@ var validPaymentMeansCodes = []cbc.Code{
 // Rule citations reference the OIOUBL Invoice schematron (F-INV) first and the
 // CreditNote equivalent (F-CRN) second. F-INV142 is invoice-only (OIOUBL CreditNote
 // uses BillingReference, not OrderLineReference).
+// Reference: https://git.erst.dk/openebusiness/common/-/tree/master/resources/Schematrons/OIOUBL?ref_type=heads
 //
 // Deliberately NOT enforced: F-LIB318 (unit code must be in OIOUBL's UN/ECE Rec 20
 // subset). The ~1100-code allowlist is a codelist-value check that belongs in
