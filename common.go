@@ -50,7 +50,6 @@ type IDType struct {
 	Value          string  `xml:",chardata"`
 }
 
-// ExchangeRate represents an exchange rate
 type ExchangeRate struct {
 	SourceCurrencyCode *string `xml:"cbc:SourceCurrencyCode"`
 	TargetCurrencyCode *string `xml:"cbc:TargetCurrencyCode"`
@@ -58,19 +57,16 @@ type ExchangeRate struct {
 	Date               *string `xml:"cbc:Date"`
 }
 
-// Amount represents a monetary amount
 type Amount struct {
 	CurrencyID *string `xml:"currencyID,attr"`
 	Value      string  `xml:",chardata"`
 }
 
-// Quantity represents a quantity with a unit code
 type Quantity struct {
 	UnitCode string `xml:"unitCode,attr"`
 	Value    string `xml:",chardata"`
 }
 
-// OrderLineReference represents a reference to an order line
 type OrderLineReference struct {
 	LineID string `xml:"cbc:LineID"`
 }
@@ -88,17 +84,14 @@ type Item struct {
 	AdditionalItemProperty     *[]AdditionalItemProperty  `xml:"cac:AdditionalItemProperty"`
 }
 
-// ItemIdentification represents an item identification
 type ItemIdentification struct {
 	ID *IDType `xml:"cbc:ID"`
 }
 
-// CommodityClassification represents a commodity classification
 type CommodityClassification struct {
 	ItemClassificationCode *IDType `xml:"cbc:ItemClassificationCode"`
 }
 
-// ClassifiedTaxCategory represents a classified tax category
 type ClassifiedTaxCategory struct {
 	ID                     *IDType    `xml:"cbc:ID,omitempty"`
 	Percent                *string    `xml:"cbc:Percent,omitempty"`
@@ -106,13 +99,11 @@ type ClassifiedTaxCategory struct {
 	TaxScheme              *TaxScheme `xml:"cac:TaxScheme,omitempty"`
 }
 
-// AdditionalItemProperty represents an additional property of an item
 type AdditionalItemProperty struct {
 	Name  string `xml:"cbc:Name"`
 	Value string `xml:"cbc:Value"`
 }
 
-// Price represents the price of an item
 type Price struct {
 	PriceAmount     Amount           `xml:"cbc:PriceAmount"`
 	BaseQuantity    *Quantity        `xml:"cbc:BaseQuantity,omitempty"`
