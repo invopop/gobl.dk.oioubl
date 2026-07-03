@@ -357,10 +357,7 @@ func quantityNonZero(val any) bool {
 	return a == nil || !a.IsZero()
 }
 
-// amountPositive backs the allowance, charge and advance amount rules: OIOUBL
-// rejects a zero or negative cbc:Amount on a cac:AllowanceCharge (F-LIB019) and
-// cbc:PaidAmount on a cac:PrepaidPayment (F-LIB013). Rejecting zero is safe —
-// corrections are modelled as credit notes, so negative line amounts don't arise.
+
 func amountPositive(val any) bool {
 	a := extractAmount(val)
 	return a == nil || a.IsPositive()
@@ -407,8 +404,7 @@ func extractAmount(val any) *num.Amount {
 }
 
 // firstPersonHasIdentityCode reports whether the first contact person carries an
-// identity code, mapped to the OIOUBL cac:Contact/cbc:ID (mandatory for the
-// customer, F-INV051). An empty people set passes (rule 03 governs presence).
+// identity code, mapped to the OIOUBL cac:Contact/cbc:ID 
 func firstPersonHasIdentityCode(val any) bool {
 	people, ok := val.([]*org.Person)
 	if !ok || len(people) == 0 {
