@@ -59,8 +59,6 @@ func positiveAmountRule(id rules.Code, msg string) rules.Def {
 	)
 }
 
-// billInvoiceRules returns the OIOUBL 2.1 rule set for bill.Invoice
-// (covers both invoices and credit notes).
 func billInvoiceRules() *rules.Set {
 	return rules.For(new(bill.Invoice),
 		// OIOUBL relaxes EN 16931 carve-outs that its own schematron does not
@@ -165,9 +163,6 @@ func billInvoiceRules() *rules.Set {
 		),
 		rules.Field("lines",
 			rules.Each(
-				// Every OIOUBL line needs a cac:TaxTotal (F-INV138 / F-CRN081),
-				// which the converter emits only from a VAT combo. GOBL core and
-				// en16931 require doc-level totals but not per-line taxes.
 				rules.Assert("27", "each line requires a VAT tax category (F-INV138 / F-CRN081)",
 					bill.RequireLineTaxCategory(tax.CategoryVAT)),
 				rules.Field("quantity",
@@ -181,17 +176,11 @@ func billInvoiceRules() *rules.Set {
 				),
 			),
 		),
-		// A document-level discount emits cac:AllowanceCharge, whose cbc:Amount
-		// must be greater than zero (F-LIB019). A zero-amount allowance —
-		// including one promoted from a zero line discount — is wire-fatal.
+
 		rules.Field("discounts",
 			rules.Each(positiveAmountRule("33", "document-level discount amount must be greater than zero (F-LIB019)")),
 		),
-		// A document-level charge emits cac:AllowanceCharge, which OIOUBL
-		// requires to carry a TaxCategory (F-LIB226) and a cbc:Amount greater
-		// than zero (F-LIB019). en16931 mandates taxes on document-level
-		// discounts (BR-32) but not on charges (BR-36 only covers the
-		// reason/type), so the taxes rule closes that gap.
+
 		rules.Field("charges",
 			rules.Each(
 				positiveAmountRule("34", "document-level charge amount must be greater than zero (F-LIB019)"),
@@ -214,8 +203,7 @@ func billInvoiceRules() *rules.Set {
 // (line- and document-level), validated by type the way GOBL validates combos.
 func billTaxComboRules() *rules.Set {
 	return rules.For(new(tax.Combo),
-		// The OIOUBL category is mapped from the GOBL key, so the dk-oioubl
-		// normalizer strips the EN 16931 UNTDID tax-category extension. Ignore the
+		// the dk-oioubl normalizer strips the EN 16931 UNTDID tax-category extension. Ignore
 		// EN 16931 rules that would otherwise require it and validate its code.
 		rules.Ignore("GOBL-EU-EN16931-TAX-COMBO-01", "GOBL-EU-EN16931-TAX-COMBO-02"),
 		rules.Assert("01", "standard-rated VAT must have a percent greater than zero (F-LIB382)",

@@ -87,12 +87,6 @@ func partyHasTaxIDOrIdentities(val any) bool {
 	return p.TaxID != nil || len(p.Identities) > 0
 }
 
-// partyHasNameOrIdentification reports whether the gobl.ubl converter can produce
-// a cac:PartyName or cac:PartyIdentification for the party, one of which F-LIB022
-// requires (cac:PartyLegalEntity does not satisfy it). A registration name yields
-// PartyName; an identity that is neither the legal CompanyID nor a tax-scheme
-// identity yields a PartyIdentification. A single legal or a tax identity alone
-// produces only CompanyID/PartyTaxScheme, which F-LIB022 does not accept.
 func partyHasNameOrIdentification(val any) bool {
 	p, ok := val.(*org.Party)
 	if !ok || p == nil {
