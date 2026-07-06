@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/l10n"
@@ -208,7 +207,7 @@ func addPartyEndpoint(p *Party, party *org.Party) {
 		if ep == nil {
 			continue
 		}
-		if scheme, value, ok := oioubl.ParseOIOUBLEndpoint(ep.URI.String()); ok {
+		if scheme, value, ok := parseOIOUBLEndpoint(ep.URI.String()); ok {
 			p.EndpointID = &EndpointID{SchemeID: scheme.String(), Value: value.String()}
 			break
 		}
@@ -484,13 +483,20 @@ func contactName(n *org.Name) string {
 	return fmt.Sprintf("%s %s", given, surname)
 }
 
-// OIOUBL symbolic schemes (F-LIB179), defined by the dk-oioubl addon (the single
-// source of truth).
+// OIOUBL symbolic schemes for participant and company identifiers (F-LIB179/189/195).
 const (
-	schemeDKCVR = oioubl.SchemeDKCVR
-	schemeDKSE  = oioubl.SchemeDKSE
-	schemeZZZ   = oioubl.SchemeZZZ
+	schemeDKCVR = "DK:CVR"
+	schemeDKSE  = "DK:SE"
+	schemeZZZ   = "ZZZ"
 )
+
+func parseOIOUBLEndpoint(uri string) (scheme, code cbc.Code, ok bool) {
+	i := strings.LastIndex(uri, ":")
+	if i <= 0 || i == len(uri)-1 {
+		return "", "", false
+	}
+	return cbc.Code(uri[:i]), cbc.Code(uri[i+1:]), true
+}
 
 // dkPrefixed adds the "DK" country prefix the OIOUBL schematron mandates on
 // DK:CVR/DK:SE identifier values (F-LIB180/F-LIB184), only when absent.
