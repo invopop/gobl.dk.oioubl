@@ -1,8 +1,6 @@
 package addon
 
 import (
-	"strings"
-
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
@@ -10,29 +8,13 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// OIOUBLEndpointURI builds a NemHandel participant endpoint: the symbolic scheme
-// and code joined by a colon (e.g. "DK:CVR:12345674"). Unlike Peppol's endpoint,
-// this is not a resolvable URI — NemHandel identifies participants by DK:CVR,
-// DK:SE or GLN. The code is colon-free, so the scheme (which may itself contain a
-// colon, e.g. DK:CVR) is recovered on the last colon when reading.
+// OIOUBLEndpointURI joins a scheme and code with a colon (e.g. "DK:CVR:12345674").
 func OIOUBLEndpointURI(scheme, code string) string {
 	return scheme + ":" + code
 }
 
-// ParseOIOUBLEndpoint splits a participant endpoint into its scheme and code on
-// the last colon, returning ok=false for a value without one.
-func ParseOIOUBLEndpoint(uri string) (scheme, code cbc.Code, ok bool) {
-	i := strings.LastIndex(uri, ":")
-	if i <= 0 || i == len(uri)-1 {
-		return "", "", false
-	}
-	return cbc.Code(uri[:i]), cbc.Code(uri[i+1:]), true
-}
-
-// normalizeParty resolves a party's NemHandel participant to an org.Endpoint
-// (org.Inbox is deprecated): it migrates a scheme/code inbox to the equivalent
-// endpoint, and for a Danish party lacking one derives the DK:CVR participant from
-// the tax ID. An explicit participant supplied by the producer is preserved.
+// normalizeParty migrates a scheme/code inbox to an org.Endpoint and derives a
+// DK:CVR endpoint from a Danish tax ID when none is present.
 func normalizeParty(p *org.Party) {
 	if len(p.Endpoints) == 0 {
 		migrateInboxesToEndpoints(p)
@@ -45,8 +27,8 @@ func normalizeParty(p *org.Party) {
 			URI: cbc.URI(OIOUBLEndpointURI(SchemeDKCVR, p.TaxID.Code.String())),
 		})
 	}
-	// OIOUBL's PartyLegalEntity/CompanyID is the CVR; set it explicitly so the
-	// converter maps it rather than deriving one. Untouched if one already exists.
+	// OIOUBL's PartyLegalEntity/CompanyID is the CVR; set it explicitly as a
+	// legal identity. Untouched if one already exists.
 	if !hasLegalIdentity(p) {
 		p.Identities = append(p.Identities, &org.Identity{
 			Scope: org.IdentityScopeLegal,
@@ -88,7 +70,7 @@ func hasLegalIdentity(p *org.Party) bool {
 }
 
 // normalizePayInstructions rewrites the EN 16931 credit-transfer means to
-// OIOUBL's code so the serializer emits the correct cbc:PaymentMeansCode.
+// OIOUBL's bank-transfer code (F-LIB100).
 func normalizePayInstructions(instr *pay.Instructions) {
 	instr.Ext = oioublPaymentMeans(instr.Ext)
 }
@@ -102,9 +84,8 @@ func oioublPaymentMeans(ext tax.Extensions) tax.Extensions {
 	return ext
 }
 
-// normalizeTaxCombo strips the redundant EN 16931 UNTDID tax-category extension;
-// the serializer derives the OIOUBL taxcategoryid-1.1 code from the GOBL VAT key.
-// en16931 (required, runs first) sets that key, so the removal is lossless.
+// normalizeTaxCombo strips the EN 16931 UNTDID tax-category ext; the OIOUBL code
+// derives from the GOBL VAT key (set by en16931, which runs first), so it's lossless.
 func normalizeTaxCombo(c *tax.Combo) {
 	c.Ext = c.Ext.Delete(untdid.ExtKeyTaxCategory)
 }
@@ -116,9 +97,7 @@ func normalizeTaxNote(n *tax.Note) {
 }
 
 // taxCategoryMapsToOIOUBL reports whether a GOBL VAT key has an OIOUBL
-// taxcategoryid-1.1 equivalent: standard/zero/exempt/reverse-charge do, while
-// export, intra-community and outside-scope do not. Gates the addon's category
-// rules.
+// taxcategoryid-1.1 equivalent (standard/zero/exempt/reverse-charge).
 func taxCategoryMapsToOIOUBL(key cbc.Key) bool {
 	switch key {
 	case tax.KeyStandard, tax.KeyZero, tax.KeyExempt, tax.KeyReverseCharge, "":
@@ -126,4 +105,3 @@ func taxCategoryMapsToOIOUBL(key cbc.Key) bool {
 	}
 	return false
 }
-

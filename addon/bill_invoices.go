@@ -14,14 +14,9 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-
-
-// validDocumentTypes are the UNTDID 1001 codes OIOUBL accepts: {325, 380, 393} on
-// the Invoice root and 381 on the CreditNote (F-INV011 / F-CRN011). en16931 stamps
-// 384/383/389 (corrective/debit-note/self-billed), which OIOUBL rejects — in Denmark
-// those are modelled as credit notes.
+// validDocumentTypes are the UNTDID 1001 codes OIOUBL accepts: 325/380/393
+// (invoice) and 381 (credit note), per F-INV011 / F-CRN011.
 var validDocumentTypes = []cbc.Code{"325", "380", "381", "393"}
-
 
 // validPaymentMeansCodes are the UNTDID 4461 means accepted for OIOUBL (F-LIB100).
 var validPaymentMeansCodes = []cbc.Code{
@@ -41,27 +36,10 @@ var (
 	roundingMax = num.MakeAmount(1000, 2)
 )
 
-// forbidWhen builds the "reject the document as soon as a guard matches" rule
-// shared by the OIOUBL payment-instruction checks: when cond reports the
-// instruction invalid, assert an always-failing test carrying id/msg.
-func forbidWhen(desc string, cond func(any) bool, id rules.Code, msg string) rules.Def {
-	return rules.When(is.Func(desc, cond),
-		rules.Assert(id, msg, is.Func("never", neverTrue)),
-	)
-}
-
-// positiveAmountRule builds the shared "amount must be greater than zero" field
-// rule used by the line/document discount, charge and advance amount checks.
-func positiveAmountRule(id rules.Code, msg string) rules.Def {
-	return rules.Field("amount",
-		rules.Assert(id, msg, is.Func("positive amount", amountPositive)),
-	)
-}
-
 func billInvoiceRules() *rules.Set {
 	return rules.For(new(bill.Invoice),
-		// Relax the EN 16931 carve-outs OIOUBL's schematron doesn't require
-		// (BR-CO-25 payment means/terms). BR-E-10 stays enforced, via rule 39.
+		// Ignore EN 16931 BR-CO-25 (06/07, payment means/terms — OIOUBL doesn't need
+		// them) and BR-E-10 (08 — inert once we strip its ext; rule 39 re-adds it).
 		rules.Ignore(
 			"GOBL-EU-EN16931-BILL-INVOICE-06", // BR-CO-25: payment details required
 			"GOBL-EU-EN16931-BILL-INVOICE-07", // BR-CO-25: payment terms required
@@ -77,25 +55,21 @@ func billInvoiceRules() *rules.Set {
 			),
 		),
 		rules.Field("supplier",
-			rules.Assert("01", "supplier must have an endpoint or inbox (F-INV031 / F-CRN028)",
-				is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
+			rules.Assert("01", "supplier must have an endpoint (F-INV031 / F-CRN028)",
+				is.Func("has endpoint", partyHasEndpoint)),
 			rules.Assert("29", "supplier requires a legal identity or a Danish tax ID for the OIOUBL PartyLegalEntity/CompanyID (F-LIB187)",
 				is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
 		),
 		rules.Field("totals",
-			// OIOUBL rejects negative payable/due totals outright (F-LIB016 /
-			// F-LIB020): over-discounted or over-advanced documents must be
-			// modelled as credit notes instead.
 			rules.Assert("26", "payable and due totals must not be negative (F-LIB016 / F-LIB020)",
 				is.Func("non-negative totals", totalsNonNegative)),
 		),
 		rules.Field("customer",
-			rules.Assert("02", "customer must have an endpoint or inbox (F-INV044 / F-CRN040)",
-				is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
+			rules.Assert("02", "customer must have an endpoint (F-INV044 / F-CRN040)",
+				is.Func("has endpoint", partyHasEndpoint)),
 			rules.Assert("30", "customer requires a legal identity or a Danish tax ID for the OIOUBL PartyLegalEntity/CompanyID (F-LIB187)",
 				is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
-			// F-INV046 requires exactly one Contact in OIOUBL output;
-			// gobl.ubl picks one Person at emit time, so the addon asserts presence only.
+			// F-INV046 requires a customer Contact (F-CRN042); assert presence.
 			rules.Field("people",
 				rules.Assert("03", "customer people are required (F-INV046 / F-CRN042)", is.Present),
 				rules.Assert("20", "the customer contact person requires an identity code for the OIOUBL Contact/ID (F-INV051)",
@@ -108,15 +82,12 @@ func billInvoiceRules() *rules.Set {
 			),
 		),
 
-		rules.When(is.Func("foreign currency without an exchange rate to the regime currency", foreignCurrencyMissingExchangeRate),
-			rules.Field("exchange_rates",
-				rules.Assert("38", "a foreign-currency document requires an exchange rate to the regime currency (DKK) so VAT is stated in the national currency per EU VAT Directive 2006/112/EC art. 230 (F-INV018 / F-CRN013)", is.Func("never", neverTrue)),
-			),
-		),
-		// exempt maps to ZeroRated, so it needs a VATEX reason
-		// (cbc:TaxExemptionReasonCode) to stay distinct from a true zero-rated line.
-		forbidWhen("exempt VAT category without a CEF VATEX exemption reason", exemptVATMissingReason,
-			"39", "an exempt VAT category requires a CEF VATEX exemption reason for the OIOUBL cbc:TaxExemptionReasonCode (BR-E-10)"),
+		rules.Assert("38", "a foreign-currency document requires an exchange rate to the regime currency so VAT is stated in the national currency per EU VAT Directive 2006/112/EC art. 230 (F-INV018 / F-CRN013)",
+			is.Func("foreign-currency VAT restated in the regime currency", foreignCurrencyExchangeRateOK)),
+		// OIOUBL maps exempt to ZeroRated; en16931's BR-E-10 keys on the UNTDID
+		// tax-category ext the normalizer strips, so re-assert on the exempt key.
+		rules.Assert("39", "an exempt VAT category requires a CEF VATEX exemption reason for the OIOUBL cbc:TaxExemptionReasonCode (BR-E-10)",
+			is.Func("exempt VAT has a VATEX reason", exemptVATHasReason)),
 		rules.Field("totals",
 			rules.Field("rounding",
 				rules.AssertIfPresent("08", "rounding must be between -10.00 and 10.00 (F-INV338 / F-CRN208)", is.Func("in rounding range", roundingInRange)),
@@ -124,9 +95,8 @@ func billInvoiceRules() *rules.Set {
 		),
 
 		rules.Field("delivery",
-			rules.When(is.Func("receiver set without identities or addresses", deliveryReceiverWithoutLocationData),
-				rules.Assert("11", "delivery requires either identities or receiver.addresses (F-INV239 / F-CRN158)", is.Func("never", neverTrue)),
-			),
+			rules.Assert("11", "delivery requires either identities or receiver.addresses (F-INV239 / F-CRN158)",
+				is.Func("receiver has identities or addresses", deliveryReceiverHasLocationData)),
 		),
 		rules.Field("payment",
 			rules.Field("instructions",
@@ -134,14 +104,14 @@ func billInvoiceRules() *rules.Set {
 					rules.AssertIfPresent("12", "payment-means code must be one of the OIOUBL allowed values (F-LIB100)",
 						tax.ExtensionsHasCodes(untdid.ExtKeyPaymentMeans, validPaymentMeansCodes...)),
 				),
-				forbidWhen("bank-transfer payment means without a payee account", bankTransferMissingAccount,
-					"13", "a credit transfer account (IBAN or number) is required for bank-transfer payment means (F-LIB107 / F-LIB126)"),
-				forbidWhen("iban bank-transfer credit transfer without a BIC", ibanTransferMissingBIC,
-					"18", "a BIC is required on the credit transfer for IBAN bank-transfer payment means 30/31 (F-LIB113)"),
-				forbidWhen("giro payment means without a 7-8 digit payee account", giroAccountInvalid,
-					"21", "Giro (payment-means 50) requires a 7 or 8 digit payee account (F-LIB319 / F-LIB320 / F-LIB321)"),
-				forbidWhen("fik payment means without an 8-character creditor account", fikAccountInvalid,
-					"22", "FIK (payment-means 93) requires an 8-character creditor account (F-LIB305)"),
+				rules.Assert("13", "a credit transfer account (IBAN or number) is required for bank-transfer payment means (F-LIB107 / F-LIB126)",
+					is.Func("bank-transfer has a payee account", bankTransferHasAccount)),
+				rules.Assert("18", "a BIC is required on the credit transfer for IBAN bank-transfer payment means 30/31 (F-LIB113)",
+					is.Func("iban bank-transfer has a BIC", ibanTransferHasBIC)),
+				rules.Assert("21", "Giro (payment-means 50) requires a 7 or 8 digit payee account (F-LIB319 / F-LIB320 / F-LIB321)",
+					is.Func("giro has a 7-8 digit payee account", giroAccountValid)),
+				rules.Assert("22", "FIK (payment-means 93) requires an 8-character creditor account (F-LIB305)",
+					is.Func("fik has an 8-character creditor account", fikAccountValid)),
 			),
 		),
 		rules.Field("lines",
@@ -152,31 +122,31 @@ func billInvoiceRules() *rules.Set {
 					rules.Assert("06", "line quantity must not be zero (F-INV147 / F-CRN088)", is.Func("non-zero amount", quantityNonZero)),
 				),
 				rules.Field("discounts",
-					rules.Each(positiveAmountRule("09", "line discount amount must be greater than zero (F-LIB019)")),
+					rules.Each(rules.Field("amount", rules.Assert("09", "line discount amount must be greater than zero (F-LIB019)", num.Positive))),
 				),
 				rules.Field("charges",
-					rules.Each(positiveAmountRule("10", "line charge amount must be greater than zero (F-LIB019)")),
+					rules.Each(rules.Field("amount", rules.Assert("10", "line charge amount must be greater than zero (F-LIB019)", num.Positive))),
 				),
 			),
 		),
 
 		rules.Field("discounts",
-			rules.Each(positiveAmountRule("33", "document-level discount amount must be greater than zero (F-LIB019)")),
+			rules.Each(rules.Field("amount", rules.Assert("33", "document-level discount amount must be greater than zero (F-LIB019)", num.Positive))),
 		),
 
 		rules.Field("charges",
 			rules.Each(
-				positiveAmountRule("34", "document-level charge amount must be greater than zero (F-LIB019)"),
+				rules.Field("amount", rules.Assert("34", "document-level charge amount must be greater than zero (F-LIB019)", num.Positive)),
 				rules.Field("taxes",
 					rules.Assert("28", "document-level charge taxes are required for the OIOUBL TaxCategory (F-LIB226)", is.Present),
 				),
 			),
 		),
-		// A prepaid advance emits cac:PrepaidPayment/cbc:PaidAmount, which must
-		// be greater than zero (F-LIB013).
+		// OIOUBL requires a prepaid advance's cbc:PaidAmount to be greater than
+		// zero (F-LIB013).
 		rules.Field("payment",
 			rules.Field("advances",
-				rules.Each(positiveAmountRule("35", "advance amount must be greater than zero (F-LIB013)")),
+				rules.Each(rules.Field("amount", rules.Assert("35", "advance amount must be greater than zero (F-LIB013)", num.Positive))),
 			),
 		),
 	)
@@ -196,50 +166,34 @@ func billTaxComboRules() *rules.Set {
 	)
 }
 
-// billChargeRules and lineChargeRules require an excise duty charge (one whose
-// Key is a numeric OIOUBL taxschemeid duty code) to carry a reason: the gobl.ubl
-// serializer emits it as the OIOUBL tax-scheme name, which OIOUBL requires to be
-// non-empty (F-LIB066).
+// Excise duty charges must carry a reason for their OIOUBL tax-scheme name (F-LIB066).
 func billChargeRules() *rules.Set { return rules.For(new(bill.Charge), exciseReasonAssert()) }
 
 func lineChargeRules() *rules.Set { return rules.For(new(bill.LineCharge), exciseReasonAssert()) }
 
-// exciseReasonAssert is the shared F-LIB066 assertion for document- and
-// line-level charges (which bind to different types and so need separate sets).
+// exciseReasonAssert is the shared F-LIB066 rule for document- and line-level
+// charges (which bind to different types and so need separate sets).
 func exciseReasonAssert() rules.Def {
-	return rules.Assert("01", "an OIOUBL excise duty charge must have a reason for the tax-scheme name (F-LIB066)",
-		is.Func("excise charge has a reason", exciseChargeHasReason))
+	return rules.When(is.Func("excise duty charge", chargeIsExcise),
+		rules.Field("reason",
+			rules.Assert("01", "an OIOUBL excise duty charge requires a reason for its tax-scheme name (F-LIB066)", is.Present),
+		),
+	)
 }
 
-// exciseChargeHasReason reports whether an excise duty charge (one whose Key is a
-// numeric OIOUBL taxschemeid code) also carries a reason. Ordinary charges (a
-// non-numeric key, or none) always pass.
-func exciseChargeHasReason(val any) bool {
-	var key cbc.Key
-	var reason string
+// chargeIsExcise reports whether a charge is an OIOUBL excise duty, keyed by an
+// all-digit taxschemeid code.
+func chargeIsExcise(val any) bool {
 	switch c := val.(type) {
 	case *bill.Charge:
-		if c == nil {
-			return true
-		}
-		key, reason = c.Key, c.Reason
+		return c != nil && isExciseKey(c.Key)
 	case *bill.LineCharge:
-		if c == nil {
-			return true
-		}
-		key, reason = c.Key, c.Reason
-	default:
-		return true
+		return c != nil && isExciseKey(c.Key)
 	}
-	if !isExciseKey(key) {
-		return true
-	}
-	return reason != ""
+	return false
 }
 
-// isExciseKey reports whether a charge Key is an OIOUBL taxschemeid duty code.
-// Excise duties are keyed with their numeric code; GOBL's own charge keys are
-// alphabetic slugs (stamp-duty, handling, …), so an all-digit key marks the duty.
+// isExciseKey reports whether a charge Key is an OIOUBL excise duty code: all digits.
 func isExciseKey(key cbc.Key) bool {
 	s := key.String()
 	if s == "" {
@@ -253,10 +207,8 @@ func isExciseKey(key cbc.Key) bool {
 	return true
 }
 
-// vatCategoryHasOIOUBLMapping reports whether a VAT combo's GOBL key maps to an
-// OIOUBL taxcategoryid-1.1 value. OIOUBL supports only standard, zero (and exempt
-// as ZeroRated) and reverse-charge; export/intra-community/outside-scope have no
-// equivalent and would reach the wire outside the codelist (F-LIB309).
+// vatCategoryHasOIOUBLMapping reports whether a VAT combo's key maps to an OIOUBL
+// taxcategoryid-1.1 value (standard/zero/exempt/reverse-charge); others fail F-LIB309.
 func vatCategoryHasOIOUBLMapping(val any) bool {
 	combo := extractCombo(val)
 	if combo == nil || combo.Category != tax.CategoryVAT {
@@ -281,50 +233,42 @@ func invoiceWithLineOrderRef(val any) bool {
 	return false
 }
 
-func foreignCurrencyMissingExchangeRate(val any) bool {
+// foreignCurrencyExchangeRateOK reports whether a foreign-currency invoice with
+// VAT to restate carries an exchange rate to the regime currency (art. 230).
+func foreignCurrencyExchangeRateOK(val any) bool {
 	inv, ok := val.(*bill.Invoice)
 	if !ok || inv == nil {
-		return false
+		return true
 	}
 	rd := inv.RegimeDef()
-	if rd == nil || inv.Currency == currency.CodeEmpty || inv.Currency == rd.Currency {
-		return false
+	needsRate := rd != nil &&
+		inv.Currency != currency.CodeEmpty &&
+		inv.Currency != rd.Currency &&
+		invoiceHasPositiveVAT(inv)
+	if needsRate {
+		return currency.MatchExchangeRate(inv.ExchangeRates, inv.Currency, rd.Currency) != nil
 	}
-	// Only StandardRated VAT is restated in the national currency, so the rate is
-	// obligatory only when such VAT is present; a purely zero-rated/exempt foreign
-	// invoice carries no VAT to express in DKK.
-	if !invoiceHasStandardRatedVAT(inv) {
-		return false
-	}
-	return currency.MatchExchangeRate(inv.ExchangeRates, inv.Currency, rd.Currency) == nil
+	return true
 }
 
-// invoiceHasStandardRatedVAT reports whether the invoice carries a StandardRated
-// VAT combo (GOBL key "standard").
-func invoiceHasStandardRatedVAT(inv *bill.Invoice) bool {
+func invoiceHasPositiveVAT(inv *bill.Invoice) bool {
 	if inv.Totals == nil || inv.Totals.Taxes == nil {
 		return false
 	}
 	for _, cat := range inv.Totals.Taxes.Categories {
-		if cat.Code != tax.CategoryVAT {
-			continue
-		}
-		for _, r := range cat.Rates {
-			if r.Key == tax.KeyStandard {
-				return true
-			}
+		if cat.Code == tax.CategoryVAT && cat.Amount.IsPositive() {
+			return true
 		}
 	}
 	return false
 }
 
-// exemptVATMissingReason reports whether the invoice carries an exempt VAT combo
-// with no CEF VATEX exemption reason. Keyed on the GOBL exempt key (not the UNTDID
-// tax-category marker, which normalizeTaxCombo strips) so it holds for OIOUBL.
-func exemptVATMissingReason(val any) bool {
+// exemptVATHasReason reports whether every exempt VAT rate carries a CEF VATEX
+// reason (keyed on the GOBL exempt key, which survives normalization).
+func exemptVATHasReason(val any) bool {
 	inv, ok := val.(*bill.Invoice)
 	if !ok || inv == nil || inv.Totals == nil || inv.Totals.Taxes == nil {
-		return false
+		return true
 	}
 	for _, cat := range inv.Totals.Taxes.Categories {
 		if cat.Code != tax.CategoryVAT {
@@ -332,11 +276,11 @@ func exemptVATMissingReason(val any) bool {
 		}
 		for _, r := range cat.Rates {
 			if r.Key == tax.KeyExempt && r.Ext.Get(cef.ExtKeyVATEX).IsEmpty() {
-				return true
+				return false
 			}
 		}
 	}
-	return false
+	return true
 }
 
 func quantityNonZero(val any) bool {
@@ -344,32 +288,22 @@ func quantityNonZero(val any) bool {
 	return a == nil || !a.IsZero()
 }
 
-
-func amountPositive(val any) bool {
-	a := extractAmount(val)
-	return a == nil || a.IsPositive()
-}
-
-func deliveryReceiverWithoutLocationData(val any) bool {
+func deliveryReceiverHasLocationData(val any) bool {
 	del, ok := val.(*bill.DeliveryDetails)
 	if !ok || del == nil || del.Receiver == nil {
-		return false
+		return true
 	}
 	for _, id := range del.Identities {
 		if !id.Code.IsEmpty() {
-			return false
+			return true
 		}
 	}
-	return len(del.Receiver.Addresses) == 0
+	return len(del.Receiver.Addresses) > 0
 }
 
-func neverTrue(any) bool {
-	return false
-}
-
-// extractCombo and extractAmount unwrap the value/pointer forms GOBL passes to a
-// rule test into a single pointer (nil when the value is neither), so the
-// predicates can share one nil-tolerant path instead of repeating the type switch.
+// extractCombo/extractAmount normalize the argument a GOBL rule test receives —
+// which may be the value (tax.Combo) or a pointer (*tax.Combo) — to one pointer
+// (nil if neither), so a predicate handles both forms without its own type switch.
 func extractCombo(val any) *tax.Combo {
 	switch c := val.(type) {
 	case *tax.Combo:
@@ -391,7 +325,7 @@ func extractAmount(val any) *num.Amount {
 }
 
 // firstPersonHasIdentityCode reports whether the first contact person carries an
-// identity code, mapped to the OIOUBL cac:Contact/cbc:ID 
+// identity code, mapped to the OIOUBL cac:Contact/cbc:ID
 func firstPersonHasIdentityCode(val any) bool {
 	people, ok := val.([]*org.Person)
 	if !ok || len(people) == 0 {
@@ -401,23 +335,17 @@ func firstPersonHasIdentityCode(val any) bool {
 	return p != nil && len(p.Identities) > 0 && !p.Identities[0].Code.IsEmpty()
 }
 
-// partyHasOIOUBLLegalID reports whether a party can produce a non-empty OIOUBL
-// PartyLegalEntity/CompanyID (F-LIB187). The converter emits a PartyLegalEntity for
-// any named party, filling CompanyID from the first legal-scope identity or (for a
-// Danish party) the CVR; a named non-Danish party with no legal identity would emit
-// an empty CompanyID, which OIOUBL rejects.
+// partyHasOIOUBLLegalID reports whether a named party can produce a non-empty
+// OIOUBL PartyLegalEntity/CompanyID from a legal identity or Danish CVR (F-LIB187).
 func partyHasOIOUBLLegalID(val any) bool {
 	p, ok := val.(*org.Party)
 	if !ok || p == nil {
 		return true
 	}
-	// No registration name means no PartyLegalEntity is emitted, so F-LIB187
-	// cannot fire (the party name is separately required by EN 16931).
+	// A party with no name has no PartyLegalEntity, so F-LIB187 (its CompanyID) can't apply.
 	if p.Name == "" {
 		return true
 	}
-	// normalizeParty derives a legal-scope identity from a Danish CVR, so a DK
-	// party is covered by the identity check below.
 	for _, id := range p.Identities {
 		if id.Scope == org.IdentityScopeLegal && !id.Code.IsEmpty() {
 			return true
@@ -426,24 +354,21 @@ func partyHasOIOUBLLegalID(val any) bool {
 	return false
 }
 
-// ibanTransferMissingBIC reports whether an IBAN bank-transfer (means 30→31, or 31)
-// carries a credit transfer with no BIC. OIOUBL requires FinancialInstitution/ID
-// for the IBAN channel (F-LIB113), which the converter sources from the BIC. Rule
-// 13 handles a missing account.
-func ibanTransferMissingBIC(val any) bool {
+func ibanTransferHasBIC(val any) bool {
 	instr, ok := val.(*pay.Instructions)
 	if !ok || instr == nil {
-		return false
+		return true
 	}
 	if !instr.Ext.Get(untdid.ExtKeyPaymentMeans).In("30", "31") {
-		return false
+		return true
 	}
 	ct := firstCreditTransfer(instr)
-	return ct != nil && ct.BIC == ""
+	// A missing account is rule 13's concern (F-LIB113 covers only the BIC).
+	return ct == nil || ct.BIC != ""
 }
 
-// firstCreditTransfer returns the credit transfer the converter emits (the
-// first); OIOUBL carries only one, so the payment rules must validate that one.
+// firstCreditTransfer returns the first credit transfer; OIOUBL carries only
+// one, so the payment rules validate that one.
 func firstCreditTransfer(instr *pay.Instructions) *pay.CreditTransfer {
 	if len(instr.CreditTransfer) == 0 {
 		return nil
@@ -451,10 +376,8 @@ func firstCreditTransfer(instr *pay.Instructions) *pay.CreditTransfer {
 	return instr.CreditTransfer[0]
 }
 
-// standardRatedHasPositivePercent reports whether a tax combo that maps to the
-// OIOUBL StandardRated category (GOBL VAT key "standard") carries a percent
-// greater than zero. OIOUBL rejects StandardRated with a zero or absent percent
-// (F-LIB382).
+// standardRatedHasPositivePercent reports whether a standard-rated VAT combo has
+// a percent greater than zero; OIOUBL rejects a zero or absent percent (F-LIB382).
 func standardRatedHasPositivePercent(val any) bool {
 	combo := extractCombo(val)
 	if combo == nil || combo.Key != tax.KeyStandard {
@@ -463,61 +386,45 @@ func standardRatedHasPositivePercent(val any) bool {
 	return combo.Percent != nil && !combo.Percent.Base().IsZero() && !combo.Percent.Base().IsNegative()
 }
 
-// bankTransferCodes are the OIOUBL PaymentMeansCode values that settle to a
-// payee bank account: 31 (IBAN), 30 (generic credit transfer, which the gobl.ubl
-// converter maps to 31), and 58 (SEPA credit transfer). OIOUBL then requires the
-// account identifier (F-LIB107 for 30/31, F-LIB377 for 58), which GOBL core
-// leaves optional. (42 is excluded — see validPaymentMeansCodes.)
+// bankTransferCodes are the OIOUBL PaymentMeansCode values requiring a payee
+// account (F-LIB107 for 30/31, F-LIB377 for 58); 30 is normalized to 31.
 var bankTransferCodes = []cbc.Code{"30", "31", "58"}
 
-func bankTransferMissingAccount(val any) bool {
+func bankTransferHasAccount(val any) bool {
 	instr, ok := val.(*pay.Instructions)
 	if !ok || instr == nil {
-		return false
+		return true
 	}
 	code := instr.Ext.Get(untdid.ExtKeyPaymentMeans)
 	if !code.In(bankTransferCodes...) {
-		return false
+		return true
 	}
 	ct := firstCreditTransfer(instr)
-	return ct == nil || (ct.IBAN == "" && ct.Number == "")
+	return ct != nil && (ct.IBAN != "" || ct.Number != "")
 }
 
-
-
-// giroAccountInvalid reports whether a Giro (payment-means 50) instruction's
-// payee account is missing or not 7-8 numeric digits (F-LIB319/320/321).
-func giroAccountInvalid(val any) bool {
-	return accountLengthInvalid(val, "50", isGiroAccountNumber)
+func giroAccountValid(val any) bool {
+	return accountNumberValid(val, "50", isGiroAccountNumber)
 }
 
-// fikAccountInvalid reports whether a FIK (payment-means 93) instruction's
-// creditor account is missing or not exactly 8 characters (F-LIB305).
-func fikAccountInvalid(val any) bool {
-	return accountLengthInvalid(val, "93", func(s string) bool { return len(s) == 8 })
+func fikAccountValid(val any) bool {
+	return accountNumberValid(val, "93", func(s string) bool { return len(s) == 8 })
 }
 
-// accountLengthInvalid fires when the instruction uses the given payment-means
-// code but no credit transfer carries an account number satisfying ok.
-func accountLengthInvalid(val any, code cbc.Code, ok func(string) bool) bool {
+// accountNumberValid checks the credit transfer's account number against ok, but
+// only for instructions using the given payment-means code (other means pass).
+func accountNumberValid(val any, code cbc.Code, ok func(string) bool) bool {
 	instr, isInstr := val.(*pay.Instructions)
 	if !isInstr || instr == nil {
-		return false
+		return true
 	}
 	if instr.Ext.Get(untdid.ExtKeyPaymentMeans) != code {
-		return false
+		return true
 	}
 	ct := firstCreditTransfer(instr)
-	return ct == nil || !ok(ct.Number)
+	return ct != nil && ok(ct.Number)
 }
 
-
-
-
-
-
-// isNumericOfLen reports whether s consists only of ASCII digits and has a
-// length within [minLen, maxLen].
 func isNumericOfLen(s string, minLen, maxLen int) bool {
 	if len(s) < minLen || len(s) > maxLen {
 		return false
@@ -533,7 +440,6 @@ func isNumericOfLen(s string, minLen, maxLen int) bool {
 func isGiroAccountNumber(s string) bool {
 	return isNumericOfLen(s, 7, 8)
 }
-
 
 func roundingInRange(val any) bool {
 	a := extractAmount(val)

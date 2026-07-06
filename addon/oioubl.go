@@ -22,6 +22,10 @@ const (
 	// V2 is the key for OIOUBL version 2.1, the current production version
 	// used on the NemHandel network.
 	V2 cbc.Key = Key + "-v2"
+
+	// SchemeDKCVR is the OIOUBL EndpointID scheme for a Danish CVR number, used
+	// when deriving a participant endpoint from a Danish tax ID.
+	SchemeDKCVR = "DK:CVR"
 )
 
 func init() {

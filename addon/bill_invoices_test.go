@@ -7,6 +7,7 @@ import (
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/catalogues/cef"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/currency"
@@ -683,6 +684,58 @@ func TestTotalsNonNegative(t *testing.T) {
 			Reason: "Goodwill",
 			Amount: inv.Totals.Total,
 			Taxes:  tax.Set{{Category: tax.CategoryVAT, Key: tax.KeyStandard, Percent: num.NewPercentage(250, 3)}},
+		}}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+}
+
+// TestInvoiceEN16931Relaxations covers the EN 16931 over-enforcement rules that
+// gobl core relaxes (or keeps) only when the dk-oioubl addon is present: the
+// production rules gate on the addon key, so the behaviour is verified here.
+func TestInvoiceEN16931Relaxations(t *testing.T) {
+	t.Run("due invoice without payment skips BR-CO-25", func(t *testing.T) {
+		// OIOUBL's payment rules are all conditional-on-presence, so a due
+		// invoice with no payment means/terms must not trip EN 16931's BR-CO-25.
+		inv := testInvoiceStandard(t)
+		inv.Payment = nil
+		require.NoError(t, inv.Calculate())
+		if err := rules.Validate(inv); err != nil {
+			assert.NotContains(t, err.Error(), "payment details are required")
+			assert.NotContains(t, err.Error(), "payment terms are required")
+		}
+	})
+
+	t.Run("amount-only payment terms pass", func(t *testing.T) {
+		// OIOUBL allows bare payment terms — its official samples carry terms
+		// with only an ID and amount — so EN 16931's due-dates-or-notes shape
+		// requirement must not fire.
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Terms: &pay.Terms{},
+		}
+		require.NoError(t, inv.Calculate())
+		if err := rules.Validate(inv); err != nil {
+			assert.NotContains(t, err.Error(), "due_dates or notes")
+		}
+	})
+
+	t.Run("exempt without a reason is rejected (BR-E-10 kept)", func(t *testing.T) {
+		// exempt maps to OIOUBL ZeroRated, but the exemption reason must accompany
+		// it so an exempt supply stays distinguishable from a true zero-rated one,
+		// so BR-E-10 is enforced.
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Taxes = tax.Set{{Category: tax.CategoryVAT, Key: tax.KeyExempt}}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "VATEX exemption reason")
+	})
+
+	t.Run("exempt with a VATEX reason passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Taxes = tax.Set{{
+			Category: tax.CategoryVAT,
+			Key:      tax.KeyExempt,
+			Ext:      tax.ExtensionsOf(cbc.CodeMap{cef.ExtKeyVATEX: "VATEX-EU-132"}),
 		}}
 		require.NoError(t, inv.Calculate())
 		assert.NoError(t, rules.Validate(inv))
