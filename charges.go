@@ -7,17 +7,6 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// AllowanceCharge represents an allowance or charge
-type AllowanceCharge struct {
-	ChargeIndicator           bool           `xml:"cbc:ChargeIndicator"`
-	AllowanceChargeReasonCode *string        `xml:"cbc:AllowanceChargeReasonCode"`
-	AllowanceChargeReason     *string        `xml:"cbc:AllowanceChargeReason"`
-	MultiplierFactorNumeric   *string        `xml:"cbc:MultiplierFactorNumeric"`
-	Amount                    Amount         `xml:"cbc:Amount"`
-	BaseAmount                *Amount        `xml:"cbc:BaseAmount"`
-	TaxCategory               []*TaxCategory `xml:"cac:TaxCategory"`
-}
-
 func (ui *Invoice) addCharges(inv *bill.Invoice) {
 	if inv.Charges == nil && inv.Discounts == nil {
 		return

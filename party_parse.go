@@ -221,7 +221,7 @@ func handlePartyTaxSchemes(party *Party, p *org.Party) {
 		return
 	}
 
-	cc := party.resolveCountry()
+	cc := resolveCountry(party)
 	validSchemes := extractValidTaxSchemes(party.PartyTaxScheme)
 
 	if len(validSchemes) == 1 {
@@ -236,11 +236,11 @@ func handlePartyTaxSchemes(party *Party, p *org.Party) {
 // address has no country to derive it from; fall back to the DK:SE/DK:CVR
 // company-ID scheme, which only a Danish party carries, so the tax-id country
 // and the DK-prefix strip still resolve.
-func (p *Party) resolveCountry() string {
+func resolveCountry(p *Party) string {
 	if c := p.CountryCode(); c != "" {
 		return c
 	}
-	if p.hasDanishCompanyScheme() {
+	if hasDanishCompanyScheme(p) {
 		return "DK"
 	}
 	return ""
@@ -248,7 +248,7 @@ func (p *Party) resolveCountry() string {
 
 // hasDanishCompanyScheme reports whether any tax-scheme or legal-entity company
 // ID carries a Danish OIOUBL scheme (DK:SE/DK:CVR).
-func (p *Party) hasDanishCompanyScheme() bool {
+func hasDanishCompanyScheme(p *Party) bool {
 	for _, pts := range p.PartyTaxScheme {
 		if id := pts.CompanyID; id != nil && id.SchemeID != nil &&
 			(*id.SchemeID == schemeDKSE || *id.SchemeID == schemeDKCVR) {

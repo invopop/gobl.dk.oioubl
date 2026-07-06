@@ -8,9 +8,7 @@ import (
 	"github.com/invopop/gobl"
 	dkoioubl "github.com/invopop/gobl.dk.oioubl"
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"
-	"github.com/invopop/gobl/org"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -158,63 +156,6 @@ func TestParseDueDateAndNestedBIC(t *testing.T) {
 	require.NotNil(t, inv.Payment.Instructions)
 	require.Len(t, inv.Payment.Instructions.CreditTransfer, 1)
 	assert.Equal(t, "DABADKKK", inv.Payment.Instructions.CreditTransfer[0].BIC)
-}
-
-func TestConvertResponseFansOutLines(t *testing.T) {
-	st := &bill.Status{
-		Type:      bill.StatusTypeResponse,
-		Code:      "RESP-MULTI",
-		IssueDate: cal.MakeDate(2026, 5, 29),
-		Supplier:  &org.Party{Name: "Seller Co"},
-		Customer:  &org.Party{Name: "Buyer Co"},
-		Lines: []*bill.StatusLine{
-			{Index: 1, Key: bill.StatusLineAccepted, Doc: &org.DocumentRef{Code: "INV-1"}},
-			{Index: 2, Key: bill.StatusLineAccepted, Doc: &org.DocumentRef{Code: "INV-2"}},
-		},
-	}
-	env, err := gobl.Envelop(st)
-	require.NoError(t, err)
-
-	doc, err := dkoioubl.Convert(env)
-	require.NoError(t, err)
-	ar, ok := doc.(*dkoioubl.ApplicationResponse)
-	require.True(t, ok)
-
-	// Every status line fans into its own DocumentResponse, each carrying the
-	// mandatory 1-based ReferenceID (F-APR016) and the response code.
-	require.Len(t, ar.DocumentResponse, 2)
-	assert.Equal(t, "INV-1", ar.DocumentResponse[0].DocumentReference.ID)
-	assert.Equal(t, "INV-2", ar.DocumentResponse[1].DocumentReference.ID)
-	assert.Equal(t, "1", ar.DocumentResponse[0].Response.ReferenceID)
-	assert.Equal(t, "2", ar.DocumentResponse[1].Response.ReferenceID)
-	require.NotNil(t, ar.DocumentResponse[0].Response.ResponseCode)
-	assert.Equal(t, "BusinessAccept", ar.DocumentResponse[0].Response.ResponseCode.Value)
-}
-
-func TestConvertResponseUpdateFlipsDirection(t *testing.T) {
-	st := &bill.Status{
-		Type:      bill.StatusTypeUpdate,
-		Code:      "UPD-1",
-		IssueDate: cal.MakeDate(2026, 5, 29),
-		Supplier:  &org.Party{Name: "Seller Co"},
-		Customer:  &org.Party{Name: "Buyer Co"},
-		Lines: []*bill.StatusLine{
-			{Index: 1, Key: bill.StatusLinePaid, Doc: &org.DocumentRef{Code: "INV-1"}},
-		},
-	}
-	env, err := gobl.Envelop(st)
-	require.NoError(t, err)
-
-	doc, err := dkoioubl.Convert(env)
-	require.NoError(t, err)
-	ar, ok := doc.(*dkoioubl.ApplicationResponse)
-	require.True(t, ok)
-
-	// An update travels supplier -> customer, the reverse of a response.
-	require.NotNil(t, ar.SenderParty)
-	assert.Equal(t, "Seller Co", ar.SenderParty.PartyName.Name)
-	require.NotNil(t, ar.ReceiverParty)
-	assert.Equal(t, "Buyer Co", ar.ReceiverParty.PartyName.Name)
 }
 
 // mixedCategoryDualCurrencyXML is a foreign-currency (EUR document, DKK tax)

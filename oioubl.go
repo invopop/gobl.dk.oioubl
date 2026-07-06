@@ -42,10 +42,8 @@ const (
 
 // VESIDs for phive validation of each document type.
 const (
-	VESIDInvoice             = "dk.oioubl:invoice:1.17.2"
-	VESIDCreditNote          = "dk.oioubl:credit-note:1.17.2"
-	VESIDApplicationResponse = "dk.oioubl:application-response:1.17.2"
-	VESIDReminder            = "dk.oioubl:reminder:1.17.2"
+	VESIDInvoice    = "dk.oioubl:invoice:1.17.2"
+	VESIDCreditNote = "dk.oioubl:credit-note:1.17.2"
 )
 
 // Addons lists the GOBL addons an OIOUBL document requires; they are ensured
@@ -69,25 +67,16 @@ const (
 	schemeTaxCategory = "urn:oioubl:id:taxcategoryid-1.1"
 	schemeTaxScheme   = "urn:oioubl:id:taxschemeid-1.1"
 	schemeProfileV12  = "urn:oioubl:id:profileid-1.2"
-	schemeProfileV14  = "urn:oioubl:id:profileid-1.4"
 
-	listInvoiceType     = "urn:oioubl:codelist:invoicetypecode-1.1"
-	listPaymentChannel  = "urn:oioubl:codelist:paymentchannelcode-1.1"
-	listAddressFormat   = "urn:oioubl:codelist:addressformatcode-1.1"
-	listTaxType         = "urn:oioubl:codelist:taxtypecode-1.1"
-	listResponseCode    = "urn:oioubl:codelist:responsecode-1.1"
-	listResponseDocType = "urn:oioubl:codelist:responsedocumenttypecode-1.1"
-	listReminderType    = "urn:oioubl:codelist:remindertypecode-1.1"
+	listInvoiceType    = "urn:oioubl:codelist:invoicetypecode-1.1"
+	listPaymentChannel = "urn:oioubl:codelist:paymentchannelcode-1.1"
+	listAddressFormat  = "urn:oioubl:codelist:addressformatcode-1.1"
+	listTaxType        = "urn:oioubl:codelist:taxtypecode-1.1"
 )
 
-// Parse parses a raw OIOUBL document and returns the underlying Go struct.
-// The returned value should be type asserted to the appropriate type:
-//
-//   - *Invoice (for both Invoice and CreditNote documents)
-//   - *ApplicationResponse (for invoice responses)
-//   - *Reminder (for the OIOUBL dunning document)
-//
-// Each type has a Convert method that returns the GOBL envelope.
+// Parse parses a raw OIOUBL document and returns the underlying Go struct. The
+// returned value is an *Invoice (for both Invoice and CreditNote documents),
+// whose Convert method returns the GOBL envelope.
 func Parse(data []byte) (any, error) {
 	ns, err := extractRootNamespace(data)
 	if err != nil {
@@ -111,29 +100,13 @@ func Parse(data []byte) (any, error) {
 		}
 		return in, nil
 
-	case NamespaceUBLApplicationResponse:
-		ar := new(ApplicationResponse)
-		if err := xmlctx.Unmarshal(data, ar, xmlctx.WithNamespaces(cbcCacNamespaces(ns))); err != nil {
-			return nil, err
-		}
-		return ar, nil
-
-	case NamespaceUBLReminder:
-		rem := new(Reminder)
-		if err := xmlctx.Unmarshal(data, rem, xmlctx.WithNamespaces(cbcCacNamespaces(ns))); err != nil {
-			return nil, err
-		}
-		return rem, nil
-
 	default:
 		return nil, ErrUnknownDocumentType
 	}
 }
 
-// Convert takes a GOBL envelope and converts it to an OIOUBL document of one
-// of the supported types: a bill.Invoice becomes an *Invoice (or CreditNote on
-// the wire), a bill.Status an *ApplicationResponse, and a bill.Payment of type
-// "request" a *Reminder.
+// Convert takes a GOBL envelope containing a bill.Invoice and converts it to an
+// OIOUBL *Invoice (or CreditNote on the wire).
 func Convert(env *gobl.Envelope) (any, error) {
 	switch doc := env.Extract().(type) {
 	case *bill.Invoice:
@@ -146,19 +119,6 @@ func Convert(env *gobl.Envelope) (any, error) {
 			return nil, fmt.Errorf("cannot convert invoice with included taxes: %w", err)
 		}
 		return newInvoice(doc)
-	case *bill.Status:
-		// The ApplicationResponse converter maps only; it neither auto-adds
-		// addons nor validates (a keyless or partial status is a generic UBL
-		// shape). Correctness is gated by the addon rules at envelope validation
-		// and by schematron downstream.
-		return newApplicationResponse(doc), nil
-	case *bill.Payment:
-		// A payment request maps to the OIOUBL Reminder (Rykker). Add any missing
-		// addons so the reminder-sequence rule surfaces, then convert.
-		if err := ensureAddons(env, Addons); err != nil {
-			return nil, err
-		}
-		return newReminder(doc), nil
 	default:
 		return nil, ErrUnsupportedDocumentType
 	}
@@ -178,13 +138,7 @@ func ConvertInvoice(env *gobl.Envelope) (*Invoice, error) {
 	return inv, nil
 }
 
-// addonsDocument is implemented by the GOBL document types that carry addons.
-type addonsDocument interface {
-	GetAddons() []cbc.Key
-	SetAddons(...cbc.Key)
-}
-
-// ensureAddons checks if the document has all required addons and adds the
+// ensureAddons checks that the invoice carries all required addons and adds the
 // missing ones, recalculating and revalidating the envelope so any rule the
 // newly added addon enforces is surfaced (as a *gobl.Error carrying the faults).
 func ensureAddons(env *gobl.Envelope, required []cbc.Key) error {
@@ -192,13 +146,13 @@ func ensureAddons(env *gobl.Envelope, required []cbc.Key) error {
 		return nil
 	}
 
-	doc, ok := env.Extract().(addonsDocument)
+	inv, ok := env.Extract().(*bill.Invoice)
 	if !ok {
 		return ErrUnsupportedDocumentType
 	}
 
 	var missing []cbc.Key
-	existing := doc.GetAddons()
+	existing := inv.GetAddons()
 	for _, addon := range required {
 		if !addon.In(existing...) {
 			missing = append(missing, addon)
@@ -208,22 +162,11 @@ func ensureAddons(env *gobl.Envelope, required []cbc.Key) error {
 		return nil
 	}
 
-	doc.SetAddons(append(existing, missing...)...)
+	inv.SetAddons(append(existing, missing...)...)
 	if err := env.Calculate(); err != nil {
 		return err
 	}
 	return env.Validate()
-}
-
-// cbcCacNamespaces returns the namespace prefix map for the simpler UBL
-// documents (ApplicationResponse, Reminder) that use only the cbc and cac
-// component namespaces alongside their root namespace.
-func cbcCacNamespaces(ns string) map[string]string {
-	return map[string]string{
-		"":    ns,
-		"cbc": NamespaceCBC,
-		"cac": NamespaceCAC,
-	}
 }
 
 func extractRootNamespace(data []byte) (string, error) {

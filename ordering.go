@@ -6,46 +6,6 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// Period represents a time period with start and end dates
-type Period struct {
-	StartDate       string `xml:"cbc:StartDate,omitempty"`
-	EndDate         string `xml:"cbc:EndDate,omitempty"`
-	DescriptionCode string `xml:"cbc:DescriptionCode,omitempty"`
-}
-
-// OrderReference represents a reference to an order
-type OrderReference struct {
-	ID                string `xml:"cbc:ID"`
-	SalesOrderID      string `xml:"cbc:SalesOrderID,omitempty"`
-	IssueDate         string `xml:"cbc:IssueDate,omitempty"`
-	CustomerReference string `xml:"cbc:CustomerReference,omitempty"`
-}
-
-// BillingReference represents a reference to a billing document
-type BillingReference struct {
-	InvoiceDocumentReference           *Reference `xml:"cac:InvoiceDocumentReference,omitempty"`
-	SelfBilledInvoiceDocumentReference *Reference `xml:"cac:SelfBilledInvoiceDocumentReference,omitempty"`
-	CreditNoteDocumentReference        *Reference `xml:"cac:CreditNoteDocumentReference,omitempty"`
-	AdditionalDocumentReference        *Reference `xml:"cac:AdditionalDocumentReference,omitempty"`
-}
-
-// Reference represents a reference to a document
-type Reference struct {
-	ID                  IDType      `xml:"cbc:ID"`
-	UUID                string      `xml:"cbc:UUID,omitempty"`
-	IssueDate           string      `xml:"cbc:IssueDate,omitempty"`
-	DocumentTypeCode    string      `xml:"cbc:DocumentTypeCode,omitempty"`
-	DocumentType        string      `xml:"cbc:DocumentType,omitempty"`
-	DocumentDescription string      `xml:"cbc:DocumentDescription,omitempty"`
-	Attachment          *Attachment `xml:"cac:Attachment,omitempty"`
-	ValidityPeriod      *Period     `xml:"cac:ValidityPeriod,omitempty"`
-}
-
-// ProjectReference represents a reference to a project
-type ProjectReference struct {
-	ID string `xml:"cbc:ID,omitempty"`
-}
-
 func (ui *Invoice) addPreceding(refs []*org.DocumentRef) {
 	if len(refs) == 0 {
 		return

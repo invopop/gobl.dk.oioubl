@@ -9,25 +9,6 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// BinaryAttachment represents a binary attachment that can be extracted from
-// or added to a UBL invoice.
-type BinaryAttachment struct {
-	// ID is the identifier for this attachment reference
-	ID string
-	// Description provides a human-readable description of the attachment
-	Description string
-	// Data contains the raw binary data (automatically base64-encoded/decoded as needed)
-	Data []byte
-	// MimeCode specifies the MIME type (e.g., "application/pdf")
-	MimeCode string
-	// Filename is the name of the file
-	Filename string
-	// CharacterSetCode specifies the character set if applicable
-	CharacterSetCode string
-	// URI can optionally reference where the document is located
-	URI string
-}
-
 // goblAddAttachments processes all attachments from the UBL Invoice and returns
 // external reference attachments only.
 // Binary attachments are skipped - use ExtractBinaryAttachments to retrieve them.

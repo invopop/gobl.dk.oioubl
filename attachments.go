@@ -6,37 +6,6 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// Attachment represents an attached document
-type Attachment struct {
-	ExternalReference            *ExternalReference `xml:"cac:ExternalReference,omitempty"`
-	EmbeddedDocumentBinaryObject *BinaryObject      `xml:"cbc:EmbeddedDocumentBinaryObject,omitempty"`
-}
-
-// BinaryObject represents binary data with associated metadata
-type BinaryObject struct {
-	MimeCode         *string `xml:"mimeCode,attr"`
-	Filename         *string `xml:"filename,attr"`
-	EncodingCode     *string `xml:"encodingCode,attr"`
-	CharacterSetCode *string `xml:"characterSetCode,attr"`
-	URI              *string `xml:"uri,attr"`
-	Value            string  `xml:",chardata"`
-}
-
-// ExternalReference represents a reference to an external resource
-type ExternalReference struct {
-	URI                 string `xml:"cbc:URI,omitempty"`
-	DocumentHash        string `xml:"cbc:DocumentHash,omitempty"`
-	HashAlgorithmMethod string `xml:"cbc:HashAlgorithmMethod,omitempty"`
-	ExpiryDate          string `xml:"cbc:ExpiryDate,omitempty"`
-	ExpiryTime          string `xml:"cbc:ExpiryTime,omitempty"`
-	MimeCode            string `xml:"cbc:MimeCode,omitempty"`
-	FormatCode          string `xml:"cbc:FormatCode,omitempty"`
-	EncodingCode        string `xml:"cbc:EncodingCode,omitempty"`
-	CharacterSetCode    string `xml:"cbc:CharacterSetCode,omitempty"`
-	FileName            string `xml:"cbc:FileName,omitempty"`
-	Description         string `xml:"cbc:Description,omitempty"`
-}
-
 // AddAttachments adds an attachment to the UBL Invoice.
 // This is useful for including documents like
 // invoice counter values or URLs
