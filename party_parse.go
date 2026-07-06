@@ -1,6 +1,7 @@
 package dkoioubl
 
 import (
+	ubl "github.com/invopop/gobl.ubl"
 	"strings"
 
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
@@ -22,7 +23,7 @@ func goblParty(party *Party) *org.Party {
 	}
 
 	if eID := party.EndpointID; eID != nil {
-		if eID.SchemeID == SchemeIDEmail {
+		if eID.SchemeID == ubl.SchemeIDEmail {
 			p.Inboxes = append(p.Inboxes, &org.Inbox{Email: eID.Value})
 		} else {
 			// OIOUBL participants are restored as org.Endpoints under the OIOUBL
@@ -308,7 +309,7 @@ func handleMultipleTaxSchemes(validSchemes []PartyTaxScheme, p *org.Party, count
 
 func findVATSchemeIndex(schemes []PartyTaxScheme) int {
 	for i, pts := range schemes {
-		if goblTaxSchemeCategory(pts.TaxScheme.ID.Value) == cbc.Code(TaxSchemeVAT) {
+		if goblTaxSchemeCategory(pts.TaxScheme.ID.Value) == cbc.Code(ubl.TaxSchemeVAT) {
 			return i
 		}
 	}

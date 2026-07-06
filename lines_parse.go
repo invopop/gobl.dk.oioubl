@@ -150,10 +150,8 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 	return line, nil
 }
 
-// calculateRequiredPrecision determines the decimal precision needed when
-// dividing a price by a base quantity to avoid rounding errors.
-// Formula: price_decimals + ceil(log10(base_quantity))
-// Example: price with 2 decimals divided by 100 needs 2 + 2 = 4 decimals
+// calculateRequiredPrecision returns the precision for a price / base-quantity
+// division that avoids rounding loss: price_decimals + ceil(log10(base_quantity)).
 func calculateRequiredPrecision(price, baseQuantity num.Amount) uint32 {
 	priceExp := price.Exp()
 

@@ -84,17 +84,17 @@ func Parse(data []byte) (any, error) {
 	}
 
 	switch ns {
-	case NamespaceUBLInvoice, NamespaceUBLCreditNote:
+	case ubl.NamespaceUBLInvoice, ubl.NamespaceUBLCreditNote:
 		in := new(Invoice)
 		if err := xmlctx.Unmarshal(data, in, xmlctx.WithNamespaces(map[string]string{
 			"":     ns,
-			"cbc":  NamespaceCBC,
-			"cac":  NamespaceCAC,
-			"qdt":  NamespaceQDT,
-			"udt":  NamespaceUDT,
-			"ccts": NamespaceCCTS,
-			"xsi":  NamespaceXSI,
-			"ext":  NamespaceEXT,
+			"cbc":  ubl.NamespaceCBC,
+			"cac":  ubl.NamespaceCAC,
+			"qdt":  ubl.NamespaceQDT,
+			"udt":  ubl.NamespaceUDT,
+			"ccts": ubl.NamespaceCCTS,
+			"xsi":  ubl.NamespaceXSI,
+			"ext":  ubl.NamespaceEXT,
 		})); err != nil {
 			return nil, err
 		}

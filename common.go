@@ -21,23 +21,6 @@ const extFieldKey = "ext"
 // local variable per attribute.
 func ptr[T any](v T) *T { return &v }
 
-// UBL namespaces, shared with the generic gobl.ubl converter.
-const (
-	NamespaceCBC  = ubl.NamespaceCBC
-	NamespaceCAC  = ubl.NamespaceCAC
-	NamespaceQDT  = ubl.NamespaceQDT
-	NamespaceUDT  = ubl.NamespaceUDT
-	NamespaceEXT  = ubl.NamespaceEXT
-	NamespaceCCTS = ubl.NamespaceCCTS
-	NamespaceXSI  = ubl.NamespaceXSI
-)
-
-// SchemeIDEmail is the EAS codelist value for email
-const SchemeIDEmail = ubl.SchemeIDEmail
-
-// TaxSchemeVAT is the tax scheme code for VAT
-const TaxSchemeVAT = ubl.TaxSchemeVAT
-
 func getTypeCode(inv *bill.Invoice) (string, error) {
 	if inv.Tax == nil || inv.Tax.Ext.Get(untdid.ExtKeyDocumentType).String() == "" {
 		return "", validation.Errors{
@@ -51,12 +34,8 @@ func getTypeCode(inv *bill.Invoice) (string, error) {
 	return inv.Tax.Ext.Get(untdid.ExtKeyDocumentType).String(), nil
 }
 
-// buildTaxCategoryKey constructs a unique key for a tax category from its scheme ID and category ID.
-// For standard-rate "S" entries the normalized percent is also included, since a single invoice can
-// have multiple S subtotals at different rates (e.g. 10% and 20%). For all other categories (E, K,
-// AE, Z, etc.) there is at most one entry per scheme+category, so the percent is omitted to allow
-// lines and charges that omit the percent element to still match.
-// The percent is normalized so that "20", "20.0", and "20.00" all produce the same key.
+// buildTaxCategoryKey keys a tax category by scheme+category, plus the normalized
+// percent for "S" (one invoice can carry several standard-rate subtotals).
 func buildTaxCategoryKey(taxSchemeID, categoryID string, percent *string) string {
 	if categoryID == "S" {
 		return taxSchemeID + ":" + categoryID + ":" + normalizeTaxPercent(percent)
@@ -94,20 +73,17 @@ func normalizeNumericString(s string) string {
 	return s
 }
 
-// goblTaxSchemeCategory maps a UBL TaxScheme ID back to the GOBL tax category
-// code on parse. OIOUBL identifies VAT as "63" (Moms); an inbound value that
-// already carries the GOBL "VAT" code passes through unchanged.
+// goblTaxSchemeCategory maps the OIOUBL VAT scheme "63" (Moms) back to GOBL's
+// "VAT" on parse; any other value passes through unchanged.
 func goblTaxSchemeCategory(schemeID string) cbc.Code {
 	if schemeID == taxSchemeVATCode {
-		return cbc.Code(TaxSchemeVAT)
+		return cbc.Code(ubl.TaxSchemeVAT)
 	}
 	return cbc.Code(schemeID)
 }
 
-// goblTaxCategoryCode maps an OIOUBL taxcategoryid-1.1 value back to the UNTDID
-// 5305 code GOBL expects on parse (en16931 then derives the GOBL key, and the
-// dk-oioubl addon strips the UNTDID extension again); any other value already
-// uses the UNTDID code and passes through unchanged.
+// goblTaxCategoryCode maps an OIOUBL taxcategoryid-1.1 value to the UNTDID 5305
+// code (S/Z/AE) that en16931 reads on parse to derive the GOBL tax key.
 func goblTaxCategoryCode(id string) cbc.Code {
 	switch id {
 	case taxCategoryStandardRated:

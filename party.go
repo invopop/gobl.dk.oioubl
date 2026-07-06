@@ -2,6 +2,7 @@ package dkoioubl
 
 import (
 	"fmt"
+	ubl "github.com/invopop/gobl.ubl"
 	"strings"
 
 	"github.com/invopop/gobl/catalogues/iso"
@@ -46,7 +47,7 @@ func addPartyTaxScheme(p *Party, party *org.Party) {
 	}
 	id := tID.GetScheme()
 	if id == cbc.CodeEmpty {
-		id = TaxSchemeVAT
+		id = ubl.TaxSchemeVAT
 	}
 	p.PartyTaxScheme = []PartyTaxScheme{{
 		CompanyID: &IDType{Value: code},
@@ -101,7 +102,7 @@ func addPartyEndpoint(p *Party, party *org.Party) {
 	if p.EndpointID == nil && len(party.Inboxes) > 0 {
 		ib := party.Inboxes[0]
 		if ib.Email != "" {
-			p.EndpointID = &EndpointID{SchemeID: SchemeIDEmail, Value: ib.Email}
+			p.EndpointID = &EndpointID{SchemeID: ubl.SchemeIDEmail, Value: ib.Email}
 		} else if ib.Scheme != "" {
 			p.EndpointID = &EndpointID{SchemeID: ib.Scheme.String(), Value: ib.Code.String()}
 		}

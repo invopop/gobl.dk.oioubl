@@ -327,10 +327,8 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 
 	taxTotal.TaxAmount = Amount{Value: totalAmount.String(), CurrencyID: &ccy}
 
-	// Mirror the line's excise duties as line-level cac:TaxTotal/Excise blocks so
-	// the wire records which line each duty belongs to. The duty is also summed
-	// into the document-level TaxTotal (which drives TaxExclusiveAmount); OIOUBL
-	// permits — and reconciles — a tax at both levels, exactly as it does for VAT.
+	// Emit the line's excise duties as line-level cac:TaxTotal/Excise blocks too,
+	// so the wire records which line each duty belongs to (as OIOUBL does for VAT).
 	totals := []TaxTotal{taxTotal}
 	totals = append(totals, makeExciseTaxTotals(collectLineExcise(line, ccy), ccy)...)
 	return totals
@@ -338,10 +336,8 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 
 func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount, ccy string, baseSum *num.Amount, taxes tax.Set) []*AllowanceCharge {
 	var allowanceCharges []*AllowanceCharge
-	// BR-DEC-24 / UBL-DT-01: line allowance and charge amounts (BT-136/BT-141)
-	// and their base amounts must match the currency's natural precision.
-	// GOBL keeps higher precision internally — notably after RemoveIncludedTaxes
-	// strips VAT from prices_include invoices — so round here at the boundary.
+	// BR-DEC-24 / UBL-DT-01: round allowance/charge amounts to the currency's
+	// natural precision, since GOBL keeps higher precision internally.
 	var base *Amount
 	if baseSum != nil {
 		base = &Amount{

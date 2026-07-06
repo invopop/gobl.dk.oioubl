@@ -14,8 +14,8 @@ func (ui *Invoice) goblAddDelivery(out *bill.Invoice) error {
 	if len(ui.Delivery) > 0 {
 		for _, del := range ui.Delivery {
 			if del.ActualDeliveryDate != nil && del.LatestDeliveryDate != nil {
-				// ZATCA maps delivery period as ActualDeliveryDate (start) +
-				// LatestDeliveryDate (end)
+				// A delivery period expressed as ActualDeliveryDate (start) +
+				// LatestDeliveryDate (end) parses back to a GOBL period.
 				start, err := parseDate(*del.ActualDeliveryDate)
 				if err != nil {
 					return err

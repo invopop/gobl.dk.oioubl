@@ -8,11 +8,8 @@ import (
 	"github.com/invopop/gobl/num"
 )
 
-// OIOUBL emits a non-VAT excise duty as a cac:TaxTotal/cac:TaxSubtotal carrying
-// the constant taxcategoryid-1.1 "Excise" category and the duty-type taxschemeid
-// code, rather than as a cac:AllowanceCharge. GOBL models the duty as a VAT-rated
-// charge whose Key is the taxschemeid duty code; VAT therefore already lands on
-// the duty-inclusive base (the charge folds into the line total).
+// taxCategoryExcise is the constant taxcategoryid-1.1 category OIOUBL emits for a
+// non-VAT excise duty (as a cac:TaxTotal, not a cac:AllowanceCharge).
 const taxCategoryExcise = "Excise"
 
 // exciseDuty is a duty charge resolved into the values OIOUBL needs: the
@@ -23,13 +20,9 @@ type exciseDuty struct {
 	amount num.Amount
 }
 
-// chargeExciseScheme returns the OIOUBL taxschemeid duty-type code a charge
-// carries in its Key, or "" for an ordinary charge. An excise duty is keyed with
-// its numeric taxschemeid code (e.g. "16"); GOBL's own charge keys are alphabetic
-// slugs (stamp-duty, handling, …), so an all-digit key marks the duty. A
-// single-digit code is stored zero-padded ("9" → "09"), since cbc.Key requires a
-// two-character minimum for digits; the leading zero is stripped to recover the
-// wire value.
+// chargeExciseScheme returns the taxschemeid duty code an all-digit charge Key
+// carries (e.g. "16"), or "" for an ordinary charge; a zero-padded "09" recovers
+// to "9" (cbc.Key needs a two-char minimum for digits).
 func chargeExciseScheme(key cbc.Key) string {
 	s := key.String()
 	if s == "" || !isAllDigits(s) {
@@ -87,12 +80,8 @@ func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
 	return out
 }
 
-// makeExciseTaxTotals builds one cac:TaxTotal per duty, mirroring the
-// official ERST samples: category "Excise", the duty-type code in the scheme, the
-// duty name from the charge reason, and TaxTypeCode derived from the amount
-// (StandardRated when positive, ZeroRated when zero — the duty's own rate, not a
-// VAT statement). TaxableAmount equals the duty amount, as the duty is levied
-// outright rather than as a percentage of a base.
+// makeExciseTaxTotals builds one cac:TaxTotal per duty (category "Excise", the
+// duty code in the scheme, name from the reason, TaxTypeCode from the amount sign).
 func makeExciseTaxTotals(excises []exciseDuty, currency string) []TaxTotal {
 	var totals []TaxTotal
 	for _, e := range excises {
@@ -123,11 +112,8 @@ func makeExciseTaxTotals(excises []exciseDuty, currency string) []TaxTotal {
 	return totals
 }
 
-// exciseLineChargesFromTaxTotals reconstructs a bill.LineCharge for every
-// cac:TaxTotal/Excise subtotal in the given totals, the inverse of
-// makeExciseTaxTotals: the taxschemeid duty code becomes the charge Key,
-// reason from the scheme name, amount from the subtotal. Non-excise (VAT)
-// subtotals are ignored.
+// exciseLineChargesFromTaxTotals is the inverse of makeExciseTaxTotals: each
+// cac:TaxTotal/Excise subtotal becomes a bill.LineCharge (VAT subtotals ignored).
 func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, error) {
 	var charges []*bill.LineCharge
 	for _, tt := range totals {
@@ -156,16 +142,9 @@ func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, erro
 	return charges, nil
 }
 
-// goblAddExciseCharges reconstructs the GOBL charges OIOUBL carried as
-// cac:TaxTotal/Excise subtotals. An excise duty is a bill.LineCharge (it must
-// ride a line: a document-level charge cannot reconcile OIOUBL's monetary
-// totals, the VAT-base bump that keeps F-LIB402/F-INV133 satisfied living only
-// in the line path). We emit the duty as both a line-level and a document-level
-// TaxTotal, so the line-level blocks (parsed per line in goblConvertLine)
-// preserve which line each duty belongs to. This handles the document-level
-// totals as a fallback: only when no line carried a line-level excise block (a
-// sender that emitted excise at document level alone), the duties are attached
-// to the first line, since the wire gives no other linkage.
+// goblAddExciseCharges is a fallback for document-level excise: it attaches the
+// duties to the first line only when no line carried its own line-level block
+// (the per-line case is handled in goblConvertLine, which preserves linkage).
 func (ui *Invoice) goblAddExciseCharges(out *bill.Invoice) error {
 	if len(out.Lines) == 0 {
 		return nil

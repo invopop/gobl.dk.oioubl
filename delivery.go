@@ -15,9 +15,8 @@ func newDelivery(del *bill.DeliveryDetails) *Delivery {
 	}
 
 	if del.Period != nil {
-		// A delivery window maps to RequestedDeliveryPeriod — the only delivery
-		// period OIOUBL permits, since it forbids LatestDeliveryDate (F-INV087)
-		// and the Promised/Estimated periods (F-INV089/F-INV090).
+		// RequestedDeliveryPeriod is the only delivery period OIOUBL permits
+		// (F-INV087/089/090 forbid LatestDeliveryDate and Promised/Estimated).
 		out.RequestedDeliveryPeriod = &Period{
 			StartDate: formatDate(del.Period.Start),
 			EndDate:   formatDate(del.Period.End),
@@ -26,10 +25,8 @@ func newDelivery(del *bill.DeliveryDetails) *Delivery {
 
 	if del.Receiver != nil {
 		out.DeliveryParty = newDeliveryParty(del.Receiver)
-		// OIOUBL requires a non-empty CompanyID whenever PartyLegalEntity is
-		// present (F-LIB187), but a delivery party only identifies a location and
-		// carries no company id. PartyLegalEntity isn't mandatory here, so drop it
-		// and keep just the PartyName.
+		// Drop PartyLegalEntity: a delivery party has no company id, and OIOUBL
+		// requires a non-empty CompanyID wherever PartyLegalEntity is present (F-LIB187).
 		if out.DeliveryParty != nil {
 			out.DeliveryParty.PartyLegalEntity = nil
 		}

@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	"encoding/xml"
 	"fmt"
+	ubl "github.com/invopop/gobl.ubl"
 
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
@@ -10,14 +11,8 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// UBL invoice and credit-note root namespaces.
-const (
-	NamespaceUBLInvoice    = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
-	NamespaceUBLCreditNote = "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2"
-
-	// rootNameCreditNote is the local name of a UBL CreditNote root element.
-	rootNameCreditNote = "CreditNote"
-)
+// rootNameCreditNote is the local name of a UBL CreditNote root element.
+const rootNameCreditNote = "CreditNote"
 
 // Schema location constants
 const (
@@ -33,14 +28,14 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 
 	out := &Invoice{
 		XMLName:                 xml.Name{Local: "Invoice"},
-		CACNamespace:            NamespaceCAC,
-		CBCNamespace:            NamespaceCBC,
-		QDTNamespace:            NamespaceQDT,
-		UDTNamespace:            NamespaceUDT,
-		UBLNamespace:            NamespaceUBLInvoice,
-		CCTSNamespace:           NamespaceCCTS,
-		XSINamespace:            NamespaceXSI,
-		EXTNamespace:            NamespaceEXT,
+		CACNamespace:            ubl.NamespaceCAC,
+		CBCNamespace:            ubl.NamespaceCBC,
+		QDTNamespace:            ubl.NamespaceQDT,
+		UDTNamespace:            ubl.NamespaceUDT,
+		UBLNamespace:            ubl.NamespaceUBLInvoice,
+		CCTSNamespace:           ubl.NamespaceCCTS,
+		XSINamespace:            ubl.NamespaceXSI,
+		EXTNamespace:            ubl.NamespaceEXT,
 		SchemaLocation:          SchemaLocationInvoice,
 		UBLVersionID:            Version,
 		CustomizationID:         CustomizationID,
@@ -78,7 +73,7 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 
 	if inv.Type.In(bill.InvoiceTypeCreditNote) {
 		out.XMLName = xml.Name{Local: rootNameCreditNote}
-		out.UBLNamespace = NamespaceUBLCreditNote
+		out.UBLNamespace = ubl.NamespaceUBLCreditNote
 		out.SchemaLocation = SchemaLocationCreditNote
 		out.InvoiceTypeCode = nil
 		out.CreditNoteTypeCode = &IDType{Value: tc}
