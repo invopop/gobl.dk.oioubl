@@ -15,15 +15,11 @@ func billStatusRules() *rules.Set {
 			rules.Field("code",
 				rules.Assert("05", "code is required (F-APR005)", is.Present),
 			),
-			// The converter sends the response FROM the responder TO the
-			// originator: the customer becomes the SenderParty (F-APR008
-			// endpoint, F-APR040 one PartyLegalEntity) and the supplier becomes
-			// the ReceiverParty (F-APR012 endpoint, F-APR041 at most one
-			// PartyLegalEntity). The citations below follow that mapping rather
-			// than the GOBL field name.
+			// Roles invert in a response: customer is the sender, supplier the
+			// receiver, so the F-APR citations below follow that inversion.
 			rules.Field("supplier",
-				rules.Assert("01", "supplier must have an endpoint or inbox (F-APR012)",
-					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
+				rules.Assert("01", "supplier must have an endpoint (F-APR012)",
+					is.Func("has endpoint", partyHasEndpoint)),
 				rules.Assert("06", "supplier must have a tax ID or identities (F-APR041)",
 					is.Func("has tax id or identities", partyHasTaxIDOrIdentities)),
 				rules.Assert("07", "supplier must have a name or identification (F-LIB022)",
@@ -31,20 +27,16 @@ func billStatusRules() *rules.Set {
 			),
 			rules.Field("customer",
 				rules.Assert("02", "customer is required for a response", is.Present),
-				rules.Assert("03", "customer must have an endpoint or inbox (F-APR008)",
-					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
+				rules.Assert("03", "customer must have an endpoint (F-APR008)",
+					is.Func("has endpoint", partyHasEndpoint)),
 				rules.Assert("08", "customer must have a name or identification (F-LIB022)",
 					is.Func("has name or identification", partyHasNameOrIdentification)),
 			),
 			rules.Field("lines",
-				// An OIOUBL ApplicationResponse carries exactly one Response for one
-				// referenced document (F-APR051 / F-APR054); the converter maps each
-				// status line to a DocumentResponse, so it must hold a single line.
+				// One Response per referenced document (F-APR051 / F-APR054).
 				rules.Assert("16", "a response carries exactly one document response (F-APR051 / F-APR054)", is.Length(1, 1)),
 				rules.Each(
-					// Only the four events the responsecode-1.1 code list accepts are
-					// representable; everything else (issued, processing, paid, …) has
-					// no OIOUBL response code (F-APR018).
+					// Only the four responsecode-1.1 events are representable (F-APR018).
 					rules.Field("key",
 						rules.Assert("15", "response status event must be one OIOUBL supports (F-APR018)",
 							is.In(
@@ -68,15 +60,12 @@ var isResponseType = is.Func("response status type", func(val any) bool {
 	return ok && st != nil && st.Type == bill.StatusTypeResponse
 })
 
-// partyHasEndpointOrInbox accepts either routing model: org.Endpoint is the
-// going-forward form for the wire cbc:EndpointID, while org.Inbox documents
-// produced before the endpoint migration remain valid.
-func partyHasEndpointOrInbox(val any) bool {
+func partyHasEndpoint(val any) bool {
 	p, ok := val.(*org.Party)
 	if !ok || p == nil {
 		return true
 	}
-	return len(p.Endpoints) > 0 || len(p.Inboxes) > 0
+	return len(p.Endpoints) > 0
 }
 
 func partyHasTaxIDOrIdentities(val any) bool {
@@ -87,12 +76,6 @@ func partyHasTaxIDOrIdentities(val any) bool {
 	return p.TaxID != nil || len(p.Identities) > 0
 }
 
-// partyHasNameOrIdentification reports whether the gobl.ubl converter can produce
-// a cac:PartyName or cac:PartyIdentification for the party, one of which F-LIB022
-// requires (cac:PartyLegalEntity does not satisfy it). A registration name yields
-// PartyName; an identity that is neither the legal CompanyID nor a tax-scheme
-// identity yields a PartyIdentification. A single legal or a tax identity alone
-// produces only CompanyID/PartyTaxScheme, which F-LIB022 does not accept.
 func partyHasNameOrIdentification(val any) bool {
 	p, ok := val.(*org.Party)
 	if !ok || p == nil {

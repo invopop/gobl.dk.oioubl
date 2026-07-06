@@ -8,31 +8,16 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// billPayTermsRules relaxes the EN 16931 BR-CO-25 payment-terms shape for OIOUBL,
-// which allows bare terms (its official samples carry terms with only an ID and
-// amount), so the due-dates-or-notes requirement does not apply.
+// billPayTermsRules relaxes EN 16931 BR-CO-25: OIOUBL allows bare payment terms
+// (ID + amount only), so the due-dates-or-notes requirement doesn't apply.
 func billPayTermsRules() *rules.Set {
 	return rules.For(new(pay.Terms),
 		rules.Ignore("GOBL-EU-EN16931-PAY-TERMS-01"),
 	)
 }
 
-// billPaymentRules returns the OIOUBL 2.1 rule set for bill.Payment. The rules
-// fire only for the "request" payment type, which is the GOBL document mapped to
-// an OIOUBL Reminder (Rykker/dunning). Other payment types (receipt, advice) have
-// no OIOUBL document and are left to GOBL core.
-//
-// GOBL core (paymentRules) already requires the type, issue date, currency
-// (F-REM008), supplier (F-REM017), lines and at least one method; EN 16931
-// registers no rules on bill.Payment at all. These rules close the OIOUBL gaps
-// the converter cannot satisfy from absent data — there is no en16931
-// over-enforcement on the request payment, so no rules.Ignore is required.
-//
-// Rules left to other layers: the Reminder totals math (F-REM079-086) is produced
-// by core Calculate; the excluded-element, single-currency and cardinality
-// assertions (e.g. F-REM002/003/065-068, F-REM069-072) are controlled by the
-// gobl.ubl serializer, which never emits the offending shapes; the penalty-fee
-// AllowanceCharge (F-REM094/097) has no bill.Payment field to map from.
+// billPaymentRules returns the OIOUBL Reminder (Rykker) rules, applied only to the
+// "request" payment type. en16931 has no bill.Payment rules, so nothing to Ignore.
 func billPaymentRules() *rules.Set {
 	return rules.For(new(bill.Payment),
 		rules.When(bill.PaymentTypeIn(bill.PaymentTypeRequest),
@@ -44,18 +29,16 @@ func billPaymentRules() *rules.Set {
 					tax.ExtensionsRequire(ExtKeyReminderSequence)),
 			),
 			rules.Field("supplier",
-				rules.Assert("03", "supplier must have an endpoint or inbox (F-REM018)",
-					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
+				rules.Assert("03", "supplier must have an endpoint (F-REM018)",
+					is.Func("has endpoint", partyHasEndpoint)),
 				rules.Assert("04", "supplier requires a legal identity or a Danish tax ID for the OIOUBL PartyLegalEntity (F-REM021 / F-LIB187)",
 					is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
 			),
 			rules.Field("customer",
 				rules.Assert("05", "customer is required (F-REM024)", is.Present),
-				rules.Assert("06", "customer must have an endpoint or inbox (F-REM025)",
-					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
-				// The Reminder schematron does not mandate a customer PartyLegalEntity
-				// (F-REM093 only caps it at one), but the gobl.ubl converter emits one
-				// for any named party, and OIOUBL then requires its CompanyID (F-LIB187).
+				rules.Assert("06", "customer must have an endpoint (F-REM025)",
+					is.Func("has endpoint", partyHasEndpoint)),
+				// A named customer has a PartyLegalEntity, so OIOUBL requires its CompanyID (F-LIB187).
 				rules.Assert("07", "customer requires a legal identity or a Danish tax ID for the OIOUBL PartyLegalEntity (F-LIB187)",
 					is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
 				rules.Field("people",
@@ -63,8 +46,8 @@ func billPaymentRules() *rules.Set {
 				),
 			),
 			rules.Field("payee",
-				rules.AssertIfPresent("09", "payee must have an endpoint or inbox (F-REM034)",
-					is.Func("has endpoint or inbox", partyHasEndpointOrInbox)),
+				rules.AssertIfPresent("09", "payee must have an endpoint (F-REM034)",
+					is.Func("has endpoint", partyHasEndpoint)),
 			),
 		),
 	)

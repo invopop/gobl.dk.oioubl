@@ -9,9 +9,9 @@ import (
 )
 
 // TagAdvis marks an OIOUBL Reminder (a bill.Payment of type "request") as an
-// advisory notice rather than a formal dunning reminder. The gobl.ubl converter
-// emits it as the remindertypecode-1.1 value "Advis" on cbc:ReminderTypeCode
-// (F-REM061); an untagged reminder defaults to "Reminder" (formal dunning).
+// advisory notice rather than a formal dunning reminder. It maps to the
+// remindertypecode-1.1 value "Advis" on cbc:ReminderTypeCode (F-REM061); an
+// untagged reminder defaults to "Reminder" (formal dunning).
 const TagAdvis cbc.Key = "advis"
 
 // paymentTags declares the OIOUBL document-variant tags for bill.Payment.
