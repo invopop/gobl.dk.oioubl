@@ -138,9 +138,8 @@ func ConvertInvoice(env *gobl.Envelope) (*Invoice, error) {
 	return inv, nil
 }
 
-// ensureAddons checks that the invoice carries all required addons and adds the
-// missing ones, recalculating and revalidating the envelope so any rule the
-// newly added addon enforces is surfaced (as a *gobl.Error carrying the faults).
+// ensureAddons adds any missing required addons, then recalculates and
+// revalidates so their rules surface as faults.
 func ensureAddons(env *gobl.Envelope, required []cbc.Key) error {
 	if len(required) == 0 {
 		return nil

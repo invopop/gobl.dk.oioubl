@@ -6,11 +6,9 @@ require (
 	cloud.google.com/go v0.118.0
 	github.com/invopop/gobl v0.502.1
 	github.com/invopop/gobl.ubl v0.54.1-0.20260706143339-ab250af77853
-	github.com/invopop/phive v0.6.0
 	github.com/invopop/validation v0.8.0
 	github.com/invopop/xmlctx v0.13.0
 	github.com/stretchr/testify v1.11.1
-	google.golang.org/grpc v1.82.0
 )
 
 require (
@@ -35,11 +33,8 @@ require (
 	github.com/russellhaering/goxmldsig v1.6.0 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
-	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/grpc v1.82.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.7.0 // indirect
 )

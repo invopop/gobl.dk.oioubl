@@ -271,10 +271,8 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 	var taxable num.Amount
 	switch {
 	case line.Sum != nil:
-		// OIOUBL line TaxableAmount is gross (Price×Qty), rounded to currency
-		// precision (l.Sum is the raw product); the discount is subtracted once
-		// at the document level (F-LIB402 sums gross line taxable amounts then
-		// adjusts for the document AllowanceCharge).
+		// OIOUBL line TaxableAmount is gross (Price×Qty); the discount is taken
+		// once at document level (F-LIB402).
 		taxable = rescaleToCurrency(*line.Sum, ccy)
 	case line.Total != nil:
 		taxable = *line.Total

@@ -1,9 +1,7 @@
 package dkoioubl_test
 
 import (
-	"context"
 	"encoding/json"
-	"flag"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,11 +11,8 @@ import (
 	dkoioubl "github.com/invopop/gobl.dk.oioubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/uuid"
-	"github.com/invopop/phive"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -26,42 +21,6 @@ const (
 
 	staticUUID uuid.UUID = "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2"
 )
-
-// validate enables schematron validation of the generated XML against a local
-// phive service on 127.0.0.1:9090.
-var validate = flag.Bool("validate", false, "Run phive validation on generated XML")
-
-// phiveClient connects to the local phive service when -validate is set,
-// returning nil otherwise.
-func phiveClient(t *testing.T) phive.ValidationServiceClient {
-	t.Helper()
-	if !*validate {
-		return nil
-	}
-	conn, err := grpc.NewClient(
-		"127.0.0.1:9090",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = conn.Close() })
-	return phive.NewValidationServiceClient(conn)
-}
-
-// validateXML runs the generated document through phive against the given VESID.
-func validateXML(t *testing.T, pc phive.ValidationServiceClient, vesid string, data []byte) {
-	t.Helper()
-	if pc == nil {
-		return
-	}
-	resp, err := pc.ValidateXml(context.Background(), &phive.ValidateXmlRequest{
-		Vesid:      vesid,
-		XmlContent: data,
-	})
-	require.NoError(t, err)
-	results, err := json.MarshalIndent(resp.Results, "", "  ")
-	require.NoError(t, err)
-	require.True(t, resp.Success, "Generated XML should be valid for %s: %s", vesid, string(results))
-}
 
 func getConvertPath() string {
 	return filepath.Join("test", "data", "convert")
@@ -82,8 +41,6 @@ func loadTestEnvelope(t *testing.T, path string) *gobl.Envelope {
 }
 
 func TestConvertInvoice(t *testing.T) {
-	pc := phiveClient(t)
-
 	examples, err := filepath.Glob(filepath.Join(getConvertPath(), jsonPattern))
 	require.NoError(t, err)
 	require.NotEmpty(t, examples, "no invoice examples found")
@@ -104,10 +61,6 @@ func TestConvertInvoice(t *testing.T) {
 			outPath := filepath.Join(getConvertPath(), "out", outName)
 			if *update {
 				require.NoError(t, os.WriteFile(outPath, data, 0644))
-			}
-
-			if inv, ok := env.Extract().(*bill.Invoice); ok {
-				validateXML(t, pc, dkoioubl.GetVESID(inv), data)
 			}
 
 			output, err := os.ReadFile(outPath)

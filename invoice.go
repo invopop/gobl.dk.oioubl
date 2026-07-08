@@ -96,7 +96,7 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 	out.addCharges(inv)
 	out.addTotals(inv)
 	out.addLines(inv)
-	out.AddAttachments(inv.Attachments)
+	(*ubl.Invoice)(out).AddAttachments(inv.Attachments)
 
 	if err = out.addPayment(inv); err != nil {
 		return nil, err
