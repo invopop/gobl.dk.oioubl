@@ -207,13 +207,11 @@ func (ui *Invoice) applyTaxRepresentative(out *bill.Invoice) {
 	if ui.TaxRepresentativeParty == nil {
 		return
 	}
-	// Move the original seller to the ordering.seller party
 	if out.Ordering == nil {
 		out.Ordering = &bill.Ordering{}
 	}
 	out.Ordering.Seller = out.Supplier
 
-	// Overwrite the seller field with the tax representative
 	out.Supplier = goblParty(ui.TaxRepresentativeParty)
 }
 

@@ -50,7 +50,6 @@ func makeCharge(ch *bill.Charge, ccy string, baseAmount num.Amount) AllowanceCha
 	if ch.Percent != nil {
 		p := allowanceMultiplier(ch.Percent)
 		c.MultiplierFactorNumeric = &p
-		// Add BaseAmount when percentage is provided
 		c.BaseAmount = &Amount{
 			Value:      baseAmount.String(),
 			CurrencyID: &ccy,
@@ -81,7 +80,6 @@ func makeDiscount(d *bill.Discount, ccy string, baseAmount num.Amount) Allowance
 	if d.Percent != nil {
 		p := allowanceMultiplier(d.Percent)
 		c.MultiplierFactorNumeric = &p
-		// Add BaseAmount when percentage is provided
 		c.BaseAmount = &Amount{
 			Value:      baseAmount.String(),
 			CurrencyID: &ccy,
@@ -110,7 +108,6 @@ func makeTaxCategory(taxes tax.Set) []*TaxCategory {
 			p := t.Percent.StringWithoutSymbol()
 			category.Percent = &p
 		} else if category.ID == nil || category.ID.Value != "O" {
-			// Default to 0% when not outside scope
 			zero := "0"
 			category.Percent = &zero
 		}

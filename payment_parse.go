@@ -213,10 +213,7 @@ func goblCreditTransfer(paymentMeans *PaymentMeans) []*pay.CreditTransfer {
 	return []*pay.CreditTransfer{creditTransfer}
 }
 
-// isIBAN checks if a string looks like an IBAN
-// Returns true if the string starts with 2+ letters followed by alphanumeric characters
-// This covers standard IBANs (e.g., NO9386011117947 or NO93 8601 1117 947) and allows
-// some flexibility for various IBAN-like formats that may appear in UBL documents
+// isIBAN reports whether s looks like an IBAN: 2+ letters then alphanumerics (spaces allowed).
 func isIBAN(s string) bool {
 	s = strings.ToUpper(strings.TrimSpace(s))
 	return ibanRegex.MatchString(s)

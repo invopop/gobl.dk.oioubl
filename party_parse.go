@@ -294,13 +294,11 @@ func handleMultipleTaxSchemes(validSchemes []PartyTaxScheme, p *org.Party, count
 	// Multiple tax schemes: look for VAT, otherwise use first
 	vatIdx := findVATSchemeIndex(validSchemes)
 
-	// Use VAT if found, otherwise first one
 	taxIDIdx := 0
 	if vatIdx != -1 {
 		taxIDIdx = vatIdx
 	}
 
-	// Set TaxID from chosen scheme
 	setTaxIDFromScheme(validSchemes[taxIDIdx], p, countryCode)
 
 	// Rest become identities with tax scope

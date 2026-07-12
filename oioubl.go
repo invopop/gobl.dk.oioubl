@@ -110,7 +110,6 @@ func Parse(data []byte) (any, error) {
 func Convert(env *gobl.Envelope) (any, error) {
 	switch doc := env.Extract().(type) {
 	case *bill.Invoice:
-		// Check and add missing addons
 		if err := ensureAddons(env, Addons); err != nil {
 			return nil, err
 		}
@@ -180,7 +179,7 @@ func extractRootNamespace(data []byte) (string, error) {
 		}
 		switch t := tk.(type) {
 		case xml.StartElement:
-			return t.Name.Space, nil // Extract and return the namespace
+			return t.Name.Space, nil
 		}
 	}
 	return "", ErrUnknownDocumentType

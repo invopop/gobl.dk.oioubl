@@ -14,9 +14,10 @@ import (
 // rootNameCreditNote is the local name of a UBL CreditNote root element.
 const rootNameCreditNote = "CreditNote"
 
-// Schema location constants
 const (
-	SchemaLocationInvoice    = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 http://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/UBL-Invoice-2.1.xsd"
+	// SchemaLocationInvoice is the xsi:schemaLocation for a UBL Invoice.
+	SchemaLocationInvoice = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 http://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/UBL-Invoice-2.1.xsd"
+	// SchemaLocationCreditNote is the xsi:schemaLocation for a UBL CreditNote.
 	SchemaLocationCreditNote = "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2 https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/UBL-CreditNote-2.1.xsd"
 )
 

@@ -188,7 +188,6 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 					p := r.Percent.StringWithoutSymbol()
 					taxCat.Percent = &p
 				} else if taxCat.ID == nil || taxCat.ID.Value != "O" {
-					// Default to 0% when not outside scope
 					p := "0"
 					taxCat.Percent = &p
 				}
@@ -208,7 +207,7 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 	ui.TaxTotal = append(ui.TaxTotal, makeExciseTaxTotals(collectExcise(inv, currency), currency)...)
 }
 
-// taxCategoryInfo holds tax category information from TaxTotal
+// taxCategoryInfo carries a subtotal's VATEX exemption reason code, keyed by tax-category.
 type taxCategoryInfo struct {
 	exemptionReasonCode string
 }

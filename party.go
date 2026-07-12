@@ -169,12 +169,10 @@ func newDeliveryParty(party *org.Party) *Party {
 	p := &Party{}
 	hasContent := false
 
-	// Only add PartyName if name is not empty
 	if party.Name != "" {
 		p.PartyName = &PartyName{
 			Name: party.Name,
 		}
-		// Only add PartyLegalEntity if name is not empty
 		p.PartyLegalEntity = &PartyLegalEntity{
 			RegistrationName: &party.Name,
 		}
@@ -235,16 +233,13 @@ func newPayeeParty(party *org.Party) *Party {
 	if len(party.Identities) > 0 {
 		for _, id := range party.Identities {
 			var schemeID *string
-			// First check if there's an explicit scheme in Ext
 			if s := id.Ext.Get(iso.ExtKeySchemeID).String(); s != "" {
 				schemeID = &s
 			}
 			// If no Ext scheme, check if label looks like a valid ICD code (4 digits)
 			if schemeID == nil && id.Label != "" && len(id.Label) == 4 {
-				// Assume 4-digit labels are ISO 6523 ICD codes
 				schemeID = &id.Label
 			}
-			// Only add the identity if we have a valid scheme
 			if schemeID != nil {
 				code := id.Code.String()
 				p.PartyIdentification = []Identification{
@@ -299,7 +294,6 @@ func newAddress(addresses []*org.Address) *PostalAddress {
 	if len(addresses) == 0 {
 		return nil
 	}
-	// Only return the first a
 	a := addresses[0]
 
 	addr := &PostalAddress{}

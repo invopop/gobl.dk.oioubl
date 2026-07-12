@@ -24,7 +24,6 @@ func (ui *Invoice) goblAddLines(out *bill.Invoice) error {
 
 	out.Lines = make([]*bill.Line, 0, len(items))
 
-	// Build tax category map from TaxTotal
 	taxCategoryMap := ui.buildTaxCategoryMap()
 
 	for _, docLine := range items {
@@ -42,7 +41,6 @@ func (ui *Invoice) goblAddLines(out *bill.Invoice) error {
 
 func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Line, error) {
 	if docLine.Price == nil {
-		// skip this line
 		return nil, nil
 	}
 	price, err := num.AmountFromString(ubl.NormalizeNumericString(docLine.Price.PriceAmount.Value))
@@ -57,8 +55,7 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 			return nil, err
 		}
 		if !baseQuantity.IsZero() {
-			// Calculate required precision dynamically to avoid rounding errors
-			// Formula: price_decimals + ceil(log10(base_quantity))
+			// Rescale to avoid rounding loss (see calculateRequiredPrecision).
 			precision := calculateRequiredPrecision(price, baseQuantity)
 			price = price.RescaleUp(precision).Divide(baseQuantity)
 		}

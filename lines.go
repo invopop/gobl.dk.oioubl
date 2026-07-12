@@ -137,7 +137,6 @@ func (ui *Invoice) addLines(inv *bill.Invoice) { //nolint:gocyclo
 					p := l.Taxes[0].Percent.StringWithoutSymbol()
 					it.ClassifiedTaxCategory.Percent = &p
 				} else if it.ClassifiedTaxCategory.ID == nil || it.ClassifiedTaxCategory.ID.Value != "O" {
-					// Default to 0% when not outside scope
 					p := "0"
 					it.ClassifiedTaxCategory.Percent = &p
 				}

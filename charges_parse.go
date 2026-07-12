@@ -17,7 +17,6 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	var charges []*bill.Charge
 	var discounts []*bill.Discount
 
-	// Build tax category map from TaxTotal
 	taxCategoryMap := ui.buildTaxCategoryMap()
 
 	for _, allowanceCharge := range ui.AllowanceCharge {
@@ -94,7 +93,6 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo)
 	if pct != nil {
 		ch.Percent = pct
 
-		// Check if there is a base amount
 		if ac.BaseAmount != nil {
 			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 			if err != nil {
@@ -110,7 +108,6 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo)
 			},
 		}
 
-		// Add tax category ID to extensions
 		if ac.TaxCategory[0].ID != nil {
 			ch.Taxes[0].Ext = ch.Taxes[0].Ext.Set(untdid.ExtKeyTaxCategory, goblTaxCategoryCode(ac.TaxCategory[0].ID.Value))
 
@@ -172,7 +169,6 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInf
 	if pct != nil {
 		d.Percent = pct
 
-		// Check if there is a base amount
 		if ac.BaseAmount != nil {
 			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 			if err != nil {
@@ -188,7 +184,6 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInf
 			},
 		}
 
-		// Add tax category ID to extensions
 		if ac.TaxCategory[0].ID != nil {
 			d.Taxes[0].Ext = d.Taxes[0].Ext.Set(untdid.ExtKeyTaxCategory, goblTaxCategoryCode(ac.TaxCategory[0].ID.Value))
 
@@ -242,7 +237,6 @@ func goblLineCharge(ac *AllowanceCharge) (*bill.LineCharge, error) {
 	if pct != nil {
 		ch.Percent = pct
 
-		// Check if there is a base amount
 		if ac.BaseAmount != nil {
 			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 			if err != nil {
@@ -277,7 +271,6 @@ func goblLineDiscount(ac *AllowanceCharge) (*bill.LineDiscount, error) {
 	if pct != nil {
 		d.Percent = pct
 
-		// Check if there is a base amount
 		if ac.BaseAmount != nil {
 			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 			if err != nil {
