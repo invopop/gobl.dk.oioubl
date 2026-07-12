@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	"strings"
 
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/cef"
 	"github.com/invopop/gobl/catalogues/untdid"
@@ -49,14 +50,13 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	return nil
 }
 
-// goblAllowancePercent parses an AllowanceCharge MultiplierFactorNumeric into a
-// GOBL percentage, or returns nil when none is present. OIOUBL stores the
-// decimal factor (0.05 = 5%), which PercentageFromString reads directly.
+// goblAllowancePercent reads the OIOUBL decimal MultiplierFactorNumeric
+// (0.05 = 5%) into a GOBL percentage, or nil when absent.
 func goblAllowancePercent(ac *AllowanceCharge) (*num.Percentage, error) {
 	if ac.MultiplierFactorNumeric == nil {
 		return nil, nil
 	}
-	p, err := num.PercentageFromString(normalizeNumericString(*ac.MultiplierFactorNumeric))
+	p, err := num.PercentageFromString(ubl.NormalizeNumericString(*ac.MultiplierFactorNumeric))
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo)
 		ch.Reason = *ac.AllowanceChargeReason
 	}
 	if ac.Amount.Value != "" {
-		a, err := num.AmountFromString(normalizeNumericString(ac.Amount.Value))
+		a, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +81,7 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo)
 		})
 	}
 	if ac.BaseAmount != nil {
-		b, err := num.AmountFromString(normalizeNumericString(ac.BaseAmount.Value))
+		b, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +96,7 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo)
 
 		// Check if there is a base amount
 		if ac.BaseAmount != nil {
-			base, err := num.AmountFromString(normalizeNumericString(ac.BaseAmount.Value))
+			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 			if err != nil {
 				return nil, err
 			}
@@ -115,14 +115,14 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo)
 			ch.Taxes[0].Ext = ch.Taxes[0].Ext.Set(untdid.ExtKeyTaxCategory, goblTaxCategoryCode(ac.TaxCategory[0].ID.Value))
 
 			// Look up exemption code from TaxTotal
-			key := buildTaxCategoryKey(ac.TaxCategory[0].TaxScheme.ID.Value, ac.TaxCategory[0].ID.Value, ac.TaxCategory[0].Percent)
+			key := ubl.BuildTaxCategoryKey(ac.TaxCategory[0].TaxScheme.ID.Value, ac.TaxCategory[0].ID.Value, ac.TaxCategory[0].Percent)
 			if info, ok := taxCategoryMap[key]; ok && info.exemptionReasonCode != "" {
 				ch.Taxes[0].Ext = ch.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.exemptionReasonCode))
 			}
 		}
 
 		if ac.TaxCategory[0].Percent != nil {
-			percent := normalizeNumericString(*ac.TaxCategory[0].Percent)
+			percent := ubl.NormalizeNumericString(*ac.TaxCategory[0].Percent)
 			if !strings.HasSuffix(percent, "%") {
 				percent += "%"
 			}
@@ -147,7 +147,7 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInf
 		d.Reason = *ac.AllowanceChargeReason
 	}
 	if ac.Amount.Value != "" {
-		a, err := num.AmountFromString(normalizeNumericString(ac.Amount.Value))
+		a, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +159,7 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInf
 		})
 	}
 	if ac.BaseAmount != nil {
-		b, err := num.AmountFromString(normalizeNumericString(ac.BaseAmount.Value))
+		b, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +174,7 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInf
 
 		// Check if there is a base amount
 		if ac.BaseAmount != nil {
-			base, err := num.AmountFromString(normalizeNumericString(ac.BaseAmount.Value))
+			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 			if err != nil {
 				return nil, err
 			}
@@ -193,14 +193,14 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInf
 			d.Taxes[0].Ext = d.Taxes[0].Ext.Set(untdid.ExtKeyTaxCategory, goblTaxCategoryCode(ac.TaxCategory[0].ID.Value))
 
 			// Look up exemption code from TaxTotal
-			key := buildTaxCategoryKey(ac.TaxCategory[0].TaxScheme.ID.Value, ac.TaxCategory[0].ID.Value, ac.TaxCategory[0].Percent)
+			key := ubl.BuildTaxCategoryKey(ac.TaxCategory[0].TaxScheme.ID.Value, ac.TaxCategory[0].ID.Value, ac.TaxCategory[0].Percent)
 			if info, ok := taxCategoryMap[key]; ok && info.exemptionReasonCode != "" {
 				d.Taxes[0].Ext = d.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.exemptionReasonCode))
 			}
 		}
 
 		if ac.TaxCategory[0].Percent != nil {
-			percentStr := normalizeNumericString(*ac.TaxCategory[0].Percent)
+			percentStr := ubl.NormalizeNumericString(*ac.TaxCategory[0].Percent)
 			if !strings.HasSuffix(percentStr, "%") {
 				percentStr += "%"
 			}
@@ -220,7 +220,7 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInf
 }
 
 func goblLineCharge(ac *AllowanceCharge) (*bill.LineCharge, error) {
-	amount, err := num.AmountFromString(normalizeNumericString(ac.Amount.Value))
+	amount, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func goblLineCharge(ac *AllowanceCharge) (*bill.LineCharge, error) {
 
 		// Check if there is a base amount
 		if ac.BaseAmount != nil {
-			base, err := num.AmountFromString(normalizeNumericString(ac.BaseAmount.Value))
+			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 			if err != nil {
 				return nil, err
 			}
@@ -255,7 +255,7 @@ func goblLineCharge(ac *AllowanceCharge) (*bill.LineCharge, error) {
 }
 
 func goblLineDiscount(ac *AllowanceCharge) (*bill.LineDiscount, error) {
-	a, err := num.AmountFromString(normalizeNumericString(ac.Amount.Value))
+	a, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func goblLineDiscount(ac *AllowanceCharge) (*bill.LineDiscount, error) {
 
 		// Check if there is a base amount
 		if ac.BaseAmount != nil {
-			base, err := num.AmountFromString(normalizeNumericString(ac.BaseAmount.Value))
+			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 			if err != nil {
 				return nil, err
 			}

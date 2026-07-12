@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	"strconv"
 
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/catalogues/untdid"
@@ -82,8 +83,8 @@ func (ui *Invoice) addLines(inv *bill.Invoice) { //nolint:gocyclo
 
 		if l.Period != nil {
 			invLine.InvoicePeriod = &Period{
-				StartDate: formatDate(l.Period.Start),
-				EndDate:   formatDate(l.Period.End),
+				StartDate: ubl.FormatDate(l.Period.Start),
+				EndDate:   ubl.FormatDate(l.Period.End),
 			}
 		}
 

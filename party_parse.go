@@ -19,7 +19,7 @@ func goblParty(party *Party) *org.Party {
 	p := &org.Party{}
 
 	if party.PartyLegalEntity != nil && party.PartyLegalEntity.RegistrationName != nil {
-		p.Name = cleanString(*party.PartyLegalEntity.RegistrationName)
+		p.Name = ubl.CleanString(*party.PartyLegalEntity.RegistrationName)
 	}
 
 	if eID := party.EndpointID; eID != nil {
@@ -42,10 +42,10 @@ func goblParty(party *Party) *org.Party {
 
 	if party.PartyName != nil {
 		if p.Name == "" {
-			p.Name = cleanString(party.PartyName.Name)
+			p.Name = ubl.CleanString(party.PartyName.Name)
 		} else if party.PartyName.Name != p.Name {
 			// Only set alias if it's different from the name
-			p.Alias = cleanString(party.PartyName.Name)
+			p.Alias = ubl.CleanString(party.PartyName.Name)
 		}
 	}
 
@@ -53,14 +53,14 @@ func goblParty(party *Party) *org.Party {
 		person := new(org.Person)
 		if c.Name != nil {
 			person.Name = &org.Name{
-				Given: cleanString(*c.Name),
+				Given: ubl.CleanString(*c.Name),
 			}
 		}
 		// OIOUBL carries the contact reference in cac:Contact/cbc:ID; restore it
 		// to the person's identities so the round-trip stays lossless (the
 		// outbound side sources Contact/ID from person.Identities for F-INV051).
 		if c.ID != nil {
-			if code := cleanString(*c.ID); code != "" {
+			if code := ubl.CleanString(*c.ID); code != "" {
 				person.Identities = []*org.Identity{{Code: cbc.Code(code)}}
 			}
 		}
@@ -79,14 +79,14 @@ func goblParty(party *Party) *org.Party {
 		if party.Contact.Telephone != nil {
 			p.Telephones = []*org.Telephone{
 				{
-					Number: cleanString(*party.Contact.Telephone),
+					Number: ubl.CleanString(*party.Contact.Telephone),
 				},
 			}
 		}
 		if party.Contact.ElectronicMail != nil {
 			p.Emails = []*org.Email{
 				{
-					Address: cleanString(*party.Contact.ElectronicMail),
+					Address: ubl.CleanString(*party.Contact.ElectronicMail),
 				},
 			}
 		}
@@ -109,11 +109,11 @@ func goblDeliveryParty(party *Party) *org.Party {
 	p := &org.Party{}
 
 	if party.PartyLegalEntity != nil && party.PartyLegalEntity.RegistrationName != nil {
-		p.Name = cleanString(*party.PartyLegalEntity.RegistrationName)
+		p.Name = ubl.CleanString(*party.PartyLegalEntity.RegistrationName)
 	}
 	if party.PartyName != nil {
 		if p.Name == "" {
-			p.Name = cleanString(party.PartyName.Name)
+			p.Name = ubl.CleanString(party.PartyName.Name)
 		}
 	}
 
@@ -133,33 +133,33 @@ func parseAddress(address *PostalAddress) *org.Address {
 		addr.Country = l10n.ISOCountryCode(address.Country.IdentificationCode)
 	}
 	if address.StreetName != nil {
-		addr.Street = cleanString(*address.StreetName)
+		addr.Street = ubl.CleanString(*address.StreetName)
 	}
 	if address.AdditionalStreetName != nil {
-		addr.StreetExtra = cleanString(*address.AdditionalStreetName)
+		addr.StreetExtra = ubl.CleanString(*address.AdditionalStreetName)
 	}
 	if address.CityName != nil {
-		addr.Locality = cleanString(*address.CityName)
+		addr.Locality = ubl.CleanString(*address.CityName)
 	}
 	if address.PostalZone != nil {
-		addr.Code = cbc.Code(cleanString(*address.PostalZone))
+		addr.Code = cbc.Code(ubl.CleanString(*address.PostalZone))
 	}
 	if address.CountrySubentity != nil {
-		addr.Region = cleanString(*address.CountrySubentity)
+		addr.Region = ubl.CleanString(*address.CountrySubentity)
 	}
 	// A StructuredRegion address carries its region in cbc:Region rather than
 	// cbc:CountrySubentity (F-LIB040). No other profile emits cbc:Region.
 	if address.Region != nil && addr.Region == "" {
-		addr.Region = cleanString(*address.Region)
+		addr.Region = ubl.CleanString(*address.Region)
 	}
 	// A StructuredRegion address carries the locality in cbc:District (F-LIB040);
 	// org.Address.Locality is its district-level field ("village, town, district,
 	// or city").
 	if address.District != nil && addr.Locality == "" {
-		addr.Locality = cleanString(*address.District)
+		addr.Locality = ubl.CleanString(*address.District)
 	}
 	if address.BuildingNumber != nil {
-		addr.Number = cleanString(*address.BuildingNumber)
+		addr.Number = ubl.CleanString(*address.BuildingNumber)
 	}
 	// A StructuredID address is reduced to a single register identifier (a GLN) in
 	// cbc:ID (F-LIB037/038). GOBL has no address-identifier field, so the value
@@ -168,14 +168,14 @@ func parseAddress(address *PostalAddress) *org.Address {
 	if address.AddressFormatCode != nil &&
 		address.AddressFormatCode.Value == addressStructuredID &&
 		address.ID != nil {
-		addr.Number = cleanString(address.ID.Value)
+		addr.Number = ubl.CleanString(address.ID.Value)
 	}
 	if address.Postbox != nil {
-		addr.PostOfficeBox = cleanString(*address.Postbox)
+		addr.PostOfficeBox = ubl.CleanString(*address.Postbox)
 	}
 	// CitySubdivisionName maps to StreetExtra in GOBL.
 	if address.CitySubdivisionName != nil && addr.StreetExtra == "" {
-		addr.StreetExtra = cleanString(*address.CitySubdivisionName)
+		addr.StreetExtra = ubl.CleanString(*address.CitySubdivisionName)
 	}
 	// Unstructured addresses (OIOUBL AddressFormatCode "Unstructured") carry
 	// their content as free-text cac:AddressLine rather than the structured
@@ -184,7 +184,7 @@ func parseAddress(address *PostalAddress) *org.Address {
 	if addr.Street == "" && len(address.AddressLine) > 0 {
 		var lines []string
 		for _, l := range address.AddressLine {
-			if s := cleanString(l.Line); s != "" {
+			if s := ubl.CleanString(l.Line); s != "" {
 				lines = append(lines, s)
 			}
 		}

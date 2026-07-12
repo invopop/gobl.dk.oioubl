@@ -1,6 +1,7 @@
 package dkoioubl
 
 import (
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"
@@ -16,32 +17,32 @@ func (ui *Invoice) goblAddDelivery(out *bill.Invoice) error {
 			if del.ActualDeliveryDate != nil && del.LatestDeliveryDate != nil {
 				// A delivery period expressed as ActualDeliveryDate (start) +
 				// LatestDeliveryDate (end) parses back to a GOBL period.
-				start, err := parseDate(*del.ActualDeliveryDate)
+				start, err := ubl.ParseDate(*del.ActualDeliveryDate)
 				if err != nil {
 					return err
 				}
-				end, err := parseDate(*del.LatestDeliveryDate)
+				end, err := ubl.ParseDate(*del.LatestDeliveryDate)
 				if err != nil {
 					return err
 				}
 				d.Date = &start
 				d.Period = &cal.Period{Start: start, End: end}
 			} else if del.ActualDeliveryDate != nil {
-				deliveryDate, err := parseDate(*del.ActualDeliveryDate)
+				deliveryDate, err := ubl.ParseDate(*del.ActualDeliveryDate)
 				if err != nil {
 					return err
 				}
 				d.Date = &deliveryDate
 			}
 			if del.RequestedDeliveryPeriod != nil {
-				p, err := goblPeriodDates(del.RequestedDeliveryPeriod)
+				p, err := ubl.GoblPeriodDates(del.RequestedDeliveryPeriod)
 				if err != nil {
 					return err
 				}
 				d.Period = p
 			}
 			if del.EstimatedDeliveryPeriod != nil {
-				p, err := goblPeriodDates(del.EstimatedDeliveryPeriod)
+				p, err := ubl.GoblPeriodDates(del.EstimatedDeliveryPeriod)
 				if err != nil {
 					return err
 				}

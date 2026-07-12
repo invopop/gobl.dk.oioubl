@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	"strconv"
 
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/cef"
 	"github.com/invopop/gobl/catalogues/untdid"
@@ -12,11 +13,8 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// addMonetaryTotal rebuilds LegalMonetaryTotal for OIOUBL, whose line
-// LineExtensionAmount is gross (Price×Qty, F-INV348). The document
-// LineExtensionAmount becomes the gross line sum, and line-level
-// allowances/charges fold into the document Allowance/ChargeTotalAmount
-// (F-INV129/F-INV130). Reconciles: gross − allowances + charges = net base.
+// addMonetaryTotal rebuilds LegalMonetaryTotal for OIOUBL's gross line amounts
+// (F-INV348), folding line allowances/charges into the document totals.
 func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 	t := inv.Totals
 	exp := t.Sum.Exp()
@@ -102,7 +100,7 @@ func (ui *Invoice) addPrepaidPayments(inv *bill.Invoice, currency string) {
 			PaidAmount: &Amount{Value: adv.Amount.String(), CurrencyID: &currency},
 		}
 		if adv.Date != nil {
-			d := formatDate(*adv.Date)
+			d := ubl.FormatDate(*adv.Date)
 			pp.ReceivedDate = &d
 		}
 		if adv.Ref != "" {
@@ -222,7 +220,7 @@ func (ui *Invoice) buildTaxCategoryMap() map[string]*taxCategoryInfo {
 	for _, taxTotal := range ui.TaxTotal {
 		for _, subtotal := range taxTotal.TaxSubtotal {
 			if subtotal.TaxCategory.ID != nil && subtotal.TaxCategory.TaxScheme != nil {
-				key := buildTaxCategoryKey(subtotal.TaxCategory.TaxScheme.ID.Value, subtotal.TaxCategory.ID.Value, subtotal.TaxCategory.Percent)
+				key := ubl.BuildTaxCategoryKey(subtotal.TaxCategory.TaxScheme.ID.Value, subtotal.TaxCategory.ID.Value, subtotal.TaxCategory.Percent)
 				info := &taxCategoryInfo{}
 				if subtotal.TaxCategory.TaxExemptionReasonCode != nil {
 					info.exemptionReasonCode = *subtotal.TaxCategory.TaxExemptionReasonCode
@@ -246,7 +244,7 @@ func (ui *Invoice) goblAddTaxNotes(inv *bill.Invoice) {
 			}
 			note := &tax.Note{
 				Category: goblTaxSchemeCategory(tc.TaxScheme.ID.Value),
-				Text:     cleanString(*tc.TaxExemptionReason),
+				Text:     ubl.CleanString(*tc.TaxExemptionReason),
 				Ext:      tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyTaxCategory: goblTaxCategoryCode(tc.ID.Value)}),
 			}
 			inv.Tax = inv.Tax.MergeNotes(note)
@@ -276,7 +274,7 @@ func goblExchangeRates(docCurrency, taxCurrency cur.Code, taxTotals []TaxTotal) 
 		return nil
 	}
 
-	docAmount, err := num.AmountFromString(normalizeNumericString(taxTotals[0].TaxAmount.Value))
+	docAmount, err := num.AmountFromString(ubl.NormalizeNumericString(taxTotals[0].TaxAmount.Value))
 	if err != nil || docAmount.IsZero() {
 		return nil
 	}
@@ -302,7 +300,7 @@ func goblExchangeRates(docCurrency, taxCurrency cur.Code, taxTotals []TaxTotal) 
 // or reading a second TaxTotal block when present.
 func taxCurrencyTaxAmount(taxTotals []TaxTotal) (num.Amount, bool) {
 	if len(taxTotals) >= 2 {
-		a, err := num.AmountFromString(normalizeNumericString(taxTotals[1].TaxAmount.Value))
+		a, err := num.AmountFromString(ubl.NormalizeNumericString(taxTotals[1].TaxAmount.Value))
 		if err != nil {
 			return num.Amount{}, false
 		}
@@ -315,7 +313,7 @@ func taxCurrencyTaxAmount(taxTotals []TaxTotal) (num.Amount, bool) {
 		if st.TransactionCurrencyTaxAmount == nil {
 			continue
 		}
-		a, err := num.AmountFromString(normalizeNumericString(st.TransactionCurrencyTaxAmount.Value))
+		a, err := num.AmountFromString(ubl.NormalizeNumericString(st.TransactionCurrencyTaxAmount.Value))
 		if err != nil {
 			return num.Amount{}, false
 		}
@@ -417,12 +415,12 @@ func sumTaxTotalAmounts(totals []TaxTotal) Amount {
 	if len(totals) == 1 {
 		return totals[0].TaxAmount
 	}
-	sum, err := num.AmountFromString(normalizeNumericString(totals[0].TaxAmount.Value))
+	sum, err := num.AmountFromString(ubl.NormalizeNumericString(totals[0].TaxAmount.Value))
 	if err != nil {
 		return totals[0].TaxAmount
 	}
 	for _, tt := range totals[1:] {
-		a, err := num.AmountFromString(normalizeNumericString(tt.TaxAmount.Value))
+		a, err := num.AmountFromString(ubl.NormalizeNumericString(tt.TaxAmount.Value))
 		if err != nil {
 			continue
 		}

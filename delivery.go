@@ -1,6 +1,10 @@
 package dkoioubl
 
-import "github.com/invopop/gobl/bill"
+import (
+	ubl "github.com/invopop/gobl.ubl"
+
+	"github.com/invopop/gobl/bill"
+)
 
 func newDelivery(del *bill.DeliveryDetails) *Delivery {
 	if del == nil {
@@ -10,7 +14,7 @@ func newDelivery(del *bill.DeliveryDetails) *Delivery {
 	out := new(Delivery)
 
 	if del.Date != nil {
-		date := formatDate(*del.Date)
+		date := ubl.FormatDate(*del.Date)
 		out.ActualDeliveryDate = &date
 	}
 
@@ -18,8 +22,8 @@ func newDelivery(del *bill.DeliveryDetails) *Delivery {
 		// RequestedDeliveryPeriod is the only delivery period OIOUBL permits
 		// (F-INV087/089/090 forbid LatestDeliveryDate and Promised/Estimated).
 		out.RequestedDeliveryPeriod = &Period{
-			StartDate: formatDate(del.Period.Start),
-			EndDate:   formatDate(del.Period.End),
+			StartDate: ubl.FormatDate(del.Period.Start),
+			EndDate:   ubl.FormatDate(del.Period.End),
 		}
 	}
 

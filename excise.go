@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	"strings"
 
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
@@ -125,7 +126,7 @@ func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, erro
 			if st.TaxCategory.TaxScheme == nil {
 				continue
 			}
-			amount, err := num.AmountFromString(normalizeNumericString(st.TaxAmount.Value))
+			amount, err := num.AmountFromString(ubl.NormalizeNumericString(st.TaxAmount.Value))
 			if err != nil {
 				return nil, err
 			}

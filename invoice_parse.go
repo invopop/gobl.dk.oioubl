@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	"cloud.google.com/go/civil"
 	"github.com/invopop/gobl"
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"
@@ -74,7 +75,7 @@ func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 	if err := ui.goblAddPayment(out); err != nil {
 		return nil, err
 	}
-	if err := ui.goblAddOrdering(out); err != nil {
+	if err := (*ubl.Invoice)(ui).GoblAddOrdering(out); err != nil {
 		return nil, err
 	}
 	if err := ui.goblAddDelivery(out); err != nil {
@@ -97,7 +98,7 @@ func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 		return nil, err
 	}
 
-	out.Attachments = ui.goblAddAttachments()
+	out.Attachments = (*ubl.Invoice)(ui).GoblAddAttachments()
 	ui.goblAddTaxNotes(out)
 
 	return out, nil
@@ -122,7 +123,7 @@ func (ui *Invoice) resolveInvoiceType(out *bill.Invoice) {
 
 // parseInvoiceDates parses IssueDate, IssueTime, and TaxPointDate (BT-7).
 func (ui *Invoice) parseInvoiceDates(out *bill.Invoice) error {
-	issueDate, err := parseDate(ui.IssueDate)
+	issueDate, err := ubl.ParseDate(ui.IssueDate)
 	if err != nil {
 		return err
 	}
@@ -138,7 +139,7 @@ func (ui *Invoice) parseInvoiceDates(out *bill.Invoice) error {
 
 	// BT-7: VAT point date
 	if ui.TaxPointDate != "" {
-		vd, err := parseDate(ui.TaxPointDate)
+		vd, err := ubl.ParseDate(ui.TaxPointDate)
 		if err != nil {
 			return err
 		}
@@ -166,7 +167,7 @@ func (ui *Invoice) parseInvoiceNotes(out *bill.Invoice) {
 	}
 	out.Notes = make([]*org.Note, 0, len(ui.Note))
 	for _, note := range ui.Note {
-		out.Notes = append(out.Notes, parseNote(note))
+		out.Notes = append(out.Notes, ubl.ParseNote(note))
 	}
 }
 
@@ -183,13 +184,13 @@ func (ui *Invoice) parseBillingReferences(out *bill.Invoice) error {
 		)
 		switch {
 		case ref.InvoiceDocumentReference != nil:
-			docRef, err = goblReference(ref.InvoiceDocumentReference)
+			docRef, err = ubl.GoblReference(ref.InvoiceDocumentReference)
 		case ref.SelfBilledInvoiceDocumentReference != nil:
-			docRef, err = goblReference(ref.SelfBilledInvoiceDocumentReference)
+			docRef, err = ubl.GoblReference(ref.SelfBilledInvoiceDocumentReference)
 		case ref.CreditNoteDocumentReference != nil:
-			docRef, err = goblReference(ref.CreditNoteDocumentReference)
+			docRef, err = ubl.GoblReference(ref.CreditNoteDocumentReference)
 		case ref.AdditionalDocumentReference != nil:
-			docRef, err = goblReference(ref.AdditionalDocumentReference)
+			docRef, err = ubl.GoblReference(ref.AdditionalDocumentReference)
 		}
 		if err != nil {
 			return err

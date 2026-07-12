@@ -4,6 +4,7 @@ import (
 	"math"
 	"strings"
 
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/cef"
 	"github.com/invopop/gobl/catalogues/iso"
@@ -44,14 +45,14 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 		// skip this line
 		return nil, nil
 	}
-	price, err := num.AmountFromString(normalizeNumericString(docLine.Price.PriceAmount.Value))
+	price, err := num.AmountFromString(ubl.NormalizeNumericString(docLine.Price.PriceAmount.Value))
 	if err != nil {
 		return nil, err
 	}
 
 	if docLine.Price.BaseQuantity != nil {
 		// Base quantity is the number of item units to which the price applies
-		baseQuantity, err := num.AmountFromString(normalizeNumericString(docLine.Price.BaseQuantity.Value))
+		baseQuantity, err := num.AmountFromString(ubl.NormalizeNumericString(docLine.Price.BaseQuantity.Value))
 		if err != nil {
 			return nil, err
 		}
@@ -81,13 +82,13 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 		iq = docLine.CreditedQuantity
 	}
 	if iq != nil {
-		line.Quantity, err = num.AmountFromString(normalizeNumericString(iq.Value))
+		line.Quantity, err = num.AmountFromString(ubl.NormalizeNumericString(iq.Value))
 		if err != nil {
 			return nil, err
 		}
 
 		if iq.UnitCode != "" {
-			line.Item.Unit = goblUnitFromUNECE(cbc.Code(iq.UnitCode))
+			line.Item.Unit = ubl.GoblUnitFromUNECE(cbc.Code(iq.UnitCode))
 		}
 	}
 
@@ -95,7 +96,7 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 		for _, note := range docLine.Note {
 			if note != "" {
 				notes = append(notes, &org.Note{
-					Text: cleanString(note),
+					Text: ubl.CleanString(note),
 				})
 			}
 		}
@@ -119,7 +120,7 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 	}
 
 	if docLine.InvoicePeriod != nil {
-		line.Period, err = goblPeriodDates(docLine.InvoicePeriod)
+		line.Period, err = ubl.GoblPeriodDates(docLine.InvoicePeriod)
 		if err != nil {
 			return nil, err
 		}
@@ -170,10 +171,10 @@ func calculateRequiredPrecision(price, baseQuantity num.Amount) uint32 {
 
 func goblConvertLineItem(di *Item, item *org.Item) {
 	if di.Name != "" {
-		item.Name = cleanString(di.Name)
+		item.Name = ubl.CleanString(di.Name)
 	}
 	if di.Description != nil {
-		item.Description = cleanString(*di.Description)
+		item.Description = ubl.CleanString(*di.Description)
 	}
 
 	if di.OriginCountry != nil {
@@ -190,8 +191,8 @@ func goblConvertLineItem(di *Item, item *org.Item) {
 		item.Meta = make(cbc.Meta)
 		for _, property := range *di.AdditionalItemProperty {
 			if property.Name != "" && property.Value != "" {
-				key := formatKey(property.Name)
-				item.Meta[key] = cleanString(property.Value)
+				key := ubl.FormatKey(property.Name)
+				item.Meta[key] = ubl.CleanString(property.Value)
 			}
 		}
 	}
@@ -211,20 +212,15 @@ func goblConvertLineItemTaxes(di *Item, line *bill.Line, taxCategoryMap map[stri
 	if ctc.ID != nil {
 		line.Taxes[0].Ext = line.Taxes[0].Ext.Set(untdid.ExtKeyTaxCategory, goblTaxCategoryCode(ctc.ID.Value))
 
-		// OIOUBL carries the exemption reason on the line; documents that source
-		// it from the document-level TaxTotal subtotal are read as a fallback.
-		if ctc.TaxExemptionReasonCode != nil {
-			line.Taxes[0].Ext = line.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(*ctc.TaxExemptionReasonCode))
-		} else {
-			key := buildTaxCategoryKey(ctc.TaxScheme.ID.Value, ctc.ID.Value, ctc.Percent)
-			if info, ok := taxCategoryMap[key]; ok && info.exemptionReasonCode != "" {
-				line.Taxes[0].Ext = line.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.exemptionReasonCode))
-			}
+		// The exemption reason (BT-121) is carried at the document level
+		// (TaxTotal subtotal); look it up for this line's category.
+		key := ubl.BuildTaxCategoryKey(ctc.TaxScheme.ID.Value, ctc.ID.Value, ctc.Percent)
+		if info, ok := taxCategoryMap[key]; ok && info.exemptionReasonCode != "" {
+			line.Taxes[0].Ext = line.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.exemptionReasonCode))
 		}
-
 	}
 	if ctc.Percent != nil {
-		percentStr := normalizeNumericString(*ctc.Percent)
+		percentStr := ubl.NormalizeNumericString(*ctc.Percent)
 		if !strings.HasSuffix(percentStr, "%") {
 			percentStr += "%"
 		}

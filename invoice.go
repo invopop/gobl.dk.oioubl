@@ -2,7 +2,7 @@ package dkoioubl
 
 import (
 	"encoding/xml"
-	"fmt"
+
 	ubl "github.com/invopop/gobl.ubl"
 
 	"github.com/invopop/gobl/bill"
@@ -40,8 +40,8 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 		UBLVersionID:            Version,
 		CustomizationID:         CustomizationID,
 		ProfileID:               newProfileID(ProfileID),
-		ID:                      invoiceNumber(inv.Series, inv.Code),
-		IssueDate:               formatDate(inv.IssueDate),
+		ID:                      ubl.InvoiceNumber(inv.Series, inv.Code),
+		IssueDate:               ubl.FormatDate(inv.IssueDate),
 		InvoiceTypeCode:         &IDType{Value: tc},
 		DocumentCurrencyCode:    string(inv.Currency),
 		AccountingSupplierParty: SupplierParty{Party: newParty(inv.Supplier)},
@@ -81,11 +81,11 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 
 	// BT-7: VAT point date
 	if inv.ValueDate != nil {
-		out.TaxPointDate = formatDate(*inv.ValueDate)
+		out.TaxPointDate = ubl.FormatDate(*inv.ValueDate)
 	}
 
 	for _, note := range inv.Notes {
-		if text := formatNote(note); text != "" {
+		if text := ubl.FormatNote(note); text != "" {
 			out.Note = append(out.Note, text)
 		}
 	}
@@ -125,13 +125,6 @@ var taxPointCodeMap = map[cbc.Key]string{
 	tax.PointPayment:  "432",
 }
 
-// taxPointKeyMap is the reverse mapping from UNTDID 2005 codes to GOBL tax point keys.
-var taxPointKeyMap = map[string]cbc.Key{
-	"3":   tax.PointIssue,
-	"35":  tax.PointDelivery,
-	"432": tax.PointPayment,
-}
-
 // addTaxPoint maps the GOBL tax point key (BT-8) to the UBL InvoicePeriod DescriptionCode.
 func (ui *Invoice) addTaxPoint(t *bill.Tax) {
 	if t == nil || t.Point == cbc.KeyEmpty {
@@ -145,13 +138,6 @@ func (ui *Invoice) addTaxPoint(t *bill.Tax) {
 		ui.InvoicePeriod = []Period{{}}
 	}
 	ui.InvoicePeriod[0].DescriptionCode = code
-}
-
-func invoiceNumber(series cbc.Code, code cbc.Code) string {
-	if series == "" {
-		return code.String()
-	}
-	return fmt.Sprintf("%s-%s", series, code)
 }
 
 func newProfileID(profileID string) *IDType {

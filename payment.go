@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	"errors"
 
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
@@ -172,19 +173,14 @@ func (ui *Invoice) addPaymentInstructions(inv *bill.Invoice) error {
 		}
 	}
 	if ui.CreditNoteTypeCode != nil && inv.Payment.Terms != nil && len(inv.Payment.Terms.DueDates) > 0 {
-		formattedDate := formatDate(*inv.Payment.Terms.DueDates[0].Date)
+		formattedDate := ubl.FormatDate(*inv.Payment.Terms.DueDates[0].Date)
 		ui.PaymentMeans[0].PaymentDueDate = &formattedDate
 	}
 	return nil
 }
 
-// kortart deduces the Giro/FIK "kortart" (cbc:PaymentID) from the payment
-// reference. FIK (means 93): no reference is the free-text kortart 73, a
-// 16-character reference is 75, and any other reference is 71 (whose 15-character
-// length F-LIB156 then confirms). Giro (means 50): the free-text kortart 01
-// without a reference, 04 (creditor number) with one — the two-reference form 15
-// isn't distinguishable from GOBL data. A malformed reference is left for the
-// schematron to reject (F-LIB149/156/157/312/336).
+// kortart derives the Giro/FIK "kortart" (cbc:PaymentID) from the payment means
+// and reference; malformed values are left for the schematron to reject.
 func kortart(paymentMeansCode, ref string) string {
 	switch paymentMeansCode {
 	case "93":
@@ -270,6 +266,6 @@ func (ui *Invoice) addPaymentTerms(pymt *bill.PaymentDetails) {
 
 	// Only one due date allowed under EN 16931
 	if ui.CreditNoteTypeCode == nil && len(pymt.Terms.DueDates) > 0 && pymt.Terms.DueDates[0].Date != nil {
-		ui.DueDate = formatDate(*pymt.Terms.DueDates[0].Date)
+		ui.DueDate = ubl.FormatDate(*pymt.Terms.DueDates[0].Date)
 	}
 }

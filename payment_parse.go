@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
@@ -38,7 +39,7 @@ func (ui *Invoice) goblAddPayment(out *bill.Invoice) error {
 
 	if ui.PaymentTerms != nil {
 		payment.Terms = &pay.Terms{
-			Notes: cleanString(ui.PaymentTerms.Note),
+			Notes: ubl.CleanString(ui.PaymentTerms.Note),
 		}
 	}
 
@@ -54,7 +55,7 @@ func (ui *Invoice) goblAddPayment(out *bill.Invoice) error {
 	}
 
 	if dueDate != "" {
-		d, err := parseDate(dueDate)
+		d, err := ubl.ParseDate(dueDate)
 		if err != nil {
 			return err
 		}
@@ -90,13 +91,13 @@ func (ui *Invoice) goblAddPayment(out *bill.Invoice) error {
 			if p.PaidAmount == nil {
 				continue
 			}
-			amount, err := num.AmountFromString(normalizeNumericString(p.PaidAmount.Value))
+			amount, err := num.AmountFromString(ubl.NormalizeNumericString(p.PaidAmount.Value))
 			if err != nil {
 				return err
 			}
 			advance := &pay.Record{Amount: amount}
 			if p.ReceivedDate != nil {
-				d, err := parseDate(*p.ReceivedDate)
+				d, err := ubl.ParseDate(*p.ReceivedDate)
 				if err != nil {
 					return err
 				}
@@ -108,7 +109,7 @@ func (ui *Invoice) goblAddPayment(out *bill.Invoice) error {
 			payment.Advances = append(payment.Advances, advance)
 		}
 	case ui.LegalMonetaryTotal.PrepaidAmount != nil:
-		totalPrepaid, err := num.AmountFromString(normalizeNumericString(ui.LegalMonetaryTotal.PrepaidAmount.Value))
+		totalPrepaid, err := num.AmountFromString(ubl.NormalizeNumericString(ui.LegalMonetaryTotal.PrepaidAmount.Value))
 		if err != nil {
 			return err
 		}
@@ -133,7 +134,7 @@ func goblInvoiceInstructions(out *bill.Invoice, paymentMeans *PaymentMeans) *pay
 	}
 
 	if paymentMeans.PaymentMeansCode.Name != nil {
-		instructions.Detail = cleanString(*paymentMeans.PaymentMeansCode.Name)
+		instructions.Detail = ubl.CleanString(*paymentMeans.PaymentMeansCode.Name)
 	}
 
 	if paymentMeans.PaymentID != nil {
@@ -177,7 +178,7 @@ func goblPaymentChannel(instr *pay.Instructions, paymentMeans *PaymentMeans) {
 	// is the InstructionID of the structured card types.
 	instr.Ref = ""
 	if paymentMeans.InstructionID != nil {
-		instr.Ref = cbc.Code(cleanString(*paymentMeans.InstructionID))
+		instr.Ref = cbc.Code(ubl.CleanString(*paymentMeans.InstructionID))
 	}
 	if paymentMeans.CreditAccount != nil && paymentMeans.CreditAccount.AccountID != "" {
 		instr.CreditTransfer = []*pay.CreditTransfer{{Number: paymentMeans.CreditAccount.AccountID}}
@@ -189,7 +190,7 @@ func goblCreditTransfer(paymentMeans *PaymentMeans) []*pay.CreditTransfer {
 	account := paymentMeans.PayeeFinancialAccount
 
 	if account.ID != nil {
-		id := cleanString(*account.ID)
+		id := ubl.CleanString(*account.ID)
 		if isIBAN(id) {
 			creditTransfer.IBAN = id
 		} else {
@@ -197,15 +198,15 @@ func goblCreditTransfer(paymentMeans *PaymentMeans) []*pay.CreditTransfer {
 		}
 	}
 	if account.Name != nil {
-		creditTransfer.Name = cleanString(*account.Name)
+		creditTransfer.Name = ubl.CleanString(*account.Name)
 	}
 	if branch := account.FinancialInstitutionBranch; branch != nil {
 		// Standard UBL carries the BIC on the branch ID; OIOUBL strips that for
 		// IBAN accounts (F-LIB295) and nests it under FinancialInstitution/ID.
 		if branch.ID != nil {
-			creditTransfer.BIC = cleanString(*branch.ID)
+			creditTransfer.BIC = ubl.CleanString(*branch.ID)
 		} else if branch.FinancialInstitution != nil && branch.FinancialInstitution.ID != nil {
-			creditTransfer.BIC = cleanString(*branch.FinancialInstitution.ID)
+			creditTransfer.BIC = ubl.CleanString(*branch.FinancialInstitution.ID)
 		}
 	}
 

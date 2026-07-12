@@ -1,6 +1,7 @@
 package dkoioubl
 
 import (
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/org"
@@ -46,8 +47,8 @@ func (ui *Invoice) addOrdering(o *bill.Ordering) {
 		if o.Period != nil {
 			ui.InvoicePeriod = []Period{
 				{
-					StartDate: formatDate(o.Period.Start),
-					EndDate:   formatDate(o.Period.End),
+					StartDate: ubl.FormatDate(o.Period.Start),
+					EndDate:   ubl.FormatDate(o.Period.End),
 				},
 			}
 		}
