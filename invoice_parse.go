@@ -145,6 +145,7 @@ func (ui *Invoice) parseInvoiceDates(out *bill.Invoice) error {
 	return nil
 }
 
+// Identical to gobl.ubl.applyExchangeRates.
 func (ui *Invoice) applyExchangeRates(out *bill.Invoice) {
 	if ui.TaxCurrencyCode != "" && ui.DocumentCurrencyCode != ui.TaxCurrencyCode {
 		out.ExchangeRates = goblExchangeRates(
@@ -207,8 +208,7 @@ func (ui *Invoice) applyTaxRepresentative(out *bill.Invoice) {
 	out.Supplier = goblParty(ui.TaxRepresentativeParty)
 }
 
-// typeCodeParse maps the UBL document type code (UNTDID 1001) to its GOBL type.
-// Source: https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred1001.htm
+// Identical to gobl.ubl.typeCodeParse.
 func typeCodeParse(typeCode *IDType) cbc.Key {
 	if typeCode == nil {
 		return bill.InvoiceTypeOther

@@ -118,7 +118,7 @@ var taxPointCodeMap = map[cbc.Key]string{
 	tax.PointPayment:  "432",
 }
 
-// addTaxPoint maps the GOBL tax point key (BT-8) to the UBL InvoicePeriod DescriptionCode.
+// Identical to gobl.ubl.addTaxPoint.
 func (ui *Invoice) addTaxPoint(t *bill.Tax) {
 	if t == nil || t.Point == cbc.KeyEmpty {
 		return

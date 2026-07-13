@@ -207,7 +207,7 @@ func goblCreditTransfer(paymentMeans *PaymentMeans) []*pay.CreditTransfer {
 	return []*pay.CreditTransfer{creditTransfer}
 }
 
-// isIBAN reports whether s looks like an IBAN: 2+ letters then alphanumerics (spaces allowed).
+// Identical to gobl.ubl.isIBAN.
 func isIBAN(s string) bool {
 	s = strings.ToUpper(strings.TrimSpace(s))
 	return ibanRegex.MatchString(s)
@@ -242,6 +242,7 @@ func goblInvoiceDirectDebit(out *bill.Invoice, paymentMeans *PaymentMeans) *pay.
 	return directDebit
 }
 
+// Identical to gobl.ubl.goblCard.
 func goblCard(paymentMeans *PaymentMeans) *pay.Card {
 	card := &pay.Card{}
 	if paymentMeans.CardAccount.PrimaryAccountNumberID != nil {
@@ -257,7 +258,7 @@ func goblCard(paymentMeans *PaymentMeans) *pay.Card {
 	return card
 }
 
-// goblPaymentMeansCode maps UBL payment means to GOBL equivalent.
+// Identical to gobl.ubl.goblPaymentMeansCode.
 func goblPaymentMeansCode(code string) cbc.Key {
 	if val, ok := paymentMeansMap[code]; ok {
 		return val

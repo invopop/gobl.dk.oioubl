@@ -31,6 +31,7 @@ func allowanceMultiplier(pct *num.Percentage) string {
 	return pct.Base().String()
 }
 
+// Adapted from gobl.ubl.makeCharge; OIOUBL uses a decimal-multiplier percent and its own taxcategoryid.
 func makeCharge(ch *bill.Charge, ccy string, baseAmount num.Amount) AllowanceCharge {
 	c := AllowanceCharge{
 		ChargeIndicator: true,
@@ -61,6 +62,7 @@ func makeCharge(ch *bill.Charge, ccy string, baseAmount num.Amount) AllowanceCha
 	return c
 }
 
+// Adapted from gobl.ubl.makeDiscount; OIOUBL uses a decimal-multiplier percent and its own taxcategoryid.
 func makeDiscount(d *bill.Discount, ccy string, baseAmount num.Amount) AllowanceCharge {
 	c := AllowanceCharge{
 		ChargeIndicator: false,

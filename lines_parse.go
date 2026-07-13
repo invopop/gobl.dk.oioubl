@@ -236,6 +236,7 @@ func goblConvertLineItemTaxes(di *Item, line *bill.Line, taxCategoryMap map[stri
 	}
 }
 
+// Identical to gobl.ubl.goblItemIdentities.
 func goblItemIdentities(di *Item) []*org.Identity {
 	ids := make([]*org.Identity, 0)
 
@@ -273,6 +274,7 @@ func goblItemIdentities(di *Item) []*org.Identity {
 	return ids
 }
 
+// Identical to gobl.ubl.goblIdentity.
 func goblIdentity(id *IDType) *org.Identity {
 	if id == nil {
 		return nil
@@ -289,6 +291,7 @@ func goblIdentity(id *IDType) *org.Identity {
 	return identity
 }
 
+// Identical to gobl.ubl.goblLineCharges.
 func goblLineCharges(allowances []*AllowanceCharge, line *bill.Line) (*bill.Line, error) {
 	for _, ac := range allowances {
 		if ac.ChargeIndicator {

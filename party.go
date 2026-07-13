@@ -328,6 +328,7 @@ func newAddress(addresses []*org.Address) *PostalAddress {
 	return addr
 }
 
+// Identical to gobl.ubl.contactName.
 func contactName(n *org.Name) string {
 	given := n.Given
 	surname := n.Surname

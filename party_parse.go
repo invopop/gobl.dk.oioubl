@@ -249,6 +249,7 @@ func hasDanishCompanyScheme(p *Party) bool {
 	return false
 }
 
+// Identical to gobl.ubl.extractValidTaxSchemes.
 func extractValidTaxSchemes(schemes []PartyTaxScheme) []PartyTaxScheme {
 	validSchemes := make([]PartyTaxScheme, 0)
 	for _, pts := range schemes {
