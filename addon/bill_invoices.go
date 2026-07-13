@@ -171,6 +171,14 @@ func billChargeRules() *rules.Set { return rules.For(new(bill.Charge), exciseRea
 
 func lineChargeRules() *rules.Set { return rules.For(new(bill.LineCharge), exciseReasonAssert()) }
 
+// billPayTermsRules relaxes EN 16931 BR-CO-25: OIOUBL allows bare invoice payment
+// terms (ID + amount only), so the due-dates-or-notes requirement doesn't apply.
+func billPayTermsRules() *rules.Set {
+	return rules.For(new(pay.Terms),
+		rules.Ignore("GOBL-EU-EN16931-PAY-TERMS-01"),
+	)
+}
+
 // exciseReasonAssert is the shared F-LIB066 rule for document- and line-level
 // charges (which bind to different types and so need separate sets).
 func exciseReasonAssert() rules.Def {
