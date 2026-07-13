@@ -335,6 +335,16 @@ func firstPersonHasIdentityCode(val any) bool {
 	return p != nil && len(p.Identities) > 0 && !p.Identities[0].Code.IsEmpty()
 }
 
+// partyHasEndpoint reports whether a party carries a NemHandel endpoint (BT-34 /
+// cbc:EndpointID); the normalizer derives one from a DK tax ID or scheme inbox.
+func partyHasEndpoint(val any) bool {
+	p, ok := val.(*org.Party)
+	if !ok || p == nil {
+		return true
+	}
+	return len(p.Endpoints) > 0
+}
+
 // partyHasOIOUBLLegalID reports whether a named party can produce a non-empty
 // OIOUBL PartyLegalEntity/CompanyID from a legal identity or Danish CVR (F-LIB187).
 func partyHasOIOUBLLegalID(val any) bool {

@@ -35,11 +35,9 @@ func init() {
 		rules.GOBL.Add("DK-OIOUBL"),
 		is.InContext(tax.AddonIn(V2)),
 		billInvoiceRules(),
-		billStatusRules(),
 		billTaxComboRules(),
 		billChargeRules(),
 		lineChargeRules(),
-		billPaymentRules(),
 		billPayTermsRules(),
 	)
 	norm.RegisterWithGuard(
@@ -95,10 +93,6 @@ func newAddon() *tax.AddonDef {
 				},
 				URL: "https://git.erst.dk/openebusiness/common/-/tree/master/released/oioubl",
 			},
-		},
-		Extensions: extensions,
-		Tags: []*tax.TagSet{
-			paymentTags,
 		},
 	}
 }
