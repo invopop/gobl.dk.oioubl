@@ -16,9 +16,8 @@ OIOUBL-specific rules and extensions on top:
 - **Payment** — the OIOUBL payment channel (IBAN / Giro / FIK) is derived from the
   payment means; the Giro/FIK kortart travels in `dk-oioubl-payment-id`.
 - **Participants** — parties are routed by OIOUBL endpoints
-  (`urn:oioubl:scheme:endpointid-1.1::DK:CVR:<CVR>`); a Danish party carrying only
-  a tax identity derives its CVR participant automatically, and explicit endpoints
-  or inboxes always win. The endpoint URI carries the symbolic scheme
+  (`DK:CVR:<CVR>`); a Danish party carrying only a tax identity derives its CVR
+  participant automatically, and explicit endpoints or inboxes always win. The endpoint URI carries the symbolic scheme
   (`DK:CVR`, `GLN`, `DK:SE`).
 - **Invoice / credit note** — participant, contact and ordering references
   required by the OIOUBL schematron, plus the non-negative totals rule
