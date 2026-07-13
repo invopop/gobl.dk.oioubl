@@ -332,7 +332,7 @@ func firstPersonHasIdentityCode(val any) bool {
 		return true
 	}
 	p := people[0]
-	return p != nil && len(p.Identities) > 0 && !p.Identities[0].Code.IsEmpty()
+	return p != nil && len(p.Identities) > 0 && p.Identities[0] != nil && !p.Identities[0].Code.IsEmpty()
 }
 
 // partyHasEndpoint reports whether a party carries a NemHandel endpoint (BT-34 /
