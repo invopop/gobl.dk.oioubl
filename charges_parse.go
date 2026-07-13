@@ -61,6 +61,7 @@ func goblAllowancePercent(ac *AllowanceCharge) (*num.Percentage, error) {
 	return &p, nil
 }
 
+// Adapted from gobl.ubl; OIOUBL: maps the 63/Moms scheme + taxcategoryid codes and reads a decimal-multiplier percent.
 func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Charge, error) {
 	ch := &bill.Charge{}
 	if ac.AllowanceChargeReason != nil {
@@ -136,6 +137,7 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo)
 	return ch, nil
 }
 
+// Adapted from gobl.ubl; OIOUBL: maps the 63/Moms scheme + taxcategoryid codes and reads a decimal-multiplier percent.
 func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Discount, error) {
 	d := &bill.Discount{}
 	if ac.AllowanceChargeReason != nil {
