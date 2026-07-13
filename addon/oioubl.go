@@ -1,4 +1,4 @@
-// Package oioubl provides extensions and validations for the Danish OIOUBL 2.1
+// Package addon provides extensions and validations for the Danish OIOUBL 2.1
 // standard used on the NemHandel e-invoicing network.
 package addon
 
