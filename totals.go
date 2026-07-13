@@ -330,9 +330,6 @@ func transactionTax(accRate *cur.ExchangeRate, catID string, amount num.Amount, 
 	return &Amount{Value: accRate.Convert(amount).String(), CurrencyID: &currencyID}
 }
 
-// hasStandardRated reports whether the invoice carries a StandardRated VAT
-// combo. Since only those subtotals carry the restated tax (F-LIB373),
-// cbc:TaxCurrencyCode must be suppressed without one (F-INV018).
 func hasStandardRated(inv *bill.Invoice) bool {
 	if inv.Totals == nil || inv.Totals.Taxes == nil {
 		return false
@@ -362,9 +359,7 @@ func taxCategoryID(key cbc.Key) string {
 	return ""
 }
 
-// applyTotals stamps the taxcategoryid attributes on the document-level tax
-// subtotals and allowance/charges, and re-interprets TaxExclusiveAmount as the
-// total tax (F-INV127). It runs last, once promoted line allowances are in.
+// applyTotals stamps taxcategoryid attributes and re-interprets TaxExclusiveAmount as the total tax (F-INV127).
 func (ui *Invoice) applyTotals() {
 	for i := range ui.TaxTotal {
 		for j := range ui.TaxTotal[i].TaxSubtotal {

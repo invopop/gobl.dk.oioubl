@@ -58,8 +58,6 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 		out.UUID = inv.UUID.String()
 	}
 	if out.ProfileID != nil {
-		// profile5:ver2.0 is valid from the profileid-1.2 code list, which real
-		// NemHandel traffic uses.
 		out.ProfileID.SchemeID = ptr(schemeProfileV12)
 		out.ProfileID.SchemeAgencyID = ptr(agencyID)
 	}

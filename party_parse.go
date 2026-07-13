@@ -222,9 +222,7 @@ func handlePartyTaxSchemes(party *Party, p *org.Party) {
 	}
 }
 
-// resolveCountry returns the party country for tax-identity parsing. When the
-// address carries no country (e.g. a StructuredID address, F-LIB038), fall back
-// to the DK:SE/DK:CVR company-ID scheme that only a Danish party carries.
+// resolveCountry falls back to the DK company-ID scheme when a StructuredID address carries no country (F-LIB038).
 func resolveCountry(p *Party) string {
 	if c := p.CountryCode(); c != "" {
 		return c
