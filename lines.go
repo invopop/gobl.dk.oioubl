@@ -12,7 +12,8 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-func (ui *Invoice) addLines(inv *bill.Invoice) { //nolint:gocyclo
+// Adapted from gobl.ubl; OIOUBL: gross line total (F-INV348) and no line-level allowances (promoted to document level, F-INV126/128/129).
+func (ui *Invoice) addLines(inv *bill.Invoice) {
 	if len(inv.Lines) == 0 {
 		return
 	}

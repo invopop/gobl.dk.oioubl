@@ -15,34 +15,24 @@ import (
 )
 
 var (
-	// ErrUnknownDocumentType is returned when the document type is not recognized during parsing.
-	ErrUnknownDocumentType = fmt.Errorf("unknown document type")
-
-	// ErrUnsupportedDocumentType is returned when the document type is not supported for conversion.
+	ErrUnknownDocumentType     = fmt.Errorf("unknown document type")
 	ErrUnsupportedDocumentType = fmt.Errorf("unsupported document type")
 )
 
-// Version is the UBL version of the generated documents.
 const Version = ubl.Version
 
-// OIOUBL 2.1 document identification.
 const (
-	// CustomizationID identifies OIOUBL 2.1 documents.
 	CustomizationID = "OIOUBL-2.1"
-	// ProfileID is the NESUBL billing profile invoices and credit notes ride.
-	ProfileID = "urn:www.nesubl.eu:profiles:profile5:ver2.0"
+	ProfileID       = "urn:www.nesubl.eu:profiles:profile5:ver2.0"
 )
 
-// VESIDs for phive validation of each document type.
 const (
 	VESIDInvoice    = "dk.oioubl:invoice:1.17.2"
 	VESIDCreditNote = "dk.oioubl:credit-note:1.17.2"
 )
 
-// Addons lists the GOBL addons an OIOUBL document requires.
 var Addons = []cbc.Key{oioubl.V2}
 
-// GetVESID returns the phive VESID for the given invoice.
 func GetVESID(inv *bill.Invoice) string {
 	if inv.Type.In(bill.InvoiceTypeCreditNote) {
 		return VESIDCreditNote
@@ -64,7 +54,7 @@ const (
 	listTaxType        = "urn:oioubl:codelist:taxtypecode-1.1"
 )
 
-// Parse parses a raw OIOUBL document into an *Invoice whose Convert method returns the GOBL envelope.
+// Parse parses an OIOUBL document into an *Invoice; call its Convert for the GOBL envelope.
 func Parse(data []byte) (any, error) {
 	doc, err := ubl.Parse(data)
 	if err != nil {
@@ -76,7 +66,6 @@ func Parse(data []byte) (any, error) {
 	return nil, ErrUnknownDocumentType
 }
 
-// Convert converts a GOBL envelope's bill.Invoice into an OIOUBL *Invoice.
 func Convert(env *gobl.Envelope) (any, error) {
 	switch doc := env.Extract().(type) {
 	case *bill.Invoice:
@@ -93,7 +82,6 @@ func Convert(env *gobl.Envelope) (any, error) {
 	}
 }
 
-// ConvertInvoice converts a GOBL envelope to an OIOUBL *Invoice.
 func ConvertInvoice(env *gobl.Envelope) (*Invoice, error) {
 	doc, err := Convert(env)
 	if err != nil {
@@ -136,7 +124,6 @@ func ensureAddons(env *gobl.Envelope, required []cbc.Key) error {
 	return env.Validate()
 }
 
-// Bytes returns the document's XML with header (reordering credit-note TaxPointDate, see reorderCreditNoteTaxPointDate).
 func Bytes(in any) ([]byte, error) {
 	b, err := ubl.Bytes(in)
 	if err != nil {
@@ -148,7 +135,6 @@ func Bytes(in any) ([]byte, error) {
 	return b, nil
 }
 
-// BytesCompact returns the document's XML with header, without indentation.
 func BytesCompact(in any) ([]byte, error) {
 	b, err := ubl.BytesCompact(in)
 	if err != nil {

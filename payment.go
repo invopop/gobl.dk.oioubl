@@ -11,8 +11,6 @@ import (
 	"github.com/invopop/validation"
 )
 
-const sepaSchemeID = "SEPA"
-
 func (ui *Invoice) addPayment(inv *bill.Invoice) error {
 	if inv == nil || inv.Payment == nil {
 		return nil
@@ -35,7 +33,7 @@ func (ui *Invoice) addPayment(inv *bill.Invoice) error {
 
 	// BT-90: creditor identifier, carried as a SEPA PartyIdentification on the payee (or seller).
 	if pymt.Instructions != nil && pymt.Instructions.DirectDebit != nil && pymt.Instructions.DirectDebit.Creditor != "" {
-		sepaID := sepaSchemeID
+		sepaID := "SEPA"
 		id := Identification{
 			ID: &IDType{
 				Value:    pymt.Instructions.DirectDebit.Creditor,

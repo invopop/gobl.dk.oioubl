@@ -14,6 +14,7 @@ import (
 // rootNameCreditNote is the local name of a UBL CreditNote root element.
 const rootNameCreditNote = "CreditNote"
 
+// Adapted from gobl.ubl (ublInvoice); OIOUBL: stamps the OIOUBL customization/profile/scheme IDs and the credit-note element/schema swap.
 func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 	tc, err := getTypeCode(inv)
 	if err != nil {
