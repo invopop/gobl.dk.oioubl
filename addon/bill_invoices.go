@@ -357,7 +357,7 @@ func partyHasOIOUBLLegalID(val any) bool {
 		return true
 	}
 	for _, id := range p.Identities {
-		if id.Scope == org.IdentityScopeLegal && !id.Code.IsEmpty() {
+		if id != nil && id.Scope == org.IdentityScopeLegal && !id.Code.IsEmpty() {
 			return true
 		}
 	}
