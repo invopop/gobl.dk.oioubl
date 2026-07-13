@@ -13,9 +13,6 @@ import (
 // extFieldKey is the JSON path segment for the `ext` field, used in validation.Errors trees.
 const extFieldKey = "ext"
 
-// ptr returns a pointer to v, keeping the optional *string XML attributes legible.
-func ptr[T any](v T) *T { return &v }
-
 // Identical to gobl.ubl.
 func getTypeCode(inv *bill.Invoice) (string, error) {
 	if inv.Tax == nil || inv.Tax.Ext.Get(untdid.ExtKeyDocumentType).String() == "" {

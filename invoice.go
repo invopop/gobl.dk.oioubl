@@ -59,8 +59,10 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 		out.UUID = inv.UUID.String()
 	}
 	if out.ProfileID != nil {
-		out.ProfileID.SchemeID = ptr(schemeProfileV12)
-		out.ProfileID.SchemeAgencyID = ptr(agencyID)
+		schemeID := schemeProfileV12
+		schemeAgencyID := agencyID
+		out.ProfileID.SchemeID = &schemeID
+		out.ProfileID.SchemeAgencyID = &schemeAgencyID
 	}
 
 	if inv.Type.In(bill.InvoiceTypeCreditNote) {
@@ -153,8 +155,10 @@ func applyTypeCode(t *IDType) {
 	if t == nil {
 		return
 	}
-	t.ListID = ptr(listInvoiceType)
-	t.ListAgencyID = ptr(agencyID)
+	listID := listInvoiceType
+	listAgencyID := agencyID
+	t.ListID = &listID
+	t.ListAgencyID = &listAgencyID
 }
 
 // applyBillingReference drops the DocumentTypeCode from billing references;

@@ -102,7 +102,8 @@ func stampPaymentChannel(pm *PaymentMeans) {
 	if pm.PaymentChannelCode == nil {
 		return
 	}
-	pm.PaymentChannelCode.ListID = ptr(listPaymentChannel)
+	listID := listPaymentChannel
+	pm.PaymentChannelCode.ListID = &listID
 	if pm.PaymentChannelCode.Value == paymentChannelIBAN && pm.PayeeFinancialAccount != nil && pm.PayeeFinancialAccount.FinancialInstitutionBranch != nil {
 		pm.PayeeFinancialAccount.FinancialInstitutionBranch.ID = nil
 	}

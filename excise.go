@@ -87,12 +87,17 @@ func makeExciseTaxTotals(excises []exciseDuty, currency string) []TaxTotal {
 		if e.amount.IsZero() {
 			typeCode = taxCategoryZeroRated
 		}
+		schemeID := schemeTaxScheme
+		schemeAgencyID := agencyID
+		typeAgencyID := agencyID
+		listID := listTaxType
 		scheme := &TaxScheme{
-			ID:          IDType{SchemeID: ptr(schemeTaxScheme), SchemeAgencyID: ptr(agencyID), Value: e.scheme},
-			TaxTypeCode: &IDType{ListAgencyID: ptr(agencyID), ListID: ptr(listTaxType), Value: typeCode},
+			ID:          IDType{SchemeID: &schemeID, SchemeAgencyID: &schemeAgencyID, Value: e.scheme},
+			TaxTypeCode: &IDType{ListAgencyID: &typeAgencyID, ListID: &listID, Value: typeCode},
 		}
 		if e.name != "" {
-			scheme.Name = ptr(e.name)
+			name := e.name
+			scheme.Name = &name
 		}
 		totals = append(totals, TaxTotal{
 			TaxAmount: amt,

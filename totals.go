@@ -408,8 +408,10 @@ func stampTaxCategoryID(id *IDType) *IDType {
 	if id == nil {
 		id = &IDType{Value: taxCategoryStandardRated}
 	}
-	id.SchemeID = ptr(schemeTaxCategory)
-	id.SchemeAgencyID = ptr(agencyID)
+	schemeID := schemeTaxCategory
+	schemeAgencyID := agencyID
+	id.SchemeID = &schemeID
+	id.SchemeAgencyID = &schemeAgencyID
 	return id
 }
 
@@ -433,10 +435,13 @@ func applyTaxScheme(ts *TaxScheme) {
 	if ts == nil {
 		return
 	}
+	schemeID := schemeTaxScheme
+	schemeAgencyID := agencyID
 	ts.ID = IDType{
-		SchemeID:       ptr(schemeTaxScheme),
-		SchemeAgencyID: ptr(agencyID),
+		SchemeID:       &schemeID,
+		SchemeAgencyID: &schemeAgencyID,
 		Value:          taxSchemeVATCode,
 	}
-	ts.Name = ptr("Moms")
+	name := "Moms"
+	ts.Name = &name
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
-	"github.com/invopop/gobl/l10n"
 	"github.com/invopop/gobl/org"
 )
 
@@ -40,11 +39,6 @@ func addPartyTaxScheme(p *Party, party *org.Party) {
 		return
 	}
 	code := tID.String()
-	// Norwegian VAT numbers require the MVA suffix on the wire
-	// (PEPPOL-EN16931 NO-R-001), which GOBL normalization may strip.
-	if tID.Country.Code() == l10n.NO && !strings.HasSuffix(code, "MVA") {
-		code += "MVA"
-	}
 	id := tID.GetScheme()
 	if id == cbc.CodeEmpty {
 		id = ubl.TaxSchemeVAT
@@ -260,9 +254,11 @@ func newPayeeParty(party *org.Party) *Party {
 
 // newAddressFormatCode builds the cbc:AddressFormatCode required on every OIOUBL address (F-LIB025).
 func newAddressFormatCode(value string) *IDType {
+	listID := listAddressFormat
+	listAgencyID := agencyID
 	return &IDType{
-		ListID:       ptr(listAddressFormat),
-		ListAgencyID: ptr(agencyID),
+		ListID:       &listID,
+		ListAgencyID: &listAgencyID,
 		Value:        value,
 	}
 }
