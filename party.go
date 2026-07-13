@@ -153,8 +153,7 @@ func addPartyIdentities(p *Party, party *org.Party) {
 	}
 }
 
-// newDeliveryParty builds a delivery Party without a PostalAddress (UBL-CR-394:
-// the address already lives in DeliveryLocation).
+// Identical to gobl.ubl.
 func newDeliveryParty(party *org.Party) *Party {
 	if party == nil {
 		return nil
@@ -205,8 +204,7 @@ func newDeliveryParty(party *org.Party) *Party {
 	return p
 }
 
-// newPayeeParty builds a minimal Payee per UBL rules (BR-17, UBL-SR-20,
-// UBL-CR-272/275): name plus at most one identifier, no address or registration name.
+// Identical to gobl.ubl.
 func newPayeeParty(party *org.Party) *Party {
 	if party == nil {
 		return nil
@@ -328,7 +326,7 @@ func newAddress(addresses []*org.Address) *PostalAddress {
 	return addr
 }
 
-// Identical to gobl.ubl.contactName.
+// Identical to gobl.ubl.
 func contactName(n *org.Name) string {
 	given := n.Given
 	surname := n.Surname

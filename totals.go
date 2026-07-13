@@ -206,6 +206,7 @@ type taxCategoryInfo struct {
 	exemptionReasonCode string
 }
 
+// Identical to gobl.ubl.
 func (ui *Invoice) buildTaxCategoryMap() map[string]*taxCategoryInfo {
 	categoryMap := make(map[string]*taxCategoryInfo)
 
@@ -225,7 +226,7 @@ func (ui *Invoice) buildTaxCategoryMap() map[string]*taxCategoryInfo {
 	return categoryMap
 }
 
-// goblAddTaxNotes copies tax exemption reasons from TaxTotal subtotals into Tax.Notes.
+// Adapted from gobl.ubl; OIOUBL: maps the 63/Moms scheme and taxcategoryid-1.1 values back via goblTaxSchemeCategory/goblTaxCategoryCode.
 func (ui *Invoice) goblAddTaxNotes(inv *bill.Invoice) {
 	for _, tt := range ui.TaxTotal {
 		for _, st := range tt.TaxSubtotal {
@@ -243,8 +244,7 @@ func (ui *Invoice) goblAddTaxNotes(inv *bill.Invoice) {
 	}
 }
 
-// findTaxNote matches a note by category + VAT key, the same pair tax.Note uses
-// to identify itself; keying works across profiles and survives extension stripping.
+// Adapted from gobl.ubl; OIOUBL: matches by the tax.Note category + VAT key rather than the UNTDID category extension.
 func findTaxNote(notes []*tax.Note, catCode cbc.Code, rate *tax.RateTotal) *tax.Note {
 	for _, n := range notes {
 		if n.Category == catCode && n.Key == rate.Key {
@@ -254,9 +254,7 @@ func findTaxNote(notes []*tax.Note, catCode cbc.Code, rate *tax.RateTotal) *tax.
 	return nil
 }
 
-// goblExchangeRates derives the DocumentCurrencyCode→TaxCurrencyCode rate. The
-// accounting-currency tax rides per-subtotal TransactionCurrencyTaxAmount, or a
-// second TaxTotal block (the EN16931/Peppol shape) when present.
+// Adapted from gobl.ubl; OIOUBL: also derives the rate from per-subtotal TransactionCurrencyTaxAmount when only one TaxTotal block is present.
 func goblExchangeRates(docCurrency, taxCurrency cur.Code, taxTotals []TaxTotal) []*cur.ExchangeRate {
 	if len(taxTotals) == 0 {
 		return nil

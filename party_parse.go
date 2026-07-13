@@ -95,8 +95,7 @@ func goblParty(party *Party) *org.Party {
 	return p
 }
 
-// goblDeliveryParty builds a GOBL party with only the delivery-party BTs (BT-70
-// name); the address is handled separately via DeliveryLocation.
+// Identical to gobl.ubl.
 func goblDeliveryParty(party *Party) *org.Party {
 	if party == nil {
 		return nil
@@ -187,6 +186,7 @@ func parseAddress(address *PostalAddress) *org.Address {
 	return addr
 }
 
+// Identical to gobl.ubl.
 func handleLegalEntityIdentity(party *Party, p *org.Party) {
 	if party.PartyLegalEntity == nil || party.PartyLegalEntity.CompanyID == nil {
 		return
@@ -206,6 +206,7 @@ func handleLegalEntityIdentity(party *Party, p *org.Party) {
 	p.Identities = append(p.Identities, identity)
 }
 
+// Adapted from gobl.ubl; OIOUBL: resolves the country via resolveCountry, falling back to the Danish company-ID scheme when the address has none (F-LIB038).
 func handlePartyTaxSchemes(party *Party, p *org.Party) {
 	if len(party.PartyTaxScheme) == 0 {
 		return
@@ -249,7 +250,7 @@ func hasDanishCompanyScheme(p *Party) bool {
 	return false
 }
 
-// Identical to gobl.ubl.extractValidTaxSchemes.
+// Identical to gobl.ubl.
 func extractValidTaxSchemes(schemes []PartyTaxScheme) []PartyTaxScheme {
 	validSchemes := make([]PartyTaxScheme, 0)
 	for _, pts := range schemes {
@@ -260,6 +261,7 @@ func extractValidTaxSchemes(schemes []PartyTaxScheme) []PartyTaxScheme {
 	return validSchemes
 }
 
+// Adapted from gobl.ubl; OIOUBL: maps the 63/Moms tax scheme back via goblTaxSchemeCategory.
 func setTaxIDFromScheme(pts PartyTaxScheme, p *org.Party, countryCode string) {
 	p.TaxID = &tax.Identity{
 		Country: l10n.TaxCountryCode(countryCode),
@@ -277,6 +279,7 @@ func setTaxIDFromScheme(pts PartyTaxScheme, p *org.Party, countryCode string) {
 	}
 }
 
+// Identical to gobl.ubl.
 func handleMultipleTaxSchemes(validSchemes []PartyTaxScheme, p *org.Party, countryCode string) {
 	// Multiple tax schemes: look for VAT, otherwise use first
 	vatIdx := findVATSchemeIndex(validSchemes)
@@ -290,6 +293,7 @@ func handleMultipleTaxSchemes(validSchemes []PartyTaxScheme, p *org.Party, count
 	addRemainingTaxSchemesAsIdentities(validSchemes, taxIDIdx, p, countryCode)
 }
 
+// Adapted from gobl.ubl; OIOUBL: matches VAT via goblTaxSchemeCategory, which maps the 63/Moms scheme.
 func findVATSchemeIndex(schemes []PartyTaxScheme) int {
 	for i, pts := range schemes {
 		if goblTaxSchemeCategory(pts.TaxScheme.ID.Value) == cbc.Code(ubl.TaxSchemeVAT) {
@@ -299,6 +303,7 @@ func findVATSchemeIndex(schemes []PartyTaxScheme) int {
 	return -1
 }
 
+// Adapted from gobl.ubl; OIOUBL: maps each identity's tax scheme back via goblTaxSchemeCategory.
 func addRemainingTaxSchemesAsIdentities(validSchemes []PartyTaxScheme, taxIDIdx int, p *org.Party, countryCode string) {
 	for i, pts := range validSchemes {
 		if i == taxIDIdx {
@@ -319,6 +324,7 @@ func addRemainingTaxSchemesAsIdentities(validSchemes []PartyTaxScheme, taxIDIdx 
 	}
 }
 
+// Adapted from gobl.ubl; OIOUBL: reverses the wire-only DK prefix on DK:CVR/DK:SE identities (F-LIB180).
 func handlePartyIdentifications(party *Party, p *org.Party) {
 	for _, partyID := range party.PartyIdentification {
 		if partyID.ID != nil {

@@ -118,7 +118,7 @@ var taxPointCodeMap = map[cbc.Key]string{
 	tax.PointPayment:  "432",
 }
 
-// Identical to gobl.ubl.addTaxPoint.
+// Identical to gobl.ubl.
 func (ui *Invoice) addTaxPoint(t *bill.Tax) {
 	if t == nil || t.Point == cbc.KeyEmpty {
 		return
@@ -140,8 +140,7 @@ func newProfileID(profileID string) *IDType {
 	return &IDType{Value: profileID}
 }
 
-// getInvoiceTypeBasedOnXMLName derives the invoice type from the XML root name,
-// since OIOUBL credit notes omit the type code.
+// Identical to gobl.ubl.
 func (ui *Invoice) getInvoiceTypeBasedOnXMLName() cbc.Key {
 	switch ui.XMLName.Local {
 	case rootNameCreditNote:

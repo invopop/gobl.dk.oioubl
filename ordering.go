@@ -7,7 +7,7 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// Identical to gobl.ubl.addPreceding.
+// Identical to gobl.ubl.
 func (ui *Invoice) addPreceding(refs []*org.DocumentRef) {
 	if len(refs) == 0 {
 		return
@@ -29,6 +29,7 @@ func (ui *Invoice) addPreceding(refs []*org.DocumentRef) {
 	}
 }
 
+// Identical to gobl.ubl.
 func (ui *Invoice) addOrdering(o *bill.Ordering) {
 	if o != nil {
 		if o.Code != "" {

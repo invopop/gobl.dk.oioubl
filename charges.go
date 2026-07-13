@@ -7,6 +7,7 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
+// Adapted from gobl.ubl; OIOUBL: skips excise-duty charges, which are emitted as cac:TaxTotal rather than cac:AllowanceCharge.
 func (ui *Invoice) addCharges(inv *bill.Invoice) {
 	if inv.Charges == nil && inv.Discounts == nil {
 		return
@@ -31,7 +32,7 @@ func allowanceMultiplier(pct *num.Percentage) string {
 	return pct.Base().String()
 }
 
-// Adapted from gobl.ubl.makeCharge; OIOUBL uses a decimal-multiplier percent and its own taxcategoryid.
+// Adapted from gobl.ubl; OIOUBL uses a decimal-multiplier percent and its own taxcategoryid.
 func makeCharge(ch *bill.Charge, ccy string, baseAmount num.Amount) AllowanceCharge {
 	c := AllowanceCharge{
 		ChargeIndicator: true,
@@ -62,7 +63,7 @@ func makeCharge(ch *bill.Charge, ccy string, baseAmount num.Amount) AllowanceCha
 	return c
 }
 
-// Adapted from gobl.ubl.makeDiscount; OIOUBL uses a decimal-multiplier percent and its own taxcategoryid.
+// Adapted from gobl.ubl; OIOUBL uses a decimal-multiplier percent and its own taxcategoryid.
 func makeDiscount(d *bill.Discount, ccy string, baseAmount num.Amount) AllowanceCharge {
 	c := AllowanceCharge{
 		ChargeIndicator: false,
@@ -93,6 +94,7 @@ func makeDiscount(d *bill.Discount, ccy string, baseAmount num.Amount) Allowance
 	return c
 }
 
+// Adapted from gobl.ubl; OIOUBL: derives the taxcategoryid-1.1 value from the GOBL tax key via taxCategoryID.
 func makeTaxCategory(taxes tax.Set) []*TaxCategory {
 	set := []*TaxCategory{}
 	for _, t := range taxes {

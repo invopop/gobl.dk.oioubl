@@ -6,6 +6,7 @@ import (
 	"github.com/invopop/gobl/bill"
 )
 
+// Adapted from gobl.ubl; OIOUBL: uses RequestedDeliveryPeriod for the period (F-INV087/089/090) and drops the delivery PartyLegalEntity (F-LIB187).
 func newDelivery(del *bill.DeliveryDetails) *Delivery {
 	if del == nil {
 		return nil

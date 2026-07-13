@@ -323,6 +323,7 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 	return totals
 }
 
+// Adapted from gobl.ubl; OIOUBL: stamps a TaxCategory on each line allowance/charge (F-LIB226).
 func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount, ccy string, baseSum *num.Amount, taxes tax.Set) []*AllowanceCharge {
 	var allowanceCharges []*AllowanceCharge
 	// BR-DEC-24 / UBL-DT-01: round allowance/charge amounts to the currency's

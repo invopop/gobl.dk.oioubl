@@ -96,7 +96,7 @@ func Convert(env *gobl.Envelope) (any, error) {
 	}
 }
 
-// ConvertInvoice converts a GOBL envelope into an OIOUBL Invoice or CreditNote.
+// Identical to gobl.ubl.
 func ConvertInvoice(env *gobl.Envelope) (*Invoice, error) {
 	doc, err := Convert(env)
 	if err != nil {

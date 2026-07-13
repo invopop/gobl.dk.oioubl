@@ -8,6 +8,7 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
+// Adapted from gobl.ubl; OIOUBL: also parses the RequestedDeliveryPeriod (F-INV087/089/090) into the delivery period.
 func (ui *Invoice) goblAddDelivery(out *bill.Invoice) error {
 	d := &bill.DeliveryDetails{}
 

@@ -31,8 +31,7 @@ var InvoiceTagMap = map[string][]cbc.Key{
 	"261": {tax.TagSelfBilled},
 }
 
-// Convert converts the OIOUBL Invoice to a GOBL envelope. Binary attachments are
-// ignored here — use ExtractBinaryAttachments to retrieve them separately.
+// Identical to gobl.ubl.
 func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 	inv, err := ui.goblInvoice()
 	if err != nil {
@@ -47,6 +46,7 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 	return env, nil
 }
 
+// Adapted from gobl.ubl; OIOUBL: also folds document-level excise duties onto their lines via goblAddExciseCharges.
 func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 	out := &bill.Invoice{
 		Addons:   tax.Addons{List: Addons},
@@ -102,6 +102,7 @@ func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 	return out, nil
 }
 
+// Adapted from gobl.ubl; OIOUBL: a credit note omits the type code, so the root element decides the type.
 func (ui *Invoice) resolveInvoiceType(out *bill.Invoice) {
 	typeCode := ui.InvoiceTypeCode
 	if typeCode == nil {
@@ -118,6 +119,7 @@ func (ui *Invoice) resolveInvoiceType(out *bill.Invoice) {
 	}
 }
 
+// Identical to gobl.ubl.
 func (ui *Invoice) parseInvoiceDates(out *bill.Invoice) error {
 	issueDate, err := ubl.ParseDate(ui.IssueDate)
 	if err != nil {
@@ -145,7 +147,7 @@ func (ui *Invoice) parseInvoiceDates(out *bill.Invoice) error {
 	return nil
 }
 
-// Identical to gobl.ubl.applyExchangeRates.
+// Identical to gobl.ubl.
 func (ui *Invoice) applyExchangeRates(out *bill.Invoice) {
 	if ui.TaxCurrencyCode != "" && ui.DocumentCurrencyCode != ui.TaxCurrencyCode {
 		out.ExchangeRates = goblExchangeRates(
@@ -156,6 +158,7 @@ func (ui *Invoice) applyExchangeRates(out *bill.Invoice) {
 	}
 }
 
+// Identical to gobl.ubl.
 func (ui *Invoice) parseInvoiceNotes(out *bill.Invoice) {
 	if len(ui.Note) == 0 {
 		return
@@ -166,6 +169,7 @@ func (ui *Invoice) parseInvoiceNotes(out *bill.Invoice) {
 	}
 }
 
+// Identical to gobl.ubl.
 func (ui *Invoice) parseBillingReferences(out *bill.Invoice) error {
 	if len(ui.BillingReference) == 0 {
 		return nil
@@ -196,6 +200,7 @@ func (ui *Invoice) parseBillingReferences(out *bill.Invoice) error {
 	return nil
 }
 
+// Identical to gobl.ubl.
 func (ui *Invoice) applyTaxRepresentative(out *bill.Invoice) {
 	if ui.TaxRepresentativeParty == nil {
 		return
@@ -208,7 +213,7 @@ func (ui *Invoice) applyTaxRepresentative(out *bill.Invoice) {
 	out.Supplier = goblParty(ui.TaxRepresentativeParty)
 }
 
-// Identical to gobl.ubl.typeCodeParse.
+// Identical to gobl.ubl.
 func typeCodeParse(typeCode *IDType) cbc.Key {
 	if typeCode == nil {
 		return bill.InvoiceTypeOther
@@ -219,6 +224,7 @@ func typeCodeParse(typeCode *IDType) cbc.Key {
 	return bill.InvoiceTypeOther
 }
 
+// Identical to gobl.ubl.
 func tagCodeParse(typeCode *IDType) []cbc.Key {
 	if typeCode == nil {
 		return nil

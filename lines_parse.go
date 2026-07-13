@@ -16,6 +16,7 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
+// Identical to gobl.ubl.
 func (ui *Invoice) goblAddLines(out *bill.Invoice) error {
 	items := ui.InvoiceLines
 	if len(ui.CreditNoteLines) > 0 {
@@ -39,6 +40,7 @@ func (ui *Invoice) goblAddLines(out *bill.Invoice) error {
 	return nil
 }
 
+// Adapted from gobl.ubl; OIOUBL: also reconstructs the line-level cac:TaxTotal/Excise blocks as line charges.
 func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Line, error) {
 	if docLine.Price == nil {
 		return nil, nil
@@ -148,8 +150,7 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 	return line, nil
 }
 
-// calculateRequiredPrecision returns the precision for a price / base-quantity
-// division that avoids rounding loss: price_decimals + ceil(log10(base_quantity)).
+// Identical to gobl.ubl.
 func calculateRequiredPrecision(price, baseQuantity num.Amount) uint32 {
 	priceExp := price.Exp()
 
@@ -165,6 +166,7 @@ func calculateRequiredPrecision(price, baseQuantity num.Amount) uint32 {
 	return priceExp + additionalDecimals
 }
 
+// Identical to gobl.ubl.
 func goblConvertLineItem(di *Item, item *org.Item) {
 	if di.Name != "" {
 		item.Name = ubl.CleanString(di.Name)
@@ -194,6 +196,7 @@ func goblConvertLineItem(di *Item, item *org.Item) {
 	}
 }
 
+// Adapted from gobl.ubl; OIOUBL: maps the 63/Moms scheme and taxcategoryid-1.1 values back via goblTaxSchemeCategory/goblTaxCategoryCode.
 func goblConvertLineItemTaxes(di *Item, line *bill.Line, taxCategoryMap map[string]*taxCategoryInfo) {
 	ctc := di.ClassifiedTaxCategory
 	if ctc == nil || ctc.TaxScheme == nil {
@@ -236,7 +239,7 @@ func goblConvertLineItemTaxes(di *Item, line *bill.Line, taxCategoryMap map[stri
 	}
 }
 
-// Identical to gobl.ubl.goblItemIdentities.
+// Identical to gobl.ubl.
 func goblItemIdentities(di *Item) []*org.Identity {
 	ids := make([]*org.Identity, 0)
 
@@ -274,7 +277,7 @@ func goblItemIdentities(di *Item) []*org.Identity {
 	return ids
 }
 
-// Identical to gobl.ubl.goblIdentity.
+// Identical to gobl.ubl.
 func goblIdentity(id *IDType) *org.Identity {
 	if id == nil {
 		return nil
@@ -291,7 +294,7 @@ func goblIdentity(id *IDType) *org.Identity {
 	return identity
 }
 
-// Identical to gobl.ubl.goblLineCharges.
+// Identical to gobl.ubl.
 func goblLineCharges(allowances []*AllowanceCharge, line *bill.Line) (*bill.Line, error) {
 	for _, ac := range allowances {
 		if ac.ChargeIndicator {

@@ -12,6 +12,7 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
+// Identical to gobl.ubl.
 func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	var charges []*bill.Charge
 	var discounts []*bill.Discount
@@ -210,6 +211,7 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInf
 	return d, nil
 }
 
+// Adapted from gobl.ubl; OIOUBL: reads the percent from the decimal MultiplierFactorNumeric via goblAllowancePercent (F-LIB228).
 func goblLineCharge(ac *AllowanceCharge) (*bill.LineCharge, error) {
 	amount, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
 	if err != nil {
@@ -244,6 +246,7 @@ func goblLineCharge(ac *AllowanceCharge) (*bill.LineCharge, error) {
 	return ch, nil
 }
 
+// Adapted from gobl.ubl; OIOUBL: reads the percent from the decimal MultiplierFactorNumeric via goblAllowancePercent (F-LIB228).
 func goblLineDiscount(ac *AllowanceCharge) (*bill.LineDiscount, error) {
 	a, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
 	if err != nil {

@@ -121,6 +121,7 @@ func (ui *Invoice) goblAddPayment(out *bill.Invoice) error {
 	return nil
 }
 
+// Adapted from gobl.ubl; OIOUBL: also runs goblPaymentChannel to reverse the Giro/FIK/IBAN payment-channel handling.
 func goblInvoiceInstructions(out *bill.Invoice, paymentMeans *PaymentMeans) *pay.Instructions {
 	instructions := &pay.Instructions{
 		Key: goblPaymentMeansCode(paymentMeans.PaymentMeansCode.Value),
@@ -179,6 +180,7 @@ func goblPaymentChannel(instr *pay.Instructions, paymentMeans *PaymentMeans) {
 	}
 }
 
+// Adapted from gobl.ubl; OIOUBL: also reads the BIC from FinancialInstitution/ID when it is stripped off the branch for IBAN accounts (F-LIB295).
 func goblCreditTransfer(paymentMeans *PaymentMeans) []*pay.CreditTransfer {
 	creditTransfer := &pay.CreditTransfer{}
 	account := paymentMeans.PayeeFinancialAccount
@@ -207,12 +209,13 @@ func goblCreditTransfer(paymentMeans *PaymentMeans) []*pay.CreditTransfer {
 	return []*pay.CreditTransfer{creditTransfer}
 }
 
-// Identical to gobl.ubl.isIBAN.
+// Identical to gobl.ubl.
 func isIBAN(s string) bool {
 	s = strings.ToUpper(strings.TrimSpace(s))
 	return ibanRegex.MatchString(s)
 }
 
+// Adapted from gobl.ubl; OIOUBL: reads the mandate Ref directly, since the mandate is only emitted when it has an ID.
 func goblInvoiceDirectDebit(out *bill.Invoice, paymentMeans *PaymentMeans) *pay.DirectDebit {
 	directDebit := &pay.DirectDebit{}
 
@@ -242,7 +245,7 @@ func goblInvoiceDirectDebit(out *bill.Invoice, paymentMeans *PaymentMeans) *pay.
 	return directDebit
 }
 
-// Identical to gobl.ubl.goblCard.
+// Identical to gobl.ubl.
 func goblCard(paymentMeans *PaymentMeans) *pay.Card {
 	card := &pay.Card{}
 	if paymentMeans.CardAccount.PrimaryAccountNumberID != nil {
@@ -258,7 +261,7 @@ func goblCard(paymentMeans *PaymentMeans) *pay.Card {
 	return card
 }
 
-// Identical to gobl.ubl.goblPaymentMeansCode.
+// Identical to gobl.ubl.
 func goblPaymentMeansCode(code string) cbc.Key {
 	if val, ok := paymentMeansMap[code]; ok {
 		return val

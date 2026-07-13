@@ -222,6 +222,7 @@ func (ui *Invoice) addCreditTransferAccount(instr *pay.Instructions, paymentMean
 	pm.PayeeFinancialAccount = newCreditTransferAccount(instr.CreditTransfer[0], paymentMeansCode)
 }
 
+// Adapted from gobl.ubl; OIOUBL: nests the BIC under FinancialInstitution for IBAN channels 31/58 (F-LIB295).
 func newCreditTransferAccount(ct *pay.CreditTransfer, paymentMeansCode string) *FinancialAccount {
 	pfa := new(FinancialAccount)
 	if ct.IBAN != "" {
