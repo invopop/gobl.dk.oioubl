@@ -152,12 +152,12 @@ func billInvoiceRules() *rules.Set {
 	)
 }
 
-// billTaxComboRules returns the OIOUBL 2.1 rule set applied to every tax combo
-// (line- and document-level), validated by type the way GOBL validates combos.
+// billTaxComboRules validates every VAT tax.Combo in the document — GOBL applies
+// type-scoped rules to all of them (invoice lines, charges, discounts).
 func billTaxComboRules() *rules.Set {
 	return rules.For(new(tax.Combo),
-		// the dk-oioubl normalizer strips the EN 16931 UNTDID tax-category extension. Ignore
-		// EN 16931 rules that would otherwise require it and validate its code.
+		// OIOUBL uses its own taxcategoryid, so the normalizer drops the UNTDID
+		// tax-category ext; skip the EN 16931 rules that require and code-check it.
 		rules.Ignore("GOBL-EU-EN16931-TAX-COMBO-01", "GOBL-EU-EN16931-TAX-COMBO-02"),
 		rules.Assert("01", "standard-rated VAT must have a percent greater than zero (F-LIB382)",
 			is.Func("standard-rated has a positive percent", standardRatedHasPositivePercent)),
@@ -403,26 +403,26 @@ func bankTransferHasAccount(val any) bool {
 	return ct != nil && (ct.IBAN != "" || ct.Number != "")
 }
 
+// giroAccountValid checks F-LIB319/320/321: a Giro payment (means 50) must
+// carry a payee account number of 7 or 8 digits.
 func giroAccountValid(val any) bool {
-	return accountNumberValid(val, "50", isGiroAccountNumber)
-}
-
-func fikAccountValid(val any) bool {
-	return accountNumberValid(val, "93", func(s string) bool { return len(s) == 8 })
-}
-
-// accountNumberValid checks the credit transfer's account number against ok, but
-// only for instructions using the given payment-means code (other means pass).
-func accountNumberValid(val any, code cbc.Code, ok func(string) bool) bool {
-	instr, isInstr := val.(*pay.Instructions)
-	if !isInstr || instr == nil {
-		return true
-	}
-	if instr.Ext.Get(untdid.ExtKeyPaymentMeans) != code {
+	instr, ok := val.(*pay.Instructions)
+	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "50" {
 		return true
 	}
 	ct := firstCreditTransfer(instr)
-	return ct != nil && ok(ct.Number)
+	return ct != nil && isGiroAccountNumber(ct.Number)
+}
+
+// fikAccountValid checks F-LIB305: a FIK payment (means 93) must carry an
+// 8-character creditor account number.
+func fikAccountValid(val any) bool {
+	instr, ok := val.(*pay.Instructions)
+	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "93" {
+		return true
+	}
+	ct := firstCreditTransfer(instr)
+	return ct != nil && len(ct.Number) == 8
 }
 
 func isNumericOfLen(s string, minLen, maxLen int) bool {
