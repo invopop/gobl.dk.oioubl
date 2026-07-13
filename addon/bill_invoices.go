@@ -294,7 +294,7 @@ func deliveryReceiverHasLocationData(val any) bool {
 		return true
 	}
 	for _, id := range del.Identities {
-		if !id.Code.IsEmpty() {
+		if id != nil && !id.Code.IsEmpty() {
 			return true
 		}
 	}
