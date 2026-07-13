@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	cloud.google.com/go v0.118.0
-	github.com/invopop/gobl v0.502.1
+	github.com/invopop/gobl v0.502.2
 	github.com/invopop/gobl.ubl v0.55.1-0.20260712183348-1ed9321ac013
 	github.com/invopop/validation v0.8.0
 	github.com/invopop/xmlctx v0.13.0

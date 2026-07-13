@@ -139,8 +139,8 @@ func TestInvoiceValidation(t *testing.T) {
 	})
 
 	t.Run("foreign-currency document without an exchange rate is rejected (F-INV018)", func(t *testing.T) {
-		// A non-DKK invoice makes gobl.ubl emit cbc:TaxCurrencyCode, which then
-		// requires a TransactionCurrencyTaxAmount derived from an exchange rate.
+		// A non-DKK document must restate VAT in the regime currency (F-INV018),
+		// which requires an exchange rate.
 		inv := testInvoiceStandard(t)
 		inv.Currency = "EUR"
 		require.NoError(t, inv.Calculate())
@@ -537,11 +537,10 @@ func TestInvoiceValidation(t *testing.T) {
 	})
 
 	t.Run("inline street address with no separate number passes (StructuredLax)", func(t *testing.T) {
-		// The gobl.ubl converter emits OIOUBL addresses as StructuredLax, which
-		// imposes no mandatory sub-fields (only F-LIB036, forbidding free-text
-		// AddressLine, which we never emit). So an address whose house number is
-		// inline in the street, or one missing a postal code, is valid here;
-		// EN 16931 (BR-8/BR-10) still governs address presence and country.
+		// OIOUBL addresses are StructuredLax: no mandatory sub-fields (only
+		// F-LIB036 forbids free-text AddressLine), so an inline house number or
+		// missing postcode is valid; EN 16931 BR-8/BR-10 still govern presence
+		// and country.
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Addresses = []*org.Address{
 			{Street: "Hovedgaden 27", Locality: "København", Country: "DK"},

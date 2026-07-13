@@ -1,4 +1,4 @@
-// Package oioubl provides extensions and validations for the Danish OIOUBL 2.1
+// Package addon provides extensions and validations for the Danish OIOUBL 2.1
 // standard used on the NemHandel e-invoicing network.
 package addon
 
@@ -14,13 +14,10 @@ import (
 )
 
 const (
-	// Key identifies the Danish OIOUBL addon family. Individual versions
-	// append a suffix; the family key is used as the fault-code namespace
-	// so that rules carrying across versions keep stable codes.
+	// Key is the OIOUBL addon family key, also the fault-code namespace.
 	Key cbc.Key = "dk-oioubl"
 
-	// V2 is the key for OIOUBL version 2.1, the current production version
-	// used on the NemHandel network.
+	// V2 is the addon key for OIOUBL 2.1.
 	V2 cbc.Key = Key + "-v2"
 
 	// SchemeDKCVR is the OIOUBL EndpointID scheme for a Danish CVR number, used
@@ -35,11 +32,9 @@ func init() {
 		rules.GOBL.Add("DK-OIOUBL"),
 		is.InContext(tax.AddonIn(V2)),
 		billInvoiceRules(),
-		billStatusRules(),
 		billTaxComboRules(),
 		billChargeRules(),
 		lineChargeRules(),
-		billPaymentRules(),
 		billPayTermsRules(),
 	)
 	norm.RegisterWithGuard(
@@ -95,10 +90,6 @@ func newAddon() *tax.AddonDef {
 				},
 				URL: "https://git.erst.dk/openebusiness/common/-/tree/master/released/oioubl",
 			},
-		},
-		Extensions: extensions,
-		Tags: []*tax.TagSet{
-			paymentTags,
 		},
 	}
 }

@@ -1,8 +1,7 @@
 # GOBL ➡️ Danish OIOUBL 2.1
 
 Danish OIOUBL 2.1 support for [GOBL](https://github.com/invopop/gobl), used for
-invoices, credit notes, Invoice Responses and Reminders exchanged over the
-NemHandel network.
+invoices and credit notes exchanged over the NemHandel network.
 
 Released under the Apache 2.0 [LICENSE](https://github.com/invopop/gobl.dk.oioubl/blob/main/LICENSE), Copyright 2026 [Invopop S.L.](https://invopop.com).
 
@@ -11,7 +10,7 @@ The module has two halves:
 - the **addon** (`addon/`, key `dk-oioubl-v2`) — extensions, normalizers and
   validation rules registered into GOBL's global registry; and
 - the **converter** (this root package) — GOBL ↔ OIOUBL 2.1 XML, both
-  directions, for all four document types.
+  directions, for invoices and credit notes.
 
 ## The addon
 
@@ -32,12 +31,8 @@ and extensions on top:
 - **Invoice / credit note** — participant, contact and ordering references
   required by the OIOUBL schematron, plus the non-negative totals rule
   (corrections are credit notes in Denmark).
-- **Invoice Response** — `bill.Status` validation for the OIOUBL
-  ApplicationResponse (responsecode-1.1 event set, single response, party
-  requirements).
-- **Reminder** — `bill.Payment` (type `request`) validation for the OIOUBL
-  Reminder (Rykker), with the `dk-oioubl-reminder-sequence` extension and the
-  `advis` tag.
+
+ApplicationResponse and Reminder support is deferred to a follow-up.
 
 Import the addon for its side effects to register it, then declare the
 `dk-oioubl-v2` addon on a GOBL document:
@@ -73,8 +68,6 @@ model and mapping live here — OIOUBL is not a context of the generic converter
 | GOBL document                 | OIOUBL document       |
 |-------------------------------|-----------------------|
 | `bill.Invoice`                | Invoice / CreditNote  |
-| `bill.Status`                 | ApplicationResponse   |
-| `bill.Payment` (`request`)    | Reminder (Rykker)     |
 
 ```go
 import dkoioubl "github.com/invopop/gobl.dk.oioubl"
@@ -95,17 +88,9 @@ normalized and validated under the OIOUBL rules before serialization.
 
 ### Testing
 
-Golden tests cover conversion and parsing for every document type:
+Golden tests cover conversion and parsing for invoices and credit notes:
 
 ```bash
 go test ./...
 go test ./... -update    # regenerate the golden files
-```
-
-With a local [invopop/phive](https://github.com/invopop/phive) service on
-`127.0.0.1:9090`, the generated XML is additionally validated against the
-official OIOUBL schematron (`dk.oioubl:*:1.17.2`):
-
-```bash
-go test . -validate
 ```
