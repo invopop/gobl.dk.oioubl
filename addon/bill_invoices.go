@@ -104,7 +104,7 @@ func billInvoiceRules() *rules.Set {
 					rules.AssertIfPresent("12", "payment-means code must be one of the OIOUBL allowed values (F-LIB100)",
 						tax.ExtensionsHasCodes(untdid.ExtKeyPaymentMeans, validPaymentMeansCodes...)),
 				),
-				rules.Assert("13", "a credit transfer account (IBAN or number) is required for bank-transfer payment means (F-LIB107 / F-LIB126)",
+				rules.Assert("13", "a credit transfer account (IBAN or number) is required for bank-transfer payment means (F-LIB107 / F-LIB377)",
 					is.Func("bank-transfer has a payee account", bankTransferHasAccount)),
 				rules.Assert("18", "a BIC is required on the credit transfer for IBAN bank-transfer payment means 30/31 (F-LIB113)",
 					is.Func("iban bank-transfer has a BIC", ibanTransferHasBIC)),
