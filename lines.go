@@ -25,8 +25,7 @@ func (ui *Invoice) addLines(inv *bill.Invoice) { //nolint:gocyclo
 		if ccy == "" {
 			ccy = inv.Currency.String()
 		}
-		// OIOUBL F-INV348 requires the gross Price×Qty here; line allowances are
-		// netted at the document level.
+		// F-INV348: gross Price×Qty here; line allowances net at the document level.
 		lineExt := l.Total.String()
 		if l.Sum != nil {
 			lineExt = rescaleToCurrency(*l.Sum, ccy).String()
@@ -40,7 +39,6 @@ func (ui *Invoice) addLines(inv *bill.Invoice) { //nolint:gocyclo
 			},
 		}
 
-		// Always set quantity (mandatory field)
 		iq := &Quantity{
 			Value: l.Quantity.String(),
 		}
@@ -94,8 +92,7 @@ func (ui *Invoice) addLines(inv *bill.Invoice) { //nolint:gocyclo
 			}
 		}
 
-		// OIOUBL reconciles allowances/charges at the DOCUMENT level
-		// (F-INV126/128/129 sum document-level AllowanceCharge, not line-level),
+		// OIOUBL reconciles allowances/charges at the document level (F-INV126/128/129),
 		// so they're promoted in addTotals instead of set on the line.
 
 		if l.Item != nil {
@@ -110,8 +107,7 @@ func (ui *Invoice) addLines(inv *bill.Invoice) { //nolint:gocyclo
 				it.Name = l.Item.Name
 			}
 
-			// OIOUBL forbids cac:OriginCountry on a line item (F-INV211 /
-			// F-CRN109), so l.Item.Origin is never emitted.
+			// OIOUBL forbids cac:OriginCountry on a line item (F-INV211 / F-CRN109).
 
 			if l.Item.Meta != nil {
 				var properties []AdditionalItemProperty
@@ -165,7 +161,7 @@ func (ui *Invoice) addLines(inv *bill.Invoice) { //nolint:gocyclo
 
 					s := id.Ext.Get(iso.ExtKeySchemeID).String()
 
-					// Map first identity without extension to BuyersItemIdentification
+					// First identity without extension → BuyersItemIdentification.
 					if s == "" {
 						if it.BuyersItemIdentification == nil {
 							it.BuyersItemIdentification = &ItemIdentification{
@@ -177,7 +173,7 @@ func (ui *Invoice) addLines(inv *bill.Invoice) { //nolint:gocyclo
 						continue
 					}
 
-					// Map first identity with extension to StandardItemIdentification
+					// First identity with extension → StandardItemIdentification.
 					if it.StandardItemIdentification == nil {
 						it.StandardItemIdentification = &ItemIdentification{
 							ID: &IDType{
@@ -223,9 +219,8 @@ func (ui *Invoice) addLines(inv *bill.Invoice) { //nolint:gocyclo
 	applyLineTaxCategories(ui.CreditNoteLines)
 }
 
-// applyLineTaxCategories maps the tax categories on a set of lines: the item
-// classified category, the line-level subtotals, and any promoted
-// allowance/charges. Invoice and credit-note lines share the InvoiceLine type.
+// applyLineTaxCategories stamps the tax categories on each line's classified
+// category, line-level subtotals, and promoted allowance/charges.
 func applyLineTaxCategories(lines []InvoiceLine) {
 	for i := range lines {
 		line := &lines[i]
@@ -251,9 +246,8 @@ func applyLineTaxCategories(lines []InvoiceLine) {
 	}
 }
 
-// rescaleToCurrency rounds the amount to the natural precision of the given
-// currency code (e.g. 2 for EUR, 0 for JPY). Falls back to the amount's
-// existing precision if the currency code is unknown.
+// rescaleToCurrency rounds the amount to the currency's natural precision
+// (2 for EUR, 0 for JPY), or leaves it unchanged for an unknown currency.
 func rescaleToCurrency(a num.Amount, ccy string) num.Amount {
 	if def := currency.Code(ccy).Def(); def != nil {
 		return def.Rescale(a)
@@ -271,8 +265,7 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 	var taxable num.Amount
 	switch {
 	case line.Sum != nil:
-		// OIOUBL line TaxableAmount is gross (Price×Qty); the discount is taken
-		// once at document level (F-LIB402).
+		// Line TaxableAmount is gross (Price×Qty); the discount is taken once at document level (F-LIB402).
 		taxable = rescaleToCurrency(*line.Sum, ccy)
 	case line.Total != nil:
 		taxable = *line.Total
@@ -280,9 +273,8 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 		return nil
 	}
 
-	// An excise duty is a VAT-rated charge OIOUBL emits as its own tax (not an
-	// AllowanceCharge), so fold it into the VAT taxable base here — VAT lands on
-	// the duty-inclusive amount and F-LIB402 reconciles without a charge bridge.
+	// An excise duty is emitted as its own tax, not an AllowanceCharge, so fold
+	// it into the VAT taxable base here: VAT lands on the duty-inclusive amount (F-LIB402).
 	for _, ch := range line.Charges {
 		if chargeExciseScheme(ch.Key) != "" {
 			taxable = taxable.Add(rescaleToCurrency(ch.Amount, ccy))
@@ -325,8 +317,7 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 
 	taxTotal.TaxAmount = Amount{Value: totalAmount.String(), CurrencyID: &ccy}
 
-	// Emit the line's excise duties as line-level cac:TaxTotal/Excise blocks too,
-	// so the wire records which line each duty belongs to (as OIOUBL does for VAT).
+	// Also emit line-level cac:TaxTotal/Excise blocks so the wire records which line each duty belongs to.
 	totals := []TaxTotal{taxTotal}
 	totals = append(totals, makeExciseTaxTotals(collectLineExcise(line, ccy), ccy)...)
 	return totals

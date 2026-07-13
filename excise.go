@@ -9,12 +9,11 @@ import (
 	"github.com/invopop/gobl/num"
 )
 
-// taxCategoryExcise is the constant taxcategoryid-1.1 category OIOUBL emits for a
-// non-VAT excise duty (as a cac:TaxTotal, not a cac:AllowanceCharge).
+// taxCategoryExcise is the taxcategoryid-1.1 category OIOUBL emits for a non-VAT
+// excise duty (as a cac:TaxTotal, not a cac:AllowanceCharge).
 const taxCategoryExcise = "Excise"
 
-// exciseDuty is a duty charge resolved into the values OIOUBL needs: the
-// taxschemeid duty-type code, the scheme name (the charge reason) and the amount.
+// exciseDuty is a duty resolved into the values OIOUBL needs.
 type exciseDuty struct {
 	scheme string
 	name   string
@@ -22,8 +21,7 @@ type exciseDuty struct {
 }
 
 // chargeExciseScheme returns the taxschemeid duty code an all-digit charge Key
-// carries (e.g. "16"), or "" for an ordinary charge; a zero-padded "09" recovers
-// to "9" (cbc.Key needs a two-char minimum for digits).
+// carries (e.g. "16"), or "" for an ordinary charge; a zero-padded "09" → "9".
 func chargeExciseScheme(key cbc.Key) string {
 	s := key.String()
 	if s == "" || !isAllDigits(s) {
@@ -53,8 +51,7 @@ func isAllDigits(s string) bool {
 	return true
 }
 
-// collectExcise gathers every excise duty across the document- and
-// line-level charges. Discounts are never excise (a duty is always a charge).
+// collectExcise gathers every excise duty across document- and line-level charges.
 func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
 	var out []exciseDuty
 	for _, ch := range inv.Charges {
@@ -68,9 +65,8 @@ func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
 	return out
 }
 
-// collectLineExcise gathers the excise duties on a single line, used to mirror
-// them as a line-level cac:TaxTotal so the wire records which line each duty
-// belongs to (the document-level totals drive the monetary reconciliation).
+// collectLineExcise gathers a single line's excise duties, mirrored as a
+// line-level cac:TaxTotal so the wire records which line each duty belongs to.
 func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
 	var out []exciseDuty
 	for _, ch := range line.Charges {
@@ -143,9 +139,8 @@ func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, erro
 	return charges, nil
 }
 
-// goblAddExciseCharges is a fallback for document-level excise: it attaches the
-// duties to the first line only when no line carried its own line-level block
-// (the per-line case is handled in goblConvertLine, which preserves linkage).
+// goblAddExciseCharges is a fallback: it attaches document-level excise to the
+// first line only when no line carried its own block (handled in goblConvertLine).
 func (ui *Invoice) goblAddExciseCharges(out *bill.Invoice) error {
 	if len(out.Lines) == 0 {
 		return nil
@@ -153,8 +148,7 @@ func (ui *Invoice) goblAddExciseCharges(out *bill.Invoice) error {
 	for _, l := range out.Lines {
 		for _, ch := range l.Charges {
 			if chargeExciseScheme(ch.Key) != "" {
-				// A line already carried its excise (line-level blocks were parsed);
-				// the document-level totals are their mirror, so don't re-add them.
+				// A line already carried its excise; the document totals are its mirror.
 				return nil
 			}
 		}

@@ -11,11 +11,11 @@ func (ui *Invoice) addCharges(inv *bill.Invoice) {
 	if inv.Charges == nil && inv.Discounts == nil {
 		return
 	}
-	// Use invoice sum (before discounts) as base amount for percentage calculations
+	// Invoice sum (before discounts) is the base for percentage calculations.
 	baseAmount := inv.Totals.Sum
 	for _, ch := range inv.Charges {
-		// OIOUBL emits an excise duty (a charge whose Key is a taxschemeid code) as
-		// a cac:TaxTotal/Excise subtotal built in addTotals, not as a charge.
+		// An excise duty (charge Key is a taxschemeid code) is emitted as a
+		// cac:TaxTotal/Excise subtotal in addTotals, not as a charge.
 		if chargeExciseScheme(ch.Key) != "" {
 			continue
 		}
@@ -26,8 +26,7 @@ func (ui *Invoice) addCharges(inv *bill.Invoice) {
 	}
 }
 
-// allowanceMultiplier renders MultiplierFactorNumeric as the decimal factor
-// OIOUBL F-LIB228 requires (Amount = BaseAmount × factor).
+// allowanceMultiplier renders MultiplierFactorNumeric as a decimal factor (F-LIB228).
 func allowanceMultiplier(pct *num.Percentage) string {
 	return pct.Base().String()
 }

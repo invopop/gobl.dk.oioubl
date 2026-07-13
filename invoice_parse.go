@@ -31,9 +31,8 @@ var InvoiceTagMap = map[string][]cbc.Key{
 	"261": {tax.TagSelfBilled},
 }
 
-// Convert converts the OIOUBL Invoice to a GOBL envelope. Binary attachments
-// are ignored during conversion - use ExtractBinaryAttachments to retrieve
-// them separately.
+// Convert converts the OIOUBL Invoice to a GOBL envelope. Binary attachments are
+// ignored here — use ExtractBinaryAttachments to retrieve them separately.
 func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 	inv, err := ui.goblInvoice()
 	if err != nil {
@@ -54,8 +53,7 @@ func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 		Code:     cbc.Code(ui.ID),
 		Currency: currency.Code(ui.DocumentCurrencyCode),
 		Tax: &bill.Tax{
-			// Always default to currency rounding for incoming invoices
-			// as this is the default for EN16931.
+			// Currency rounding is the EN16931 default for incoming invoices.
 			Rounding: tax.RoundingRuleCurrency,
 		},
 		Supplier: goblParty(ui.AccountingSupplierParty.Party),
@@ -104,7 +102,6 @@ func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 	return out, nil
 }
 
-// resolveInvoiceType derives the GOBL invoice type and tags from the UBL type code.
 func (ui *Invoice) resolveInvoiceType(out *bill.Invoice) {
 	typeCode := ui.InvoiceTypeCode
 	if typeCode == nil {
@@ -121,7 +118,6 @@ func (ui *Invoice) resolveInvoiceType(out *bill.Invoice) {
 	}
 }
 
-// parseInvoiceDates parses IssueDate, IssueTime, and TaxPointDate (BT-7).
 func (ui *Invoice) parseInvoiceDates(out *bill.Invoice) error {
 	issueDate, err := ubl.ParseDate(ui.IssueDate)
 	if err != nil {
@@ -149,7 +145,6 @@ func (ui *Invoice) parseInvoiceDates(out *bill.Invoice) error {
 	return nil
 }
 
-// applyExchangeRates populates ExchangeRates when the tax currency differs from the document currency.
 func (ui *Invoice) applyExchangeRates(out *bill.Invoice) {
 	if ui.TaxCurrencyCode != "" && ui.DocumentCurrencyCode != ui.TaxCurrencyCode {
 		out.ExchangeRates = goblExchangeRates(
@@ -160,7 +155,6 @@ func (ui *Invoice) applyExchangeRates(out *bill.Invoice) {
 	}
 }
 
-// parseInvoiceNotes copies document-level notes into the GOBL invoice.
 func (ui *Invoice) parseInvoiceNotes(out *bill.Invoice) {
 	if len(ui.Note) == 0 {
 		return
@@ -171,7 +165,6 @@ func (ui *Invoice) parseInvoiceNotes(out *bill.Invoice) {
 	}
 }
 
-// parseBillingReferences resolves BillingReference entries into Preceding document refs.
 func (ui *Invoice) parseBillingReferences(out *bill.Invoice) error {
 	if len(ui.BillingReference) == 0 {
 		return nil
@@ -202,7 +195,6 @@ func (ui *Invoice) parseBillingReferences(out *bill.Invoice) error {
 	return nil
 }
 
-// applyTaxRepresentative remaps Supplier when a TaxRepresentativeParty is present.
 func (ui *Invoice) applyTaxRepresentative(out *bill.Invoice) {
 	if ui.TaxRepresentativeParty == nil {
 		return
@@ -215,8 +207,7 @@ func (ui *Invoice) applyTaxRepresentative(out *bill.Invoice) {
 	out.Supplier = goblParty(ui.TaxRepresentativeParty)
 }
 
-// typeCodeParse maps the UBL document type code (UNTDID 1001) to its GOBL
-// invoice type.
+// typeCodeParse maps the UBL document type code (UNTDID 1001) to its GOBL type.
 // Source: https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred1001.htm
 func typeCodeParse(typeCode *IDType) cbc.Key {
 	if typeCode == nil {
@@ -228,7 +219,6 @@ func typeCodeParse(typeCode *IDType) cbc.Key {
 	return bill.InvoiceTypeOther
 }
 
-// tagCodeParse maps UBL invoice type to GOBL equivalent tax tag.
 func tagCodeParse(typeCode *IDType) []cbc.Key {
 	if typeCode == nil {
 		return nil

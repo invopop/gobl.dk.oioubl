@@ -33,8 +33,7 @@ func (ui *Invoice) addPayment(inv *bill.Invoice) error {
 		ui.PayeeParty = newPayeeParty(pymt.Payee)
 	}
 
-	// BT-90: Bank assigned creditor identifier
-	// In UBL this lives as a SEPA PartyIdentification on the payee (or seller)
+	// BT-90: creditor identifier, carried as a SEPA PartyIdentification on the payee (or seller).
 	if pymt.Instructions != nil && pymt.Instructions.DirectDebit != nil && pymt.Instructions.DirectDebit.Creditor != "" {
 		sepaID := sepaSchemeID
 		id := Identification{
@@ -62,8 +61,7 @@ func (ui *Invoice) addPayment(inv *bill.Invoice) error {
 	return nil
 }
 
-// OIOUBL paymentchannelcode-1.1 wire values. Derived from the payment means
-// (see paymentChannel), not carried in an extension.
+// OIOUBL paymentchannelcode-1.1 wire values, derived from the payment means (see paymentChannel).
 const (
 	paymentChannelIBAN = "IBAN"
 	paymentChannelGiro = "DK:GIRO"
@@ -71,9 +69,8 @@ const (
 )
 
 // paymentChannel maps a UNTDID 4461 payment means to its OIOUBL
-// paymentchannelcode-1.1 value: Giro (50) → DK:GIRO, FIK (93) → DK:FIK, and the
-// account-transfer means (30/31 bank transfer, 58 SEPA credit transfer) → IBAN.
-// Every other means settles outside a payment channel and carries none.
+// paymentchannelcode-1.1 value: Giro (50) → DK:GIRO, FIK (93) → DK:FIK,
+// account transfers (30/31/58) → IBAN. Every other means carries none.
 func paymentChannel(means string) string {
 	switch means {
 	case "50":
@@ -86,8 +83,7 @@ func paymentChannel(means string) string {
 	return ""
 }
 
-// applyPaymentMeans stamps the payment channel (see stampPaymentChannel) and
-// moves the document due date onto each means.
+// applyPaymentMeans stamps the payment channel and moves the document due date onto each means.
 func applyPaymentMeans(out *Invoice) {
 	for i := range out.PaymentMeans {
 		pm := &out.PaymentMeans[i]
@@ -103,9 +99,7 @@ func applyPaymentMeans(out *Invoice) {
 }
 
 // stampPaymentChannel stamps the paymentchannelcode-1.1 list ID and strips the
-// redundant FinancialInstitutionBranch from IBAN accounts (F-LIB295, the BIC
-// stays nested under FinancialInstitution/ID). The channel value itself is set
-// when the payment means is built.
+// redundant branch ID from IBAN accounts (F-LIB295; the BIC stays under FinancialInstitution/ID).
 func stampPaymentChannel(pm *PaymentMeans) {
 	if pm.PaymentChannelCode == nil {
 		return
@@ -141,8 +135,7 @@ func (ui *Invoice) addPaymentInstructions(inv *bill.Invoice) error {
 	if ref := instr.Ref.String(); ref != "" {
 		ui.PaymentMeans[0].PaymentID = &ref
 	}
-	// The payment channel and the Giro/FIK PaymentID kortart are both derived
-	// from the payment means and reference (see applyPaymentID).
+	// Payment channel and the Giro/FIK kortart both derive from the means (see applyPaymentID).
 	if ch := paymentChannel(paymentMeansCode); ch != "" && ui.PaymentMeans[0].PaymentChannelCode == nil {
 		ui.PaymentMeans[0].PaymentChannelCode = &IDType{Value: ch}
 	}
@@ -201,9 +194,8 @@ func kortart(paymentMeansCode, ref string) string {
 	return ""
 }
 
-// applyPaymentID sets the Giro (50) / FIK (93) cbc:PaymentID to the kortart
-// deduced for the payment reference; the reference itself rides cbc:InstructionID
-// for the structured kortarts (the free-text 01/73 carry no payment number).
+// applyPaymentID sets the Giro (50) / FIK (93) cbc:PaymentID kortart; the
+// reference rides cbc:InstructionID for structured kortarts (not free-text 01/73).
 func applyPaymentID(pm *PaymentMeans, instr *pay.Instructions, paymentMeansCode string) {
 	if paymentMeansCode != "50" && paymentMeansCode != "93" {
 		return
@@ -217,8 +209,7 @@ func applyPaymentID(pm *PaymentMeans, instr *pay.Instructions, paymentMeansCode 
 }
 
 // addCreditTransferAccount wires the credit-transfer account onto the payment
-// means. For FIK (93) the creditor account lives in cac:CreditAccount/cbc:AccountID
-// (8 chars, F-LIB305) rather than PayeeFinancialAccount.
+// means. FIK (93) uses cac:CreditAccount/cbc:AccountID (F-LIB305), not PayeeFinancialAccount.
 func (ui *Invoice) addCreditTransferAccount(instr *pay.Instructions, paymentMeansCode string) {
 	if len(instr.CreditTransfer) == 0 {
 		return
@@ -243,10 +234,9 @@ func newCreditTransferAccount(ct *pay.CreditTransfer, paymentMeansCode string) *
 	}
 	if ct.BIC != "" {
 		branch := &Branch{ID: &ct.BIC}
-		// IBAN-channel transfers (domestic 31, SEPA 58) nest the BIC under
-		// FinancialInstitution; the redundant branch ID is then stripped for the
-		// IBAN channel (F-LIB295), so without the nesting the BIC would be lost
-		// and the branch left empty.
+		// IBAN-channel transfers (31, 58) nest the BIC under FinancialInstitution;
+		// the branch ID is then stripped for the IBAN channel (F-LIB295), which
+		// would otherwise lose the BIC.
 		if paymentMeansCode == "31" || paymentMeansCode == "58" {
 			branch.FinancialInstitution = &FinancialInstitution{
 				ID: &ct.BIC,

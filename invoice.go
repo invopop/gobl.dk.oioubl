@@ -14,13 +14,6 @@ import (
 // rootNameCreditNote is the local name of a UBL CreditNote root element.
 const rootNameCreditNote = "CreditNote"
 
-const (
-	// SchemaLocationInvoice is the xsi:schemaLocation for a UBL Invoice.
-	SchemaLocationInvoice = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 http://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/UBL-Invoice-2.1.xsd"
-	// SchemaLocationCreditNote is the xsi:schemaLocation for a UBL CreditNote.
-	SchemaLocationCreditNote = "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2 https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/UBL-CreditNote-2.1.xsd"
-)
-
 func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 	tc, err := getTypeCode(inv)
 	if err != nil {
@@ -37,7 +30,7 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 		CCTSNamespace:           ubl.NamespaceCCTS,
 		XSINamespace:            ubl.NamespaceXSI,
 		EXTNamespace:            ubl.NamespaceEXT,
-		SchemaLocation:          SchemaLocationInvoice,
+		SchemaLocation:          ubl.SchemaLocationInvoice,
 		UBLVersionID:            Version,
 		CustomizationID:         CustomizationID,
 		ProfileID:               newProfileID(ProfileID),
@@ -49,9 +42,8 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 		AccountingCustomerParty: CustomerParty{Party: newParty(inv.Customer)},
 	}
 
-	// BR-53 requires an exchange rate whenever cbc:TaxCurrencyCode is present,
-	// and OIOUBL carries the restated tax only on StandardRated subtotals
-	// (F-LIB373), so it also needs one of those to satisfy F-INV018.
+	// BR-53 needs an exchange rate when cbc:TaxCurrencyCode is present, and the
+	// restated tax rides StandardRated subtotals only (F-LIB373 / F-INV018).
 	if taxCurrency := inv.RegimeDef().Currency; taxCurrency != inv.Currency &&
 		cur.MatchExchangeRate(inv.ExchangeRates, inv.Currency, taxCurrency) != nil &&
 		hasStandardRated(inv) {
@@ -66,8 +58,8 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 		out.UUID = inv.UUID.String()
 	}
 	if out.ProfileID != nil {
-		// Invoices/credit notes carry profile5:ver2.0, valid from the
-		// profileid-1.2 code list — which real NemHandel traffic uses.
+		// profile5:ver2.0 is valid from the profileid-1.2 code list, which real
+		// NemHandel traffic uses.
 		out.ProfileID.SchemeID = ptr(schemeProfileV12)
 		out.ProfileID.SchemeAgencyID = ptr(agencyID)
 	}
@@ -75,7 +67,7 @@ func newInvoice(inv *bill.Invoice) (*Invoice, error) {
 	if inv.Type.In(bill.InvoiceTypeCreditNote) {
 		out.XMLName = xml.Name{Local: rootNameCreditNote}
 		out.UBLNamespace = ubl.NamespaceUBLCreditNote
-		out.SchemaLocation = SchemaLocationCreditNote
+		out.SchemaLocation = ubl.SchemaLocationCrediteNote
 		out.InvoiceTypeCode = nil
 		out.CreditNoteTypeCode = &IDType{Value: tc}
 	}
@@ -148,9 +140,8 @@ func newProfileID(profileID string) *IDType {
 	return &IDType{Value: profileID}
 }
 
-// getInvoiceTypeBasedOnXMLName returns the invoice type based on the XML root
-// name instead of gobl's invoice type key, since OIOUBL credit notes omit the
-// type code.
+// getInvoiceTypeBasedOnXMLName derives the invoice type from the XML root name,
+// since OIOUBL credit notes omit the type code.
 func (ui *Invoice) getInvoiceTypeBasedOnXMLName() cbc.Key {
 	switch ui.XMLName.Local {
 	case rootNameCreditNote:

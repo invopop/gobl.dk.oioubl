@@ -10,8 +10,7 @@ import (
 	"github.com/invopop/validation"
 )
 
-// extFieldKey is the JSON path segment for the `ext` field on GOBL structs,
-// used when constructing validation.Errors trees.
+// extFieldKey is the JSON path segment for the `ext` field, used in validation.Errors trees.
 const extFieldKey = "ext"
 
 // ptr returns a pointer to v, keeping the optional *string XML attributes legible.

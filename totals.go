@@ -21,9 +21,8 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 	grossSum := num.MakeAmount(0, exp)
 	lineDiscounts := num.MakeAmount(0, exp)
 	lineCharges := num.MakeAmount(0, exp)
-	// excise holds duty charges OIOUBL emits as cac:TaxTotal/Excise subtotals; they
-	// leave the AllowanceCharge/ChargeTotalAmount path and land in
-	// TaxInclusiveAmount as tax instead (the subtotals are built in addTotals).
+	// excise holds duty charges emitted as cac:TaxTotal/Excise subtotals; they
+	// land in TaxInclusiveAmount as tax rather than in ChargeTotalAmount.
 	excise := num.MakeAmount(0, exp)
 	for _, l := range inv.Lines {
 		if l.Sum != nil {
@@ -41,8 +40,7 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 			lineCharges = lineCharges.Add(c.Amount)
 			ordinary = append(ordinary, c)
 		}
-		// Promote ordinary line allowances/charges to document-level AllowanceCharge
-		// so they sum to Allowance/ChargeTotalAmount (F-INV129/F-INV130).
+		// Promote ordinary line allowances/charges to document level (F-INV129/F-INV130).
 		for _, ac := range makeLineCharges(ordinary, l.Discounts, currency, l.Sum, l.Taxes) {
 			ui.AllowanceCharge = append(ui.AllowanceCharge, *ac)
 		}
@@ -69,9 +67,8 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 	if !chg.IsZero() {
 		ui.LegalMonetaryTotal.ChargeTotalAmount = &Amount{Value: chg.String(), CurrencyID: &currency}
 	}
-	// OIOUBL rounds per line then sums (F-INV128/F-INV133); GOBL end-rounds,
-	// which can differ by a cent on fractional quantities. Recompute the
-	// inclusive/payable totals from the rounded components so they reconcile.
+	// OIOUBL rounds per line then sums (F-INV128/F-INV133), which can differ from
+	// GOBL's end-rounding by a cent; recompute totals from the rounded components.
 	incl := grossSum.Add(t.Tax).Add(excise).Add(chg).Subtract(allow)
 	if t.Rounding != nil {
 		incl = incl.Add(*t.Rounding)
@@ -84,9 +81,8 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 	ui.LegalMonetaryTotal.PayableAmount = &Amount{Value: pay.String(), CurrencyID: &currency}
 }
 
-// addPrepaidPayments emits a cac:PrepaidPayment per GOBL advance. OIOUBL
-// requires the PaidAmount elements to sum to LegalMonetaryTotal/PrepaidAmount
-// (F-INV131).
+// addPrepaidPayments emits a cac:PrepaidPayment per GOBL advance; their
+// PaidAmounts must sum to LegalMonetaryTotal/PrepaidAmount (F-INV131).
 func (ui *Invoice) addPrepaidPayments(inv *bill.Invoice, currency string) {
 	if inv.Payment == nil {
 		return
@@ -164,8 +160,7 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 				if r.Base != (num.Amount{}) {
 					subtotal.TaxableAmount = Amount{Value: r.Base.String(), CurrencyID: &currency}
 				}
-				// The category is mapped from the GOBL key. Computed early because
-				// F-LIB373 gates the dual-currency amount on it.
+				// Computed early because F-LIB373 gates the dual-currency amount on the category.
 				catID := taxCategoryID(r.Key)
 				subtotal.TransactionCurrencyTaxAmount = transactionTax(accRate, catID, r.Amount, rCurrency)
 				taxCat := TaxCategory{}
@@ -202,8 +197,7 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 	}
 
 	// Non-VAT excise duties travel as their own cac:TaxTotal blocks (the VAT total
-	// already includes them in its base, GOBL having folded the charge into the
-	// line). applyTotals sums every TaxTotal into TaxExclusiveAmount.
+	// already includes them in its base); applyTotals sums them into TaxExclusiveAmount.
 	ui.TaxTotal = append(ui.TaxTotal, makeExciseTaxTotals(collectExcise(inv, currency), currency)...)
 }
 
@@ -212,7 +206,6 @@ type taxCategoryInfo struct {
 	exemptionReasonCode string
 }
 
-// buildTaxCategoryMap builds a map of tax category information from TaxTotal.
 func (ui *Invoice) buildTaxCategoryMap() map[string]*taxCategoryInfo {
 	categoryMap := make(map[string]*taxCategoryInfo)
 
@@ -232,8 +225,7 @@ func (ui *Invoice) buildTaxCategoryMap() map[string]*taxCategoryInfo {
 	return categoryMap
 }
 
-// goblAddTaxNotes extracts tax notes from UBL TaxTotal subtotals and adds them
-// to the invoice's Tax.Notes.
+// goblAddTaxNotes copies tax exemption reasons from TaxTotal subtotals into Tax.Notes.
 func (ui *Invoice) goblAddTaxNotes(inv *bill.Invoice) {
 	for _, tt := range ui.TaxTotal {
 		for _, st := range tt.TaxSubtotal {
@@ -251,10 +243,8 @@ func (ui *Invoice) goblAddTaxNotes(inv *bill.Invoice) {
 	}
 }
 
-// findTaxNote finds a tax note that matches the given category code and rate
-// total by category and VAT key — the same pair tax.Note uses to identify
-// itself. Matching on the key works across profiles and survives the dk-oioubl
-// addon stripping the UNTDID extension from the document.
+// findTaxNote matches a note by category + VAT key, the same pair tax.Note uses
+// to identify itself; keying works across profiles and survives extension stripping.
 func findTaxNote(notes []*tax.Note, catCode cbc.Code, rate *tax.RateTotal) *tax.Note {
 	for _, n := range notes {
 		if n.Category == catCode && n.Key == rate.Key {
@@ -264,10 +254,9 @@ func findTaxNote(notes []*tax.Note, catCode cbc.Code, rate *tax.RateTotal) *tax.
 	return nil
 }
 
-// goblExchangeRates derives the exchange rate between DocumentCurrencyCode and
-// TaxCurrencyCode. OIOUBL carries the accounting-currency tax per subtotal as
-// TransactionCurrencyTaxAmount; a second TaxTotal block (the EN16931/Peppol
-// shape) is also read for inbound documents that use it.
+// goblExchangeRates derives the DocumentCurrencyCode→TaxCurrencyCode rate. The
+// accounting-currency tax rides per-subtotal TransactionCurrencyTaxAmount, or a
+// second TaxTotal block (the EN16931/Peppol shape) when present.
 func goblExchangeRates(docCurrency, taxCurrency cur.Code, taxTotals []TaxTotal) []*cur.ExchangeRate {
 	if len(taxTotals) == 0 {
 		return nil
@@ -294,9 +283,8 @@ func goblExchangeRates(docCurrency, taxCurrency cur.Code, taxTotals []TaxTotal) 
 	}
 }
 
-// taxCurrencyTaxAmount returns the total tax expressed in the tax currency,
-// summing the per-subtotal TransactionCurrencyTaxAmount of the first TaxTotal,
-// or reading a second TaxTotal block when present.
+// taxCurrencyTaxAmount returns the total tax in the tax currency: a second
+// TaxTotal block if present, else the summed per-subtotal amounts of the first.
 func taxCurrencyTaxAmount(taxTotals []TaxTotal) (num.Amount, bool) {
 	if len(taxTotals) >= 2 {
 		a, err := num.AmountFromString(ubl.NormalizeNumericString(taxTotals[1].TaxAmount.Value))
@@ -335,9 +323,8 @@ const (
 	taxSchemeVATCode = "63" // taxschemeid-1.1 VAT (Moms)
 )
 
-// transactionTax restates a subtotal's tax in the tax currency. F-LIB373
-// allows it only on StandardRated, so it returns nil otherwise (and for
-// single-currency invoices).
+// transactionTax restates a subtotal's tax in the tax currency, returning nil
+// for single-currency invoices and non-StandardRated categories (F-LIB373).
 func transactionTax(accRate *cur.ExchangeRate, catID string, amount num.Amount, currencyID string) *Amount {
 	if accRate == nil || catID != taxCategoryStandardRated {
 		return nil
@@ -346,9 +333,8 @@ func transactionTax(accRate *cur.ExchangeRate, catID string, amount num.Amount, 
 }
 
 // hasStandardRated reports whether the invoice carries a StandardRated VAT
-// combo. cbc:TransactionCurrencyTaxAmount is emitted only on StandardRated
-// subtotals (F-LIB373), so cbc:TaxCurrencyCode — which then requires at least one
-// of those amounts (F-INV018) — must be suppressed when none is present.
+// combo. Since only those subtotals carry the restated tax (F-LIB373),
+// cbc:TaxCurrencyCode must be suppressed without one (F-INV018).
 func hasStandardRated(inv *bill.Invoice) bool {
 	if inv.Totals == nil || inv.Totals.Taxes == nil {
 		return false
@@ -363,10 +349,9 @@ func hasStandardRated(inv *bill.Invoice) bool {
 	return false
 }
 
-// taxCategoryID maps a GOBL VAT key to the OIOUBL taxcategoryid-1.1 code
-// emitted as cac:TaxCategory/cbc:ID. OIOUBL 2.1 has no exempt category, so exempt
-// reports as ZeroRated. Returns "" for keys with no OIOUBL category (export,
-// intra-community and outside-scope, which the addon rejects upstream).
+// taxCategoryID maps a GOBL VAT key to its OIOUBL taxcategoryid-1.1 code. OIOUBL
+// 2.1 has no exempt category, so exempt reports as ZeroRated; keys with no
+// OIOUBL category (export/intra-community/outside-scope) return "".
 func taxCategoryID(key cbc.Key) string {
 	switch key {
 	case tax.KeyStandard, "":
@@ -381,9 +366,7 @@ func taxCategoryID(key cbc.Key) string {
 
 // applyTotals stamps the taxcategoryid attributes on the document-level tax
 // subtotals and allowance/charges, and re-interprets TaxExclusiveAmount as the
-// total tax amount (F-INV127), not the pre-tax sum as in generic UBL. It runs
-// after the whole document is assembled because the document allowance set is
-// only complete once promoted line allowances have been added.
+// total tax (F-INV127). It runs last, once promoted line allowances are in.
 func (ui *Invoice) applyTotals() {
 	for i := range ui.TaxTotal {
 		for j := range ui.TaxTotal[i].TaxSubtotal {
@@ -405,8 +388,7 @@ func (ui *Invoice) applyTotals() {
 	ui.LegalMonetaryTotal.TaxExclusiveAmount = sumTaxTotalAmounts(ui.TaxTotal)
 }
 
-// sumTaxTotalAmounts totals the TaxAmount of every cac:TaxTotal. With a single
-// (VAT) total it returns that amount unchanged; excise totals add to it.
+// sumTaxTotalAmounts totals the TaxAmount of every cac:TaxTotal (VAT plus excise).
 func sumTaxTotalAmounts(totals []TaxTotal) Amount {
 	if len(totals) == 0 {
 		return Amount{}
@@ -428,8 +410,7 @@ func sumTaxTotalAmounts(totals []TaxTotal) Amount {
 	return Amount{Value: sum.String(), CurrencyID: totals[0].TaxAmount.CurrencyID}
 }
 
-// stampTaxCategoryID stamps the taxcategoryid-1.1 codelist attributes onto a
-// tax-category cbc:ID, defaulting an absent category to StandardRated.
+// stampTaxCategoryID stamps the taxcategoryid-1.1 attributes, defaulting an absent category to StandardRated.
 func stampTaxCategoryID(id *IDType) *IDType {
 	if id == nil {
 		id = &IDType{Value: taxCategoryStandardRated}

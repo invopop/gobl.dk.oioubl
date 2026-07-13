@@ -32,8 +32,8 @@ func newParty(party *org.Party) *Party {
 	return p
 }
 
-// addPartyTaxScheme maps the party's primary tax identity to a PartyTaxScheme and
-// stamps its country onto the postal address.
+// addPartyTaxScheme maps the primary tax identity to a PartyTaxScheme and stamps
+// its country onto the postal address.
 func addPartyTaxScheme(p *Party, party *org.Party) {
 	tID := party.TaxID
 	if tID == nil || tID.Code == "" {
@@ -53,16 +53,14 @@ func addPartyTaxScheme(p *Party, party *org.Party) {
 		CompanyID: &IDType{Value: code},
 		TaxScheme: &TaxScheme{ID: IDType{Value: id.String()}},
 	}}
-	// Override the company address's country code.
 	if p.PostalAddress == nil {
 		p.PostalAddress = new(PostalAddress)
 	}
 	p.PostalAddress.Country = &Country{IdentificationCode: tID.Country.String()}
 }
 
-// newPartyContact builds the cac:Contact from the party's emails, phones and
-// first person, returning nil when none are present. The mandatory cbc:ID
-// (F-INV051) is sourced from the person's identity rather than fabricated.
+// newPartyContact builds the cac:Contact, returning nil when empty. The
+// mandatory cbc:ID (F-INV051) comes from the person's identity, not fabricated.
 func newPartyContact(party *org.Party) *Contact {
 	contact := &Contact{}
 	if len(party.Emails) > 0 {
@@ -86,9 +84,8 @@ func newPartyContact(party *org.Party) *Contact {
 	return contact
 }
 
-// addPartyEndpoint derives the cbc:EndpointID. The participant scheme and code
-// are carried in the OIOUBL endpoint URI and emitted 1:1; a party without one
-// falls back to the first inbox using its raw scheme.
+// addPartyEndpoint derives the cbc:EndpointID from the OIOUBL endpoint URI
+// (scheme+code emitted 1:1), falling back to the first inbox.
 func addPartyEndpoint(p *Party, party *org.Party) {
 	for _, ep := range party.Endpoints {
 		if ep == nil {
@@ -109,9 +106,8 @@ func addPartyEndpoint(p *Party, party *org.Party) {
 	}
 }
 
-// addPartyIdentities classifies the party identities: the first legal-scope one
-// becomes PartyLegalEntity.CompanyID, tax-scope ones become additional
-// PartyTaxScheme entries, and the rest become PartyIdentification entries.
+// addPartyIdentities classifies identities: first legal-scope →
+// PartyLegalEntity.CompanyID, tax-scope → PartyTaxScheme, rest → PartyIdentification.
 func addPartyIdentities(p *Party, party *org.Party) {
 	firstLegalIdx := -1
 	for i, id := range party.Identities {
@@ -157,10 +153,8 @@ func addPartyIdentities(p *Party, party *org.Party) {
 	}
 }
 
-// newDeliveryParty creates a Party structure for delivery parties
-// according to UBL rules:
-//   - UBL-CR-394: A UBL invoice should not include the DeliveryParty PostalAddress
-//     (it's already in DeliveryLocation)
+// newDeliveryParty builds a delivery Party without a PostalAddress (UBL-CR-394:
+// the address already lives in DeliveryLocation).
 func newDeliveryParty(party *org.Party) *Party {
 	if party == nil {
 		return nil
@@ -179,8 +173,7 @@ func newDeliveryParty(party *org.Party) *Party {
 		hasContent = true
 	}
 
-	// Note: Intentionally NOT including PostalAddress per UBL-CR-394
-	// The address is already in DeliveryLocation
+	// No PostalAddress per UBL-CR-394 (address lives in DeliveryLocation).
 
 	contact := &Contact{}
 
@@ -204,7 +197,7 @@ func newDeliveryParty(party *org.Party) *Party {
 		hasContent = true
 	}
 
-	// Return nil if party would be completely empty to avoid empty XML elements
+	// Return nil when empty to avoid emitting an empty XML element.
 	if !hasContent {
 		return nil
 	}
@@ -212,12 +205,8 @@ func newDeliveryParty(party *org.Party) *Party {
 	return p
 }
 
-// newPayeeParty creates a minimal Party structure for the Payee
-// according to UBL rules which state:
-// - BR-17: The Payee name shall be provided
-// - UBL-SR-20: Payee identifier shall occur maximum once
-// - UBL-CR-272: A UBL invoice should not include the PayeeParty PostalAddress
-// - UBL-CR-275: A UBL invoice should not include the PayeeParty PartyLegalEntity RegistrationName
+// newPayeeParty builds a minimal Payee per UBL rules (BR-17, UBL-SR-20,
+// UBL-CR-272/275): name plus at most one identifier, no address or registration name.
 func newPayeeParty(party *org.Party) *Party {
 	if party == nil {
 		return nil
@@ -228,15 +217,14 @@ func newPayeeParty(party *org.Party) *Party {
 		},
 	}
 
-	// Add only the first identity with a valid scheme as PartyIdentification (UBL-SR-20: maximum once)
-	// Prefer identities with Ext[iso.ExtKeySchemeID] or 4-digit labels (ISO 6523 ICD codes)
+	// First identity with a valid scheme only (UBL-SR-20: maximum once),
+	// preferring an Ext schemeID or a 4-digit ISO 6523 ICD label.
 	if len(party.Identities) > 0 {
 		for _, id := range party.Identities {
 			var schemeID *string
 			if s := id.Ext.Get(iso.ExtKeySchemeID).String(); s != "" {
 				schemeID = &s
 			}
-			// If no Ext scheme, check if label looks like a valid ICD code (4 digits)
 			if schemeID == nil && id.Label != "" && len(id.Label) == 4 {
 				schemeID = &id.Label
 			}
@@ -253,7 +241,7 @@ func newPayeeParty(party *org.Party) *Party {
 		}
 	}
 
-	// Only add PartyLegalEntity if there's a legal identity, but without RegistrationName
+	// PartyLegalEntity carries the legal identity's CompanyID but no RegistrationName (UBL-CR-275).
 	for _, id := range party.Identities {
 		if id.Scope == org.IdentityScopeLegal {
 			code := id.Code.String()
@@ -272,8 +260,7 @@ func newPayeeParty(party *org.Party) *Party {
 	return p
 }
 
-// newAddressFormatCode builds the cbc:AddressFormatCode (codelist
-// addressformatcode-1.1) required on every OIOUBL address (F-LIB025).
+// newAddressFormatCode builds the cbc:AddressFormatCode required on every OIOUBL address (F-LIB025).
 func newAddressFormatCode(value string) *IDType {
 	return &IDType{
 		ListID:       ptr(listAddressFormat),
@@ -282,9 +269,8 @@ func newAddressFormatCode(value string) *IDType {
 	}
 }
 
-// OIOUBL addressformatcode-1.1 values. Outbound the converter always emits
-// StructuredLax (it imposes no mandatory sub-fields); StructuredID is recognized
-// when parsing an inbound identifier-only address.
+// OIOUBL addressformatcode-1.1 values. Outbound always emits StructuredLax (no
+// mandatory sub-fields); StructuredID is recognized on inbound parse.
 const (
 	addressStructuredLax = "StructuredLax"
 	addressStructuredID  = "StructuredID"
@@ -298,13 +284,9 @@ func newAddress(addresses []*org.Address) *PostalAddress {
 
 	addr := &PostalAddress{}
 
-	// Every OIOUBL address needs an AddressFormatCode (F-LIB025). Stamping it
-	// here covers delivery and payee addresses too, not just the supplier and
-	// customer handled by applyParty.
+	// Every OIOUBL address needs an AddressFormatCode (F-LIB025); stamping it
+	// here also covers delivery and payee addresses, not just supplier/customer.
 	addr.AddressFormatCode = newAddressFormatCode(addressStructuredLax)
-	// OIOUBL keeps the street number and PO box in their own elements when
-	// GOBL provides them; under StructuredLax these are emitted but not
-	// required, so an inline street number is preserved as-is in StreetName.
 	if a.Street != "" {
 		addr.StreetName = &a.Street
 	}
@@ -341,8 +323,7 @@ func newAddress(addresses []*org.Address) *PostalAddress {
 		addr.Country = &Country{IdentificationCode: string(a.Country)}
 	}
 
-	// OIOUBL forbids cac:LocationCoordinate on an address (F-LIB212), so
-	// coordinates are never emitted.
+	// OIOUBL forbids cac:LocationCoordinate on an address (F-LIB212).
 
 	return addr
 }
@@ -379,8 +360,7 @@ func parseOIOUBLEndpoint(uri string) (scheme, code cbc.Code, ok bool) {
 	return cbc.Code(uri[:i]), cbc.Code(uri[i+1:]), true
 }
 
-// dkPrefixed adds the "DK" country prefix the OIOUBL schematron mandates on
-// DK:CVR/DK:SE identifier values (F-LIB180/F-LIB184), only when absent.
+// dkPrefixed adds the "DK" prefix OIOUBL mandates on DK:CVR/DK:SE values (F-LIB180/184), if absent.
 func dkPrefixed(value string) string {
 	if strings.HasPrefix(value, "DK") {
 		return value
@@ -389,10 +369,8 @@ func dkPrefixed(value string) string {
 }
 
 // applyCompanyID stamps a CompanyID's OIOUBL scheme: a Danish party gets the
-// given Danish scheme with the DK-prefixed value the schematron mandates
-// (F-LIB190/196); a foreign party gets the "other" scheme ZZZ with its value left
-// as-is, since forcing a DK scheme + prefix onto a foreign identifier is wire-fatal.
-// A nil CompanyID is ignored.
+// Danish scheme + DK-prefixed value (F-LIB190/196); a foreign party gets ZZZ
+// with its value unchanged, since a forced DK scheme + prefix is wire-fatal.
 func applyCompanyID(id *IDType, danishScheme string, danish bool) {
 	if id == nil {
 		return
@@ -406,9 +384,8 @@ func applyCompanyID(id *IDType, danishScheme string, danish bool) {
 	id.SchemeID = &scheme
 }
 
-// applyParty rewrites an assembled party into OIOUBL 2.1 form: symbolic
-// endpoint scheme + DK-prefixed CVR (F-LIB179/F-LIB180), a fallback PartyName,
-// the StructuredLax address format, and the DK:SE/DK:CVR company-ID schemes.
+// applyParty rewrites an assembled party into OIOUBL 2.1 form: DK-prefixed CVR
+// endpoint (F-LIB179/180), fallback PartyName, and DK:SE/DK:CVR company-ID schemes.
 func applyParty(p *Party) {
 	if p == nil {
 		return
@@ -425,8 +402,7 @@ func applyParty(p *Party) {
 		}
 	}
 	if p.PostalAddress != nil && p.PostalAddress.AddressFormatCode == nil {
-		// Covers a party that has a tax identity but no address (newAddress
-		// returns nil, so the bare PostalAddress is created without a format code).
+		// A tax identity with no address yields a bare PostalAddress lacking a format code.
 		p.PostalAddress.AddressFormatCode = newAddressFormatCode(addressStructuredLax)
 	}
 	danish := partyIsDanish(p)
@@ -441,9 +417,8 @@ func applyParty(p *Party) {
 	applyPartyIdentifications(p)
 }
 
-// applyTaxRepParty drops the elements OIOUBL forbids on a
-// cac:TaxRepresentativeParty (EndpointID, PartyIdentification, PartyLegalEntity,
-// Contact) and runs the standard OIOUBL party pass on what remains.
+// applyTaxRepParty drops the elements OIOUBL forbids on a cac:TaxRepresentativeParty
+// (EndpointID, PartyIdentification, PartyLegalEntity, Contact) before the standard pass.
 func applyTaxRepParty(p *Party) {
 	if p == nil {
 		return
@@ -455,10 +430,8 @@ func applyTaxRepParty(p *Party) {
 	applyParty(p)
 }
 
-// applyPartyIdentifications DK-prefixes DK:CVR/DK:SE PartyIdentification
-// values (F-LIB184), mirroring the company-ID handling. Schemes are expected to
-// be OIOUBL-symbolic already (F-LIB183); an ISO 6523 identifier must be supplied
-// pre-formatted as an OIOUBL scheme.
+// applyPartyIdentifications DK-prefixes DK:CVR/DK:SE PartyIdentification values
+// (F-LIB184); schemes are expected to be OIOUBL-symbolic already (F-LIB183).
 func applyPartyIdentifications(p *Party) {
 	for i := range p.PartyIdentification {
 		id := p.PartyIdentification[i].ID
@@ -471,10 +444,8 @@ func applyPartyIdentifications(p *Party) {
 	}
 }
 
-// partyIsDanish reports whether an assembled OIOUBL party is Danish, the signal
-// that decides DK:SE/DK:CVR vs the ZZZ "other" scheme. newParty stamps the tax
-// identity's country onto the postal address, so the country code is the
-// reliable marker even when an identifier value carries no country prefix.
+// partyIsDanish decides DK:SE/DK:CVR vs the ZZZ "other" scheme. The postal
+// address country (stamped from the tax identity) is the reliable marker.
 func partyIsDanish(p *Party) bool {
 	return p.PostalAddress != nil &&
 		p.PostalAddress.Country != nil &&

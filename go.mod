@@ -7,7 +7,6 @@ require (
 	github.com/invopop/gobl v0.502.2
 	github.com/invopop/gobl.ubl v0.55.1-0.20260712183348-1ed9321ac013
 	github.com/invopop/validation v0.8.0
-	github.com/invopop/xmlctx v0.13.0
 	github.com/stretchr/testify v1.11.1
 )
 
@@ -24,6 +23,7 @@ require (
 	github.com/invopop/gobl.fr.ctc v0.0.4 // indirect
 	github.com/invopop/gobl.sa.zatca v0.0.2 // indirect
 	github.com/invopop/jsonschema v0.14.0 // indirect
+	github.com/invopop/xmlctx v0.13.0 // indirect
 	github.com/invopop/xmldsig v0.14.0 // indirect
 	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect

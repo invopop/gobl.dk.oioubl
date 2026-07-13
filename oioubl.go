@@ -1,31 +1,24 @@
 // Package dkoioubl converts GOBL documents to and from OIOUBL 2.1, the Danish
-// NemHandel profile of UBL 2.1. The generic UBL plumbing (serialization,
-// namespaces, version) is shared with github.com/invopop/gobl.ubl; everything
-// OIOUBL-specific lives here, alongside the dk-oioubl GOBL addon in the addon
-// subpackage.
+// NemHandel profile of UBL 2.1. Generic UBL plumbing is shared with gobl.ubl;
+// OIOUBL-specifics live here alongside the dk-oioubl addon subpackage.
 package dkoioubl
 
 import (
 	"bytes"
-	"encoding/xml"
 	"fmt"
-	"io"
 
 	"github.com/invopop/gobl"
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
-	"github.com/invopop/xmlctx"
 )
 
 var (
-	// ErrUnknownDocumentType is returned when the document type
-	// is not recognized during parsing.
+	// ErrUnknownDocumentType is returned when the document type is not recognized during parsing.
 	ErrUnknownDocumentType = fmt.Errorf("unknown document type")
 
-	// ErrUnsupportedDocumentType is returned when the document type
-	// is not supported for conversion.
+	// ErrUnsupportedDocumentType is returned when the document type is not supported for conversion.
 	ErrUnsupportedDocumentType = fmt.Errorf("unsupported document type")
 )
 
@@ -46,8 +39,7 @@ const (
 	VESIDCreditNote = "dk.oioubl:credit-note:1.17.2"
 )
 
-// Addons lists the GOBL addons an OIOUBL document requires; they are ensured
-// on conversion and stamped onto parsed documents.
+// Addons lists the GOBL addons an OIOUBL document requires.
 var Addons = []cbc.Key{oioubl.V2}
 
 // GetVESID returns the phive VESID for the given invoice.
@@ -58,9 +50,8 @@ func GetVESID(inv *bill.Invoice) string {
 	return VESIDInvoice
 }
 
-// OIOUBL 2.1 code-list and scheme identifiers. These are the schemeID/listID
-// attribute values the schematron expects (agency 320 throughout); centralised
-// so every OIOUBL wire identifier has a single source of truth.
+// OIOUBL 2.1 code-list and scheme identifiers: the schemeID/listID values the
+// schematron expects (agency 320 throughout), centralised here.
 const (
 	agencyID = "320"
 
@@ -74,35 +65,17 @@ const (
 	listTaxType        = "urn:oioubl:codelist:taxtypecode-1.1"
 )
 
-// Parse parses a raw OIOUBL document and returns the underlying Go struct. The
-// returned value is an *Invoice (for both Invoice and CreditNote documents),
-// whose Convert method returns the GOBL envelope.
+// Parse parses a raw OIOUBL document into an *Invoice (for both Invoice and
+// CreditNote), whose Convert method returns the GOBL envelope.
 func Parse(data []byte) (any, error) {
-	ns, err := extractRootNamespace(data)
+	doc, err := ubl.Parse(data)
 	if err != nil {
 		return nil, err
 	}
-
-	switch ns {
-	case ubl.NamespaceUBLInvoice, ubl.NamespaceUBLCreditNote:
-		in := new(Invoice)
-		if err := xmlctx.Unmarshal(data, in, xmlctx.WithNamespaces(map[string]string{
-			"":     ns,
-			"cbc":  ubl.NamespaceCBC,
-			"cac":  ubl.NamespaceCAC,
-			"qdt":  ubl.NamespaceQDT,
-			"udt":  ubl.NamespaceUDT,
-			"ccts": ubl.NamespaceCCTS,
-			"xsi":  ubl.NamespaceXSI,
-			"ext":  ubl.NamespaceEXT,
-		})); err != nil {
-			return nil, err
-		}
-		return in, nil
-
-	default:
-		return nil, ErrUnknownDocumentType
+	if in, ok := doc.(*ubl.Invoice); ok {
+		return (*Invoice)(in), nil
 	}
+	return nil, ErrUnknownDocumentType
 }
 
 // Convert takes a GOBL envelope containing a bill.Invoice and converts it to an
@@ -123,8 +96,7 @@ func Convert(env *gobl.Envelope) (any, error) {
 	}
 }
 
-// ConvertInvoice is a convenience function that converts a GOBL envelope
-// containing an invoice into an OIOUBL Invoice or CreditNote document.
+// ConvertInvoice converts a GOBL envelope into an OIOUBL Invoice or CreditNote.
 func ConvertInvoice(env *gobl.Envelope) (*Invoice, error) {
 	doc, err := Convert(env)
 	if err != nil {
@@ -167,27 +139,8 @@ func ensureAddons(env *gobl.Envelope, required []cbc.Key) error {
 	return env.Validate()
 }
 
-func extractRootNamespace(data []byte) (string, error) {
-	dc := xml.NewDecoder(bytes.NewReader(data))
-	for {
-		tk, err := dc.Token()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return "", fmt.Errorf("error parsing XML: %w", err)
-		}
-		switch t := tk.(type) {
-		case xml.StartElement:
-			return t.Name.Space, nil
-		}
-	}
-	return "", ErrUnknownDocumentType
-}
-
-// Bytes returns the raw XML of the document including the XML header,
-// serialized via gobl.ubl. A credit note carrying a cbc:TaxPointDate is
-// reordered to the CreditNote XSD sequence — see reorderCreditNoteTaxPointDate.
+// Bytes returns the document's XML with header. A credit note carrying a
+// cbc:TaxPointDate is reordered — see reorderCreditNoteTaxPointDate.
 func Bytes(in any) ([]byte, error) {
 	b, err := ubl.Bytes(in)
 	if err != nil {
@@ -199,8 +152,7 @@ func Bytes(in any) ([]byte, error) {
 	return b, nil
 }
 
-// BytesCompact returns the raw XML of the document without indentation,
-// including the XML header.
+// BytesCompact returns the document's XML with header, without indentation.
 func BytesCompact(in any) ([]byte, error) {
 	b, err := ubl.BytesCompact(in)
 	if err != nil {
@@ -213,8 +165,7 @@ func BytesCompact(in any) ([]byte, error) {
 }
 
 // creditNoteNeedsTaxPointDateReorder reports whether in is a credit note
-// carrying a cbc:TaxPointDate, which the CreditNote XSD sequences differently
-// from the shared Invoice struct — see reorderCreditNoteTaxPointDate.
+// carrying a cbc:TaxPointDate — see reorderCreditNoteTaxPointDate.
 func creditNoteNeedsTaxPointDateReorder(in any) bool {
 	var inv *Invoice
 	switch v := in.(type) {
@@ -229,10 +180,8 @@ func creditNoteNeedsTaxPointDateReorder(in any) bool {
 }
 
 // reorderCreditNoteTaxPointDate moves cbc:TaxPointDate ahead of
-// cbc:CreditNoteTypeCode to match the CreditNote XSD sequence. Invoice and
-// CreditNote share one Go struct, and encoding/xml can neither vary field order
-// per struct nor survive a decode/re-encode (it mangles the cac:/cbc: prefixes),
-// so the fix edits the marshaled bytes directly.
+// cbc:CreditNoteTypeCode for the CreditNote XSD sequence. Invoice and CreditNote
+// share one struct, so the fix edits the marshaled bytes directly.
 func reorderCreditNoteTaxPointDate(b []byte) []byte {
 	const (
 		open     = "<cbc:TaxPointDate>"
@@ -262,8 +211,7 @@ func reorderCreditNoteTaxPointDate(b []byte) []byte {
 	}
 	rest := append(append([]byte(nil), b[:cut]...), b[elemEnd:]...)
 
-	// Re-insert it before the type code, reusing that line's leading whitespace
-	// (empty for the compact, non-indented output).
+	// Re-insert it before the type code, reusing that line's leading whitespace.
 	tc = bytes.Index(rest, []byte(typeCode))
 	indentStart := tc
 	for indentStart > 0 && (rest[indentStart-1] == ' ' || rest[indentStart-1] == '\t') {

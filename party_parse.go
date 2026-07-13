@@ -26,10 +26,8 @@ func goblParty(party *Party) *org.Party {
 		if eID.SchemeID == ubl.SchemeIDEmail {
 			p.Inboxes = append(p.Inboxes, &org.Inbox{Email: eID.Value})
 		} else {
-			// OIOUBL participants are restored as org.Endpoints under the OIOUBL
-			// endpoint-identifier scheme (org.Inbox is deprecated). The symbolic
-			// scheme and code round-trip verbatim; only the wire-only DK prefix
-			// (F-LIB180) on a Danish identifier is reversed.
+			// Restored as org.Endpoints (org.Inbox is deprecated); scheme and code
+			// round-trip verbatim, reversing only the wire-only DK prefix (F-LIB180).
 			code := eID.Value
 			if eID.SchemeID == schemeDKCVR || eID.SchemeID == schemeDKSE {
 				code = strings.TrimPrefix(code, "DK")
@@ -44,7 +42,6 @@ func goblParty(party *Party) *org.Party {
 		if p.Name == "" {
 			p.Name = ubl.CleanString(party.PartyName.Name)
 		} else if party.PartyName.Name != p.Name {
-			// Only set alias if it's different from the name
 			p.Alias = ubl.CleanString(party.PartyName.Name)
 		}
 	}
@@ -56,9 +53,8 @@ func goblParty(party *Party) *org.Party {
 				Given: ubl.CleanString(*c.Name),
 			}
 		}
-		// OIOUBL carries the contact reference in cac:Contact/cbc:ID; restore it
-		// to the person's identities so the round-trip stays lossless (the
-		// outbound side sources Contact/ID from person.Identities for F-INV051).
+		// Restore cac:Contact/cbc:ID to the person's identities for a lossless
+		// round-trip (the outbound side sources it from there for F-INV051).
 		if c.ID != nil {
 			if code := ubl.CleanString(*c.ID); code != "" {
 				person.Identities = []*org.Identity{{Code: cbc.Code(code)}}
@@ -99,9 +95,8 @@ func goblParty(party *Party) *org.Party {
 	return p
 }
 
-// goblDeliveryParty creates a GOBL party with only the BTs available
-// for the delivery party (BT-70 name). Address is handled separately
-// via DeliveryLocation.
+// goblDeliveryParty builds a GOBL party with only the delivery-party BTs (BT-70
+// name); the address is handled separately via DeliveryLocation.
 func goblDeliveryParty(party *Party) *org.Party {
 	if party == nil {
 		return nil
@@ -147,24 +142,20 @@ func parseAddress(address *PostalAddress) *org.Address {
 	if address.CountrySubentity != nil {
 		addr.Region = ubl.CleanString(*address.CountrySubentity)
 	}
-	// A StructuredRegion address carries its region in cbc:Region rather than
-	// cbc:CountrySubentity (F-LIB040). No other profile emits cbc:Region.
+	// A StructuredRegion address carries its region in cbc:Region (F-LIB040).
 	if address.Region != nil && addr.Region == "" {
 		addr.Region = ubl.CleanString(*address.Region)
 	}
-	// A StructuredRegion address carries the locality in cbc:District (F-LIB040);
-	// org.Address.Locality is its district-level field ("village, town, district,
-	// or city").
+	// A StructuredRegion address carries the locality in cbc:District (F-LIB040).
 	if address.District != nil && addr.Locality == "" {
 		addr.Locality = ubl.CleanString(*address.District)
 	}
 	if address.BuildingNumber != nil {
 		addr.Number = ubl.CleanString(*address.BuildingNumber)
 	}
-	// A StructuredID address is reduced to a single register identifier (a GLN) in
-	// cbc:ID (F-LIB037/038). GOBL has no address-identifier field, so the value
-	// rides org.Address.Number (idle in this format, which clears all postal
-	// fields); the emit side re-reads it from there.
+	// A StructuredID address is just a register identifier (a GLN) in cbc:ID
+	// (F-LIB037/038). GOBL has no such field, so it rides org.Address.Number
+	// (idle in this format); the emit side re-reads it from there.
 	if address.AddressFormatCode != nil &&
 		address.AddressFormatCode.Value == addressStructuredID &&
 		address.ID != nil {
@@ -177,10 +168,8 @@ func parseAddress(address *PostalAddress) *org.Address {
 	if address.CitySubdivisionName != nil && addr.StreetExtra == "" {
 		addr.StreetExtra = ubl.CleanString(*address.CitySubdivisionName)
 	}
-	// Unstructured addresses (OIOUBL AddressFormatCode "Unstructured") carry
-	// their content as free-text cac:AddressLine rather than the structured
-	// fields above. Fall back to it so the content survives the parse: the first
-	// line becomes the street, any remaining lines the street extra.
+	// Unstructured addresses carry content as free-text cac:AddressLine: fall
+	// back to it, first line as street and the rest as street extra.
 	if addr.Street == "" && len(address.AddressLine) > 0 {
 		var lines []string
 		for _, l := range address.AddressLine {
@@ -232,11 +221,9 @@ func handlePartyTaxSchemes(party *Party, p *org.Party) {
 	}
 }
 
-// resolveCountry returns the party country for tax-identity parsing. An OIOUBL
-// StructuredID address carries only an identifier (F-LIB038), so the postal
-// address has no country to derive it from; fall back to the DK:SE/DK:CVR
-// company-ID scheme, which only a Danish party carries, so the tax-id country
-// and the DK-prefix strip still resolve.
+// resolveCountry returns the party country for tax-identity parsing. When the
+// address carries no country (e.g. a StructuredID address, F-LIB038), fall back
+// to the DK:SE/DK:CVR company-ID scheme that only a Danish party carries.
 func resolveCountry(p *Party) string {
 	if c := p.CountryCode(); c != "" {
 		return c
@@ -247,8 +234,7 @@ func resolveCountry(p *Party) string {
 	return ""
 }
 
-// hasDanishCompanyScheme reports whether any tax-scheme or legal-entity company
-// ID carries a Danish OIOUBL scheme (DK:SE/DK:CVR).
+// hasDanishCompanyScheme reports whether any company ID carries a Danish OIOUBL scheme (DK:SE/DK:CVR).
 func hasDanishCompanyScheme(p *Party) bool {
 	for _, pts := range p.PartyTaxScheme {
 		if id := pts.CompanyID; id != nil && id.SchemeID != nil &&
@@ -300,8 +286,6 @@ func handleMultipleTaxSchemes(validSchemes []PartyTaxScheme, p *org.Party, count
 	}
 
 	setTaxIDFromScheme(validSchemes[taxIDIdx], p, countryCode)
-
-	// Rest become identities with tax scope
 	addRemainingTaxSchemesAsIdentities(validSchemes, taxIDIdx, p, countryCode)
 }
 
@@ -345,8 +329,7 @@ func handlePartyIdentifications(party *Party, p *org.Party) {
 					iso.ExtKeySchemeID: cbc.Code(s),
 				})
 				if s == schemeDKCVR || s == schemeDKSE {
-					// Reverse the wire-only DK prefix (F-LIB180), matching the
-					// endpoint parse and gobl's canonical country-prefix-free codes.
+					// Reverse the wire-only DK prefix (F-LIB180).
 					code = strings.TrimPrefix(code, "DK")
 				}
 			}

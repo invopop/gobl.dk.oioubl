@@ -153,7 +153,6 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 func calculateRequiredPrecision(price, baseQuantity num.Amount) uint32 {
 	priceExp := price.Exp()
 
-	// Convert baseQuantity to a whole number to calculate needed decimal places
 	baseQtyNormalized := baseQuantity.Rescale(0)
 	baseQtyFloat := math.Abs(float64(baseQtyNormalized.Value()))
 
@@ -223,10 +222,8 @@ func goblConvertLineItemTaxes(di *Item, line *bill.Line, taxCategoryMap map[stri
 		}
 		percent, _ := num.PercentageFromString(percentStr)
 
-		// Skip setting percent if it's 0% and the tax category is not zero-rated.
-		// This prevents GOBL from normalizing to "zero" tax rate for
-		// exempt/reverse-charge cases. Compare via goblTaxCategoryCode so the
-		// OIOUBL "ZeroRated" wire value is recognised, not just the UNTDID "Z".
+		// Skip 0% unless zero-rated, so GOBL doesn't normalize exempt/reverse-charge
+		// to "zero"; compare via goblTaxCategoryCode to catch the "ZeroRated" wire value.
 		if percent.IsZero() && ctc.ID != nil && goblTaxCategoryCode(ctc.ID.Value) != "Z" {
 			return
 		}

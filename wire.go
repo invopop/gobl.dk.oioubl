@@ -2,16 +2,12 @@ package dkoioubl
 
 import ubl "github.com/invopop/gobl.ubl"
 
-// Invoice is the OIOUBL view of a UBL invoice. It is a defined type over
-// ubl.Invoice (not an alias) so the converter can hang the OIOUBL-specific
-// build and parse methods on it, and so gobl.ubl's own generic Convert method
-// is not inherited (OIOUBL is never parsed as a generic UBL document). The wire
-// layout is gobl.ubl's, so it marshals identically.
+// Invoice is the OIOUBL view of a UBL invoice: a defined type over ubl.Invoice
+// (not an alias) so the OIOUBL build/parse methods hang off it and gobl.ubl's
+// generic Convert is not inherited. It shares the wire layout, so it marshals identically.
 type Invoice ubl.Invoice
 
-// The OIOUBL converter reuses gobl.ubl's wire model wholesale rather than
-// redefining it; these aliases let the OIOUBL-specific code reference the shared
-// types without qualification.
+// Aliases to gobl.ubl's shared wire model, so OIOUBL code can reference the types unqualified.
 type (
 	IDType                  = ubl.IDType
 	Amount                  = ubl.Amount

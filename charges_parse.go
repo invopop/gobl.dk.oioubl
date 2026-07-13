@@ -12,7 +12,6 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// goblAddCharges adds the invoice charges to the gobl output.
 func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	var charges []*bill.Charge
 	var discounts []*bill.Discount
@@ -49,8 +48,7 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	return nil
 }
 
-// goblAllowancePercent reads the OIOUBL decimal MultiplierFactorNumeric
-// (0.05 = 5%) into a GOBL percentage, or nil when absent.
+// goblAllowancePercent reads the decimal MultiplierFactorNumeric (0.05 = 5%) into a GOBL percentage.
 func goblAllowancePercent(ac *AllowanceCharge) (*num.Percentage, error) {
 	if ac.MultiplierFactorNumeric == nil {
 		return nil, nil
@@ -128,8 +126,7 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo)
 				return nil, err
 			}
 
-			// Skip setting percent if it's 0% and tax category is not "Z" (zero-rated)
-			// This prevents GOBL from normalizing to "zero" tax rate for exempt/reverse-charge cases
+			// Skip 0% unless zero-rated ("Z"), so GOBL doesn't normalize exempt/reverse-charge to "zero".
 			if !p.IsZero() || (ac.TaxCategory[0].ID != nil && ac.TaxCategory[0].ID.Value == "Z") {
 				ch.Taxes[0].Percent = &p
 			}
@@ -204,8 +201,7 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInf
 				return nil, err
 			}
 
-			// Skip setting percent if it's 0% and tax category is not "Z" (zero-rated)
-			// This prevents GOBL from normalizing to "zero" tax rate for exempt/reverse-charge cases
+			// Skip 0% unless zero-rated ("Z"), so GOBL doesn't normalize exempt/reverse-charge to "zero".
 			if !percent.IsZero() || (ac.TaxCategory[0].ID != nil && ac.TaxCategory[0].ID.Value == "Z") {
 				d.Taxes[0].Percent = &percent
 			}
