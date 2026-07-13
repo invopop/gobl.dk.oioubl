@@ -1,0 +1,69 @@
+{
+	"$schema": "https://gobl.org/draft-0/envelope",
+	"head": {
+		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
+		"dig": {
+			"alg": "sha256",
+			"val": "09be36cbcbe5e10b30a14b9cecac9666433e52b37829b2afb72bd512cca2de34"
+		},
+		"from": "DK:CVR:12345674",
+		"to": "DK:CVR:88146328"
+	},
+	"doc": {
+		"$schema": "https://gobl.org/draft-0/bill/status",
+		"$regime": "DK",
+		"$addons": [
+			"eu-en16931-v2017",
+			"dk-oioubl-v2"
+		],
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3",
+		"type": "response",
+		"issue_date": "2026-01-15",
+		"code": "RESP001",
+		"supplier": {
+			"name": "Kunde ApS",
+			"tax_id": {
+				"country": "DK",
+				"code": "88146328"
+			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "88146328"
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "DK:CVR:88146328"
+				}
+			]
+		},
+		"customer": {
+			"name": "Eksempel A/S",
+			"tax_id": {
+				"country": "DK",
+				"code": "12345674"
+			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "12345674"
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "DK:CVR:12345674"
+				}
+			]
+		},
+		"lines": [
+			{
+				"index": 1,
+				"key": "rejected",
+				"doc": {
+					"code": "INV1000"
+				}
+			}
+		]
+	}
+}
