@@ -1,0 +1,147 @@
+package dkoioubl
+
+import (
+	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/catalogues/untdid"
+	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/pay"
+)
+
+// decoratePayment adjusts the base's already-built PaymentMeans/PaymentTerms
+// (from gobl.ubl's AddPayment, which ran as part of the base ConvertInvoice
+// call — including the BT-90 creditor identifier and the ordinary bank
+// transfer/direct debit/card case) for OIOUBL: stamps the payment channel
+// code, and replaces the Giro/FIK kortart and account shape outright, since
+// those have no equivalent in the generic base (cac:CreditAccount, instead of
+// cac:PayeeFinancialAccount, plus the "kortart" cbc:PaymentID).
+func (ui *Invoice) decoratePayment(inv *bill.Invoice) error {
+	if inv == nil || inv.Payment == nil || inv.Payment.Instructions == nil || len(ui.PaymentMeans) == 0 {
+		applyPaymentTermsAmount(ui)
+		return nil
+	}
+	instr := inv.Payment.Instructions
+	paymentMeansCode := instr.Ext.Get(untdid.ExtKeyPaymentMeans).String()
+	pm := &ui.PaymentMeans[0]
+
+	if paymentMeansCode == "50" || paymentMeansCode == "93" {
+		applyPaymentID(pm, instr, paymentMeansCode)
+		if paymentMeansCode == "93" && len(instr.CreditTransfer) > 0 {
+			// FIK: cac:CreditAccount/cbc:AccountID (F-LIB305), not PayeeFinancialAccount.
+			pm.CreditAccount = &CreditAccount{AccountID: instr.CreditTransfer[0].Number}
+			pm.PayeeFinancialAccount = nil
+		}
+	}
+	if channel, ok := instr.Meta[cbc.Key("payment-channel")]; ok && channel != "" {
+		pm.PaymentChannelCode = &IDType{Value: channel}
+	} else if ch := paymentChannel(paymentMeansCode); ch != "" {
+		pm.PaymentChannelCode = &IDType{Value: ch}
+	}
+
+	applyPaymentMeans(ui)
+	applyPaymentTermsAmount(ui)
+	return nil
+}
+
+// applyPaymentTermsAmount stamps F-INV134: the payment terms carry the payable amount in OIOUBL.
+func applyPaymentTermsAmount(ui *Invoice) {
+	if ui.PaymentTerms != nil && ui.PaymentTerms.Amount == nil && ui.LegalMonetaryTotal.PayableAmount != nil {
+		ui.PaymentTerms.Amount = &Amount{
+			Value:      ui.LegalMonetaryTotal.PayableAmount.Value,
+			CurrencyID: ui.LegalMonetaryTotal.PayableAmount.CurrencyID,
+		}
+	}
+}
+
+// OIOUBL paymentchannelcode-1.1 wire values, derived from the payment means (see paymentChannel).
+const (
+	paymentChannelIBAN = "IBAN"
+	paymentChannelGiro = "DK:GIRO"
+	paymentChannelFIK  = "DK:FIK"
+)
+
+// paymentChannel maps a UNTDID 4461 payment means to its OIOUBL
+// paymentchannelcode-1.1 value: Giro (50) → DK:GIRO, FIK (93) → DK:FIK,
+// account transfers (30/31/58) → IBAN. Every other means carries none.
+func paymentChannel(means string) string {
+	switch means {
+	case "50":
+		return paymentChannelGiro
+	case "93":
+		return paymentChannelFIK
+	case "30", "31", "58":
+		return paymentChannelIBAN
+	}
+	return ""
+}
+
+// applyPaymentMeans stamps the payment channel and moves the document due date onto each means.
+func applyPaymentMeans(out *Invoice) {
+	for i := range out.PaymentMeans {
+		pm := &out.PaymentMeans[i]
+		stampPaymentChannel(pm)
+		if out.DueDate != "" && pm.PaymentDueDate == nil {
+			d := out.DueDate
+			pm.PaymentDueDate = &d
+		}
+	}
+	if len(out.PaymentMeans) > 0 && out.DueDate != "" {
+		out.DueDate = ""
+	}
+}
+
+// stampPaymentChannel stamps the paymentchannelcode-1.1 list ID and, for IBAN
+// accounts, nests the base's branch ID (the BIC) under FinancialInstitution
+// and drops the redundant branch ID itself (F-LIB295).
+func stampPaymentChannel(pm *PaymentMeans) {
+	if pm.PaymentChannelCode == nil {
+		return
+	}
+	listID := listPaymentChannel
+	pm.PaymentChannelCode.ListID = &listID
+	if pm.PaymentChannelCode.Value != paymentChannelIBAN || pm.PayeeFinancialAccount == nil {
+		return
+	}
+	branch := pm.PayeeFinancialAccount.FinancialInstitutionBranch
+	if branch == nil || branch.ID == nil {
+		return
+	}
+	branch.FinancialInstitution = &FinancialInstitution{ID: branch.ID}
+	branch.ID = nil
+}
+
+// kortart derives the Giro/FIK "kortart" (cbc:PaymentID) from the payment means
+// and reference; malformed values are left for the schematron to reject.
+func kortart(paymentMeansCode, ref string) string {
+	switch paymentMeansCode {
+	case "93":
+		switch {
+		case ref == "":
+			return "73"
+		case len(ref) == 16:
+			return "75"
+		default:
+			return "71"
+		}
+	case "50":
+		if ref == "" {
+			return "01"
+		}
+		return "04"
+	}
+	return ""
+}
+
+// applyPaymentID sets the Giro (50) / FIK (93) cbc:PaymentID kortart; the
+// reference rides cbc:InstructionID for structured kortarts (not free-text 01/73).
+func applyPaymentID(pm *PaymentMeans, instr *pay.Instructions, paymentMeansCode string) {
+	if paymentMeansCode != "50" && paymentMeansCode != "93" {
+		return
+	}
+	ref := instr.Ref.String()
+	k := kortart(paymentMeansCode, ref)
+	pm.PaymentID = &k
+	pm.InstructionID = nil
+	if ref != "" && k != "01" && k != "73" {
+		pm.InstructionID = &ref
+	}
+}
