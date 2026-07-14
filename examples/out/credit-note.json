@@ -4,7 +4,7 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "7bffe7c93cea2d0f51e645172ff15b1b69e9ac7ae9953ec74f003d592e982c7a"
+			"val": "ac72d752a69cc910e6e0edcca259fbfcc168cd6a47869b2d6bfd9c80710787eb"
 		},
 		"from": "DK:CVR:12345674",
 		"to": "DK:CVR:88146328"
@@ -31,6 +31,7 @@
 			}
 		],
 		"tax": {
+			"rounding": "currency",
 			"ext": {
 				"untdid-document-type": "381"
 			}

@@ -1,12 +1,27 @@
 package addon
 
 import (
+	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/tax"
 )
+
+// normalizeInvoice forces GOBL's currency rounding rule, unless the issuer set
+// one explicitly: OIOUBL rounds each line to the currency's precision before
+// summing (F-INV128/F-INV133), which is exactly GOBL's tax.RoundingRuleCurrency
+// mode (the default, tax.RoundingRulePrecise, keeps higher precision through
+// the sum and can differ from OIOUBL's expected totals by a cent).
+func normalizeInvoice(inv *bill.Invoice) {
+	if inv.Tax == nil {
+		inv.Tax = new(bill.Tax)
+	}
+	if inv.Tax.Rounding == "" {
+		inv.Tax.Rounding = tax.RoundingRuleCurrency
+	}
+}
 
 // OIOUBLEndpointURI joins a scheme and code with a colon (e.g. "DK:CVR:12345674").
 func OIOUBLEndpointURI(scheme, code string) string {
