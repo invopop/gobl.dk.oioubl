@@ -1,9 +1,6 @@
 package dkoioubl
 
 import (
-	"regexp"
-	"strings"
-
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
@@ -11,22 +8,6 @@ import (
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/tax"
-)
-
-var (
-	paymentMeansMap = map[string]cbc.Key{
-		"10": pay.MeansKeyCash,
-		"20": pay.MeansKeyCheque,
-		"30": pay.MeansKeyCreditTransfer,
-		"42": pay.MeansKeyDebitTransfer,
-		"48": pay.MeansKeyCard,
-		"49": pay.MeansKeyDirectDebit,
-		"58": pay.MeansKeyCreditTransfer.With(pay.MeansKeySEPA),
-		"59": pay.MeansKeyDirectDebit.With(pay.MeansKeySEPA),
-	}
-
-	// ibanRegex matches IBAN-like values: 2+ letters then alphanumerics, spaces allowed.
-	ibanRegex = regexp.MustCompile(`^[A-Z]{2,}\s*[0-9A-Z\s]+$`)
 )
 
 func (ui *Invoice) goblAddPayment(out *bill.Invoice) error {
@@ -124,7 +105,7 @@ func (ui *Invoice) goblAddPayment(out *bill.Invoice) error {
 // OIOUBL: also runs goblPaymentChannel to reverse the Giro/FIK/IBAN payment-channel handling.
 func goblInvoiceInstructions(out *bill.Invoice, paymentMeans *PaymentMeans) *pay.Instructions {
 	instructions := &pay.Instructions{
-		Key: goblPaymentMeansCode(paymentMeans.PaymentMeansCode.Value),
+		Key: ubl.GoblPaymentMeansCode(paymentMeans.PaymentMeansCode.Value),
 		Ext: tax.ExtensionsOf(cbc.CodeMap{
 			untdid.ExtKeyPaymentMeans: cbc.Code(paymentMeans.PaymentMeansCode.Value),
 		}),
@@ -142,10 +123,10 @@ func goblInvoiceInstructions(out *bill.Invoice, paymentMeans *PaymentMeans) *pay
 		instructions.CreditTransfer = goblCreditTransfer(paymentMeans)
 	}
 	if paymentMeans.PaymentMandate != nil {
-		instructions.DirectDebit = goblInvoiceDirectDebit(out, paymentMeans)
+		instructions.DirectDebit = ubl.GoblInvoiceDirectDebit(out, paymentMeans)
 	}
 	if paymentMeans.CardAccount != nil {
-		instructions.Card = goblCard(paymentMeans)
+		instructions.Card = ubl.GoblCard(paymentMeans)
 	}
 
 	goblPaymentChannel(instructions, paymentMeans)
@@ -180,88 +161,17 @@ func goblPaymentChannel(instr *pay.Instructions, paymentMeans *PaymentMeans) {
 	}
 }
 
-// OIOUBL: also reads the BIC from FinancialInstitution/ID when it is stripped off the branch for IBAN accounts (F-LIB295).
+// goblCreditTransfer reads the BIC from FinancialInstitution/ID when the base
+// doesn't find one on the branch itself (OIOUBL strips it there for IBAN
+// accounts and nests it under FinancialInstitution instead, F-LIB295).
 func goblCreditTransfer(paymentMeans *PaymentMeans) []*pay.CreditTransfer {
-	creditTransfer := &pay.CreditTransfer{}
-	account := paymentMeans.PayeeFinancialAccount
-
-	if account.ID != nil {
-		id := ubl.CleanString(*account.ID)
-		if isIBAN(id) {
-			creditTransfer.IBAN = id
-		} else {
-			creditTransfer.Number = id
-		}
+	ct := ubl.GoblCreditTransfer(paymentMeans)
+	if len(ct) == 0 || ct[0].BIC != "" {
+		return ct
 	}
-	if account.Name != nil {
-		creditTransfer.Name = ubl.CleanString(*account.Name)
+	if branch := paymentMeans.PayeeFinancialAccount.FinancialInstitutionBranch; branch != nil &&
+		branch.FinancialInstitution != nil && branch.FinancialInstitution.ID != nil {
+		ct[0].BIC = ubl.CleanString(*branch.FinancialInstitution.ID)
 	}
-	if branch := account.FinancialInstitutionBranch; branch != nil {
-		// OIOUBL strips the BIC off the branch ID for IBAN accounts (F-LIB295),
-		// nesting it under FinancialInstitution/ID instead.
-		if branch.ID != nil {
-			creditTransfer.BIC = ubl.CleanString(*branch.ID)
-		} else if branch.FinancialInstitution != nil && branch.FinancialInstitution.ID != nil {
-			creditTransfer.BIC = ubl.CleanString(*branch.FinancialInstitution.ID)
-		}
-	}
-
-	return []*pay.CreditTransfer{creditTransfer}
-}
-
-func isIBAN(s string) bool {
-	s = strings.ToUpper(strings.TrimSpace(s))
-	return ibanRegex.MatchString(s)
-}
-
-// OIOUBL: reads the mandate Ref directly, since the mandate is only emitted when it has an ID.
-func goblInvoiceDirectDebit(out *bill.Invoice, paymentMeans *PaymentMeans) *pay.DirectDebit {
-	directDebit := &pay.DirectDebit{}
-
-	directDebit.Ref = paymentMeans.PaymentMandate.ID.Value
-	if paymentMeans.PaymentMandate.PayerFinancialAccount != nil && paymentMeans.PaymentMandate.PayerFinancialAccount.ID != nil {
-		directDebit.Account = *paymentMeans.PaymentMandate.PayerFinancialAccount.ID
-	}
-	seller := out.Supplier
-	if seller != nil {
-		for _, id := range seller.Identities {
-			if id.Label == "SEPA" {
-				directDebit.Creditor = id.Code.String()
-				break
-			}
-		}
-	}
-	payment := out.Payment
-	if payment != nil && payment.Payee != nil {
-		payee := payment.Payee
-		for _, id := range payee.Identities {
-			if id.Label == "SEPA" {
-				directDebit.Creditor = id.Code.String()
-				break
-			}
-		}
-	}
-	return directDebit
-}
-
-func goblCard(paymentMeans *PaymentMeans) *pay.Card {
-	card := &pay.Card{}
-	if paymentMeans.CardAccount.PrimaryAccountNumberID != nil {
-		pan := *paymentMeans.CardAccount.PrimaryAccountNumberID
-		if len(pan) >= 4 {
-			pan = pan[len(pan)-4:]
-		}
-		card.Last4 = pan
-	}
-	if paymentMeans.CardAccount.HolderName != nil {
-		card.Holder = *paymentMeans.CardAccount.HolderName
-	}
-	return card
-}
-
-func goblPaymentMeansCode(code string) cbc.Key {
-	if val, ok := paymentMeansMap[code]; ok {
-		return val
-	}
-	return pay.MeansKeyAny
+	return ct
 }

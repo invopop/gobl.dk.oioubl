@@ -88,57 +88,25 @@ func goblParty(party *Party) *org.Party {
 		}
 	}
 
-	handleLegalEntityIdentity(party, p)
+	ubl.HandleLegalEntityIdentity(party, p)
 	handlePartyTaxSchemes(party, p)
 	handlePartyIdentifications(party, p)
 
 	return p
 }
 
-func goblDeliveryParty(party *Party) *org.Party {
-	if party == nil {
-		return nil
-	}
-	p := &org.Party{}
-
-	if party.PartyLegalEntity != nil && party.PartyLegalEntity.RegistrationName != nil {
-		p.Name = ubl.CleanString(*party.PartyLegalEntity.RegistrationName)
-	}
-	if party.PartyName != nil {
-		if p.Name == "" {
-			p.Name = ubl.CleanString(party.PartyName.Name)
-		}
-	}
-
-	if p.Name == "" {
-		return nil
-	}
-	return p
-}
-
+// parseAddress builds on gobl.ubl's generic address parsing, adding the
+// OIOUBL-specific fields it doesn't produce: Postbox, the StructuredRegion
+// cbc:Region/cbc:District fallbacks (F-LIB040), the StructuredID register
+// identifier (F-LIB037/038), and the unstructured cac:AddressLine fallback.
 func parseAddress(address *PostalAddress) *org.Address {
 	if address == nil {
 		return nil
 	}
+	addr := ubl.ParseAddress(address)
 
-	addr := new(org.Address)
-	if address.Country != nil {
-		addr.Country = l10n.ISOCountryCode(address.Country.IdentificationCode)
-	}
-	if address.StreetName != nil {
-		addr.Street = ubl.CleanString(*address.StreetName)
-	}
-	if address.AdditionalStreetName != nil {
-		addr.StreetExtra = ubl.CleanString(*address.AdditionalStreetName)
-	}
-	if address.CityName != nil {
-		addr.Locality = ubl.CleanString(*address.CityName)
-	}
-	if address.PostalZone != nil {
-		addr.Code = cbc.Code(ubl.CleanString(*address.PostalZone))
-	}
-	if address.CountrySubentity != nil {
-		addr.Region = ubl.CleanString(*address.CountrySubentity)
+	if address.Postbox != nil {
+		addr.PostOfficeBox = ubl.CleanString(*address.Postbox)
 	}
 	// A StructuredRegion address carries its region in cbc:Region (F-LIB040).
 	if address.Region != nil && addr.Region == "" {
@@ -148,9 +116,6 @@ func parseAddress(address *PostalAddress) *org.Address {
 	if address.District != nil && addr.Locality == "" {
 		addr.Locality = ubl.CleanString(*address.District)
 	}
-	if address.BuildingNumber != nil {
-		addr.Number = ubl.CleanString(*address.BuildingNumber)
-	}
 	// A StructuredID address is just a register identifier (a GLN) in cbc:ID
 	// (F-LIB037/038). GOBL has no such field, so it rides org.Address.Number
 	// (idle in this format); the emit side re-reads it from there.
@@ -158,13 +123,6 @@ func parseAddress(address *PostalAddress) *org.Address {
 		address.AddressFormatCode.Value == addressStructuredID &&
 		address.ID != nil {
 		addr.Number = ubl.CleanString(address.ID.Value)
-	}
-	if address.Postbox != nil {
-		addr.PostOfficeBox = ubl.CleanString(*address.Postbox)
-	}
-	// CitySubdivisionName maps to StreetExtra in GOBL.
-	if address.CitySubdivisionName != nil && addr.StreetExtra == "" {
-		addr.StreetExtra = ubl.CleanString(*address.CitySubdivisionName)
 	}
 	// Unstructured addresses carry content as free-text cac:AddressLine: fall
 	// back to it, first line as street and the rest as street extra.
@@ -183,25 +141,6 @@ func parseAddress(address *PostalAddress) *org.Address {
 		}
 	}
 	return addr
-}
-
-func handleLegalEntityIdentity(party *Party, p *org.Party) {
-	if party.PartyLegalEntity == nil || party.PartyLegalEntity.CompanyID == nil {
-		return
-	}
-	if p.Identities == nil {
-		p.Identities = make([]*org.Identity, 0)
-	}
-	identity := &org.Identity{
-		Code:  cbc.Code(party.PartyLegalEntity.CompanyID.Value),
-		Scope: org.IdentityScopeLegal,
-	}
-	if party.PartyLegalEntity.CompanyID.SchemeID != nil {
-		identity.Ext = tax.ExtensionsOf(cbc.CodeMap{
-			iso.ExtKeySchemeID: cbc.Code(*party.PartyLegalEntity.CompanyID.SchemeID),
-		})
-	}
-	p.Identities = append(p.Identities, identity)
 }
 
 // OIOUBL: resolves the country via resolveCountry, falling back to the Danish company-ID scheme when the address has none (F-LIB038).

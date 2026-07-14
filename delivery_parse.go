@@ -3,85 +3,26 @@ package dkoioubl
 import (
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/cal"
-	"github.com/invopop/gobl/cbc"
-	"github.com/invopop/gobl/org"
 )
 
-// OIOUBL: also parses the RequestedDeliveryPeriod (F-INV087/089/090) into the delivery period.
+// OIOUBL: also parses the RequestedDeliveryPeriod (F-INV087/089/090), which
+// the base doesn't read, into the delivery period.
 func (ui *Invoice) goblAddDelivery(out *bill.Invoice) error {
-	d := &bill.DeliveryDetails{}
-
-	// Only one delivery Location and Receiver are supported, so if more than one is passed the former will be overwritten
-	if len(ui.Delivery) > 0 {
-		for _, del := range ui.Delivery {
-			if del.ActualDeliveryDate != nil && del.LatestDeliveryDate != nil {
-				// A delivery period expressed as ActualDeliveryDate (start) +
-				// LatestDeliveryDate (end) parses back to a GOBL period.
-				start, err := ubl.ParseDate(*del.ActualDeliveryDate)
-				if err != nil {
-					return err
-				}
-				end, err := ubl.ParseDate(*del.LatestDeliveryDate)
-				if err != nil {
-					return err
-				}
-				d.Date = &start
-				d.Period = &cal.Period{Start: start, End: end}
-			} else if del.ActualDeliveryDate != nil {
-				deliveryDate, err := ubl.ParseDate(*del.ActualDeliveryDate)
-				if err != nil {
-					return err
-				}
-				d.Date = &deliveryDate
-			}
-			if del.RequestedDeliveryPeriod != nil {
-				p, err := ubl.GoblPeriodDates(del.RequestedDeliveryPeriod)
-				if err != nil {
-					return err
-				}
-				d.Period = p
-			}
-			if del.EstimatedDeliveryPeriod != nil {
-				p, err := ubl.GoblPeriodDates(del.EstimatedDeliveryPeriod)
-				if err != nil {
-					return err
-				}
-				d.Period = p
-			}
-			if del.DeliveryLocation != nil && del.DeliveryLocation.ID != nil {
-				id := &org.Identity{
-					Code: cbc.Code(del.DeliveryLocation.ID.Value),
-				}
-				if del.DeliveryLocation.ID.SchemeID != nil {
-					id.Label = *del.DeliveryLocation.ID.SchemeID
-				}
-				d.Identities = []*org.Identity{id}
-			}
-			if del.DeliveryParty != nil {
-				d.Receiver = goblDeliveryParty(del.DeliveryParty)
-			}
-			if del.DeliveryLocation != nil && del.DeliveryLocation.Address != nil {
-				if d.Receiver == nil {
-					d.Receiver = new(org.Party)
-				}
-				d.Receiver.Addresses = []*org.Address{
-					parseAddress(del.DeliveryLocation.Address),
-				}
-			}
-		}
+	if err := (*ubl.Invoice)(ui).GoblAddDelivery(out); err != nil {
+		return err
 	}
-
-	if ui.DeliveryTerms != nil {
-		d.Identities = []*org.Identity{
-			{
-				Code: cbc.Code(ui.DeliveryTerms.ID),
-			},
+	for _, del := range ui.Delivery {
+		if del.RequestedDeliveryPeriod == nil {
+			continue
 		}
-	}
-
-	if d.Receiver != nil || d.Date != nil || d.Period != nil || d.Identities != nil {
-		out.Delivery = d
+		p, err := ubl.GoblPeriodDates(del.RequestedDeliveryPeriod)
+		if err != nil {
+			return err
+		}
+		if out.Delivery == nil {
+			out.Delivery = &bill.DeliveryDetails{}
+		}
+		out.Delivery.Period = p
 	}
 	return nil
 }

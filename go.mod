@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	cloud.google.com/go v0.118.0
 	github.com/invopop/gobl v0.502.2
-	github.com/invopop/gobl.ubl v0.55.1-0.20260714085745-818fd987d67f
+	github.com/invopop/gobl.ubl v0.55.1-0.20260714113210-5699fddbcc5a
 	github.com/stretchr/testify v1.11.1
 )
 
