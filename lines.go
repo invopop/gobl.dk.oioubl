@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	"strconv"
 
+	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/iso"
@@ -125,7 +126,7 @@ func (ui *Invoice) addLines(inv *bill.Invoice) {
 					},
 				}
 
-				if cat := taxCategoryID(l.Taxes[0].Key); cat != "" {
+				if cat := l.Taxes[0].Ext.Get(oioubl.ExtKeyTaxCategory).String(); cat != "" {
 					it.ClassifiedTaxCategory.ID = &IDType{Value: cat}
 				}
 
@@ -293,7 +294,7 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 		}
 		taxCat := TaxCategory{}
 
-		if k := taxCategoryID(t.Key); k != "" {
+		if k := t.Ext.Get(oioubl.ExtKeyTaxCategory).String(); k != "" {
 			taxCat.ID = &IDType{Value: k}
 		}
 

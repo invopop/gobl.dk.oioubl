@@ -77,6 +77,7 @@ func newAddon() *tax.AddonDef {
 				indkøb (B2G) i Danmark siden 2005.
 			`),
 		},
+		Extensions: extensions,
 		Sources: []*cbc.Source{
 			{
 				Title: i18n.String{

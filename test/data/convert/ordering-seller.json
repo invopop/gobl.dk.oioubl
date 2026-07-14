@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
 		"dig": {
 			"alg": "sha256",
-			"val": "f194e6d2474bc9b8799ed221f6b3408545c0eb36eac65281bd34482621983e0b"
+			"val": "db81f5849710bbd591d3d222ea0411583228db08434587ec0bc9570cde477e7d"
 		},
 		"from": "DK:CVR:12345674",
 		"to": "DK:CVR:76543216"
@@ -95,6 +95,29 @@
 				}
 			]
 		},
+		"lines": [
+			{
+				"i": 1,
+				"quantity": "10",
+				"item": {
+					"name": "Udvikling timer",
+					"price": "1000.00",
+					"unit": "h"
+				},
+				"sum": "10000.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"percent": "25%",
+						"ext": {
+							"dk-oioubl-tax-category": "StandardRated"
+						}
+					}
+				],
+				"total": "10000.00"
+			}
+		],
 		"ordering": {
 			"seller": {
 				"name": "Sælger Agent ApS",
@@ -132,26 +155,6 @@
 				]
 			}
 		},
-		"lines": [
-			{
-				"i": 1,
-				"quantity": "10",
-				"item": {
-					"name": "Udvikling timer",
-					"price": "1000.00",
-					"unit": "h"
-				},
-				"sum": "10000.00",
-				"taxes": [
-					{
-						"cat": "VAT",
-						"key": "standard",
-						"percent": "25%"
-					}
-				],
-				"total": "10000.00"
-			}
-		],
 		"payment": {
 			"instructions": {
 				"key": "credit-transfer",
@@ -177,6 +180,9 @@
 						"rates": [
 							{
 								"key": "standard",
+								"ext": {
+									"dk-oioubl-tax-category": "StandardRated"
+								},
 								"base": "10000.00",
 								"percent": "25%",
 								"amount": "2500.00"

@@ -84,10 +84,30 @@ func oioublPaymentMeans(ext tax.Extensions) tax.Extensions {
 	return ext
 }
 
-// normalizeTaxCombo strips the EN 16931 UNTDID tax-category ext; the OIOUBL code
-// derives from the GOBL VAT key (set by en16931, which runs first), so it's lossless.
+// normalizeTaxCombo strips the EN 16931 UNTDID tax-category ext (the OIOUBL
+// code derives from the GOBL VAT key, set by en16931 which runs first, so
+// it's lossless) and sets the dk-oioubl-tax-category ext in its place, so the
+// converter reads the OIOUBL category directly instead of re-deriving it.
 func normalizeTaxCombo(c *tax.Combo) {
 	c.Ext = c.Ext.Delete(untdid.ExtKeyTaxCategory)
+	if cat := oioublTaxCategory(c.Key); cat != "" {
+		c.Ext = c.Ext.Set(ExtKeyTaxCategory, cat)
+	}
+}
+
+// oioublTaxCategory maps a GOBL VAT key to its OIOUBL taxcategoryid-1.1 code.
+// OIOUBL 2.1 has no exempt category, so exempt maps to ZeroRated like zero
+// (F-LIB309); keys with no OIOUBL category return "".
+func oioublTaxCategory(key cbc.Key) cbc.Code {
+	switch key {
+	case tax.KeyStandard, "":
+		return TaxCategoryStandardRated
+	case tax.KeyZero, tax.KeyExempt:
+		return TaxCategoryZeroRated
+	case tax.KeyReverseCharge:
+		return TaxCategoryReverseCharge
+	}
+	return ""
 }
 
 // normalizeTaxNote strips the same UNTDID tax-category extension from a tax note;
@@ -99,9 +119,5 @@ func normalizeTaxNote(n *tax.Note) {
 // taxCategoryMapsToOIOUBL reports whether a GOBL VAT key has an OIOUBL
 // taxcategoryid-1.1 equivalent (standard/zero/exempt/reverse-charge).
 func taxCategoryMapsToOIOUBL(key cbc.Key) bool {
-	switch key {
-	case tax.KeyStandard, tax.KeyZero, tax.KeyExempt, tax.KeyReverseCharge, "":
-		return true
-	}
-	return false
+	return oioublTaxCategory(key) != ""
 }

@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
 		"dig": {
 			"alg": "sha256",
-			"val": "dcd2faf93466d93b47e87f3c06fb2f04931f3ddc5fcef7896cff23fbb9272788"
+			"val": "3b87a3d18ee152ee31d6fa0667f88f67803ccb7759e8043bf01686255e9d25e7"
 		},
 		"from": "DK:CVR:12345674",
 		"to": "DK:CVR:88146328"
@@ -113,7 +113,10 @@
 					{
 						"cat": "VAT",
 						"key": "standard",
-						"percent": "25.0%"
+						"percent": "25.0%",
+						"ext": {
+							"dk-oioubl-tax-category": "StandardRated"
+						}
 					}
 				],
 				"total": "10000.00"
@@ -136,6 +139,9 @@
 						"rates": [
 							{
 								"key": "standard",
+								"ext": {
+									"dk-oioubl-tax-category": "StandardRated"
+								},
 								"base": "10000.00",
 								"percent": "25.0%",
 								"amount": "2500.00"

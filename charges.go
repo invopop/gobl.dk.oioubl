@@ -1,6 +1,7 @@
 package dkoioubl
 
 import (
+	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/num"
@@ -94,7 +95,7 @@ func makeDiscount(d *bill.Discount, ccy string, baseAmount num.Amount) Allowance
 	return c
 }
 
-// OIOUBL: derives the taxcategoryid-1.1 value from the GOBL tax key via taxCategoryID.
+// OIOUBL: reads the taxcategoryid-1.1 value the addon derived onto the combo's ext.
 func makeTaxCategory(taxes tax.Set) []*TaxCategory {
 	set := []*TaxCategory{}
 	for _, t := range taxes {
@@ -102,7 +103,7 @@ func makeTaxCategory(taxes tax.Set) []*TaxCategory {
 		category.TaxScheme = &TaxScheme{ID: IDType{Value: t.Category.String()}}
 
 		// OIOUBL emits its own taxcategoryid-1.1 value (StandardRated/…).
-		if e := taxCategoryID(t.Key); e != "" {
+		if e := t.Ext.Get(oioubl.ExtKeyTaxCategory).String(); e != "" {
 			category.ID = &IDType{Value: e}
 		}
 

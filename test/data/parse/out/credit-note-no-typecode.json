@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
 		"dig": {
 			"alg": "sha256",
-			"val": "3256d3712aef3ea51bb5fa50c79ab8fdda41776158ae1f9954fe862f41fc79d4"
+			"val": "c2a81c5110a2459e17cf4e5101a0844bccf527625a0a20c546cd5d666f58ee57"
 		},
 		"from": "GLN:5790000436101",
 		"to": "GLN:5790000436057"
@@ -136,7 +136,10 @@
 					{
 						"cat": "VAT",
 						"key": "standard",
-						"percent": "19%"
+						"percent": "19%",
+						"ext": {
+							"dk-oioubl-tax-category": "StandardRated"
+						}
 					}
 				],
 				"total": "1800.00"
@@ -177,6 +180,9 @@
 						"rates": [
 							{
 								"key": "standard",
+								"ext": {
+									"dk-oioubl-tax-category": "StandardRated"
+								},
 								"base": "1800.00",
 								"percent": "19%",
 								"amount": "342.00"

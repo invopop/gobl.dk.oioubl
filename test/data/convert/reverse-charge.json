@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
 		"dig": {
 			"alg": "sha256",
-			"val": "cdcc0c8269435f8ecffaca1c1d85a14cd78e9c66a00243539637fc8318eabcd3"
+			"val": "90c753d2ef23fd46bd46d964d1dfc56eeecbdc41f206f9ce1fe2cc5e5527acbb"
 		},
 		"from": "DK:CVR:12345674",
 		"to": "DK:CVR:76543216"
@@ -118,7 +118,8 @@
 						"cat": "VAT",
 						"key": "reverse-charge",
 						"ext": {
-							"cef-vatex": "VATEX-EU-AE"
+							"cef-vatex": "VATEX-EU-AE",
+							"dk-oioubl-tax-category": "ReverseCharge"
 						}
 					}
 				],
@@ -154,7 +155,8 @@
 							{
 								"key": "reverse-charge",
 								"ext": {
-									"cef-vatex": "VATEX-EU-AE"
+									"cef-vatex": "VATEX-EU-AE",
+									"dk-oioubl-tax-category": "ReverseCharge"
 								},
 								"base": "9000.00",
 								"amount": "0.00"

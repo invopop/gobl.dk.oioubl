@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	"strconv"
 
+	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/cef"
@@ -161,7 +162,9 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 					subtotal.TaxableAmount = Amount{Value: r.Base.String(), CurrencyID: &currency}
 				}
 				// Computed early because F-LIB373 gates the dual-currency amount on the category.
-				catID := taxCategoryID(r.Key)
+				// The addon's normalizeTaxCombo already derived this onto the combo's ext,
+				// which Calculate() propagates through to the RateTotal here.
+				catID := r.Ext.Get(oioubl.ExtKeyTaxCategory).String()
 				subtotal.TransactionCurrencyTaxAmount = transactionTax(accRate, catID, r.Amount, rCurrency)
 				taxCat := TaxCategory{}
 
@@ -310,12 +313,13 @@ func taxCurrencyTaxAmount(taxTotals []TaxTotal) (num.Amount, bool) {
 	return total, found
 }
 
-// OIOUBL taxcategoryid-1.1 category codes and the serialization-only
-// taxschemeid-1.1 VAT (Moms) code.
+// OIOUBL taxcategoryid-1.1 category codes (mirroring the addon's extension
+// values, as plain strings since these compare against wire *IDType.Value
+// fields) and the serialization-only taxschemeid-1.1 VAT (Moms) code.
 const (
-	taxCategoryStandardRated = "StandardRated"
-	taxCategoryZeroRated     = "ZeroRated"
-	taxCategoryReverseCharge = "ReverseCharge"
+	taxCategoryStandardRated = string(oioubl.TaxCategoryStandardRated)
+	taxCategoryZeroRated     = string(oioubl.TaxCategoryZeroRated)
+	taxCategoryReverseCharge = string(oioubl.TaxCategoryReverseCharge)
 
 	taxSchemeVATCode = "63" // taxschemeid-1.1 VAT (Moms)
 )
@@ -335,27 +339,12 @@ func hasStandardRated(inv *bill.Invoice) bool {
 	}
 	for _, cat := range inv.Totals.Taxes.Categories {
 		for _, r := range cat.Rates {
-			if taxCategoryID(r.Key) == taxCategoryStandardRated {
+			if r.Ext.Get(oioubl.ExtKeyTaxCategory).String() == taxCategoryStandardRated {
 				return true
 			}
 		}
 	}
 	return false
-}
-
-// taxCategoryID maps a GOBL VAT key to its OIOUBL taxcategoryid-1.1 code. OIOUBL
-// 2.1 has no exempt category, so exempt reports as ZeroRated; keys with no
-// OIOUBL category (export/intra-community/outside-scope) return "".
-func taxCategoryID(key cbc.Key) string {
-	switch key {
-	case tax.KeyStandard, "":
-		return taxCategoryStandardRated
-	case tax.KeyZero, tax.KeyExempt:
-		return taxCategoryZeroRated
-	case tax.KeyReverseCharge:
-		return taxCategoryReverseCharge
-	}
-	return ""
 }
 
 // applyTotals stamps taxcategoryid attributes and re-interprets TaxExclusiveAmount as the total tax (F-INV127).
