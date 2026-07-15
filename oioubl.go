@@ -45,7 +45,7 @@ const (
 	agencyID = "320"
 
 	schemeTaxCategory = "urn:oioubl:id:taxcategoryid-1.1"
-	schemeTaxScheme   = "urn:oioubl:id:taxschemeid-1.1"
+	schemeTaxScheme   = "urn:oioubl:id:taxschemeid-1.5"
 	schemeProfileV12  = "urn:oioubl:id:profileid-1.2"
 
 	listInvoiceType    = "urn:oioubl:codelist:invoicetypecode-1.1"
