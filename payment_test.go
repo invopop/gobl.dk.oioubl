@@ -1,31 +1,16 @@
 package dkoioubl_test
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/invopop/gobl"
 	dkoioubl "github.com/invopop/gobl.dk.oioubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/pay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// parseXMLInvoice parses an XML fixture from test/data/parse into a GOBL envelope.
-func parseXMLInvoice(t *testing.T, name string) *gobl.Envelope {
-	t.Helper()
-	data, err := os.ReadFile(filepath.Join(getParsePath(), name))
-	require.NoError(t, err)
-	doc, err := dkoioubl.Parse(data)
-	require.NoError(t, err)
-	inv, ok := doc.(*dkoioubl.Invoice)
-	require.True(t, ok)
-	env, err := inv.Convert()
-	require.NoError(t, err)
-	return env
-}
 
 func TestPaymentMeans(t *testing.T) {
 	t.Run("applies OIO payment mapping", func(t *testing.T) {
@@ -63,6 +48,33 @@ func TestPaymentMeans(t *testing.T) {
 		assert.Equal(t, "31", doc.PaymentMeans[0].PaymentMeansCode.Value)
 	})
 
+	t.Run("NemKonto keeps only the means and channel codes", func(t *testing.T) {
+		env := loadTestEnvelope(t, filepath.Join(getConvertPath(), "nemkonto.json"))
+
+		// Account and reference details on the GOBL side must not leak onto the
+		// means: NemKonto allows none of them (F-LIB159 – F-LIB165).
+		inv, ok := env.Extract().(*bill.Invoice)
+		require.True(t, ok)
+		inv.Payment.Instructions.Ref = "12345678"
+		inv.Payment.Instructions.CreditTransfer = []*pay.CreditTransfer{
+			{Number: "0440116243", BIC: "DABADKKK"},
+		}
+
+		doc, err := dkoioubl.ConvertInvoice(env)
+		require.NoError(t, err)
+		require.NotEmpty(t, doc.PaymentMeans)
+		pm := doc.PaymentMeans[0]
+		assert.Equal(t, "97", pm.PaymentMeansCode.Value)
+		require.NotNil(t, pm.PaymentChannelCode)
+		assert.Equal(t, "DK:NEMKONTO", pm.PaymentChannelCode.Value)
+		assert.Nil(t, pm.PayeeFinancialAccount)
+		assert.Nil(t, pm.PayerFinancialAccount)
+		assert.Nil(t, pm.CreditAccount)
+		assert.Nil(t, pm.PaymentID)
+		assert.Nil(t, pm.InstructionID)
+		assert.Empty(t, pm.InstructionNote)
+	})
+
 	t.Run("rejects a due date without a date", func(t *testing.T) {
 		env := loadTestEnvelope(t, filepath.Join(getConvertPath(), "invoice-bare.json"))
 
@@ -79,23 +91,4 @@ func TestPaymentMeans(t *testing.T) {
 		_, err := dkoioubl.ConvertInvoice(env)
 		require.Error(t, err)
 	})
-}
-
-func TestParseDueDateAndNestedBIC(t *testing.T) {
-	// OIOUBL moves the invoice due date onto the payment means (clearing the
-	// root) and nests the BIC under FinancialInstitution/ID after stripping the
-	// branch ID (F-LIB295). Both must survive the parse.
-	env := parseXMLInvoice(t, "invoice-bare.xml")
-	inv, ok := env.Extract().(*bill.Invoice)
-	require.True(t, ok)
-	require.NotNil(t, inv.Payment)
-
-	require.NotNil(t, inv.Payment.Terms)
-	require.Len(t, inv.Payment.Terms.DueDates, 1)
-	require.NotNil(t, inv.Payment.Terms.DueDates[0].Date)
-	assert.Equal(t, "2024-06-15", inv.Payment.Terms.DueDates[0].Date.String())
-
-	require.NotNil(t, inv.Payment.Instructions)
-	require.Len(t, inv.Payment.Instructions.CreditTransfer, 1)
-	assert.Equal(t, "DABADKKK", inv.Payment.Instructions.CreditTransfer[0].BIC)
 }

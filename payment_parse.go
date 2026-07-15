@@ -142,7 +142,7 @@ func goblPaymentChannel(instr *pay.Instructions, paymentMeans *PaymentMeans) {
 		return
 	}
 	switch paymentMeans.PaymentChannelCode.Value {
-	case paymentChannelIBAN:
+	case paymentChannelIBAN, paymentChannelNemKonto:
 		instr.Key = pay.MeansKeyOther
 		return
 	case paymentChannelGiro, paymentChannelFIK:
