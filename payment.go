@@ -23,13 +23,16 @@ func (ui *Invoice) decoratePayment(inv *bill.Invoice) error {
 	paymentMeansCode := instr.Ext.Get(untdid.ExtKeyPaymentMeans).String()
 	pm := &ui.PaymentMeans[0]
 
-	if paymentMeansCode == "50" || paymentMeansCode == "93" {
+	switch paymentMeansCode {
+	case "50", "93":
 		applyPaymentID(pm, instr, paymentMeansCode)
 		if paymentMeansCode == "93" && len(instr.CreditTransfer) > 0 {
 			// FIK: cac:CreditAccount/cbc:AccountID (F-LIB305), not PayeeFinancialAccount.
 			pm.CreditAccount = &CreditAccount{AccountID: instr.CreditTransfer[0].Number}
 			pm.PayeeFinancialAccount = nil
 		}
+	case "97":
+		clearNemKontoDetails(pm)
 	}
 	if channel, ok := instr.Meta[cbc.Key("payment-channel")]; ok && channel != "" {
 		pm.PaymentChannelCode = &IDType{Value: channel}
@@ -54,24 +57,43 @@ func applyPaymentTermsAmount(ui *Invoice) {
 
 // OIOUBL paymentchannelcode-1.1 wire values, derived from the payment means (see paymentChannel).
 const (
-	paymentChannelIBAN = "IBAN"
-	paymentChannelGiro = "DK:GIRO"
-	paymentChannelFIK  = "DK:FIK"
+	paymentChannelIBAN     = "IBAN"
+	paymentChannelGiro     = "DK:GIRO"
+	paymentChannelFIK      = "DK:FIK"
+	paymentChannelNemKonto = "DK:NEMKONTO"
 )
 
 // paymentChannel maps a UNTDID 4461 payment means to its OIOUBL
 // paymentchannelcode-1.1 value: Giro (50) → DK:GIRO, FIK (93) → DK:FIK,
-// account transfers (30/31/58) → IBAN. Every other means carries none.
+// NemKonto (97) → DK:NEMKONTO, account transfers (30/31/58) → IBAN.
+// Every other means carries none.
 func paymentChannel(means string) string {
 	switch means {
 	case "50":
 		return paymentChannelGiro
 	case "93":
 		return paymentChannelFIK
+	case "97":
+		return paymentChannelNemKonto
 	case "30", "31", "58":
 		return paymentChannelIBAN
 	}
 	return ""
+}
+
+// clearNemKontoDetails strips everything but the means and channel codes: a
+// NemKonto payment (97) is disbursed to the payee's centrally registered
+// account, resolved by the payer out-of-band, so the means allows no account
+// or payment identification at all (F-LIB159 – F-LIB165).
+func clearNemKontoDetails(pm *PaymentMeans) {
+	pm.InstructionID = nil
+	pm.InstructionNote = nil
+	pm.PaymentID = nil
+	pm.CardAccount = nil
+	pm.PayerFinancialAccount = nil
+	pm.PayeeFinancialAccount = nil
+	pm.CreditAccount = nil
+	pm.PaymentMandate = nil
 }
 
 // applyPaymentMeans stamps the payment channel and moves the document due date onto each means.
