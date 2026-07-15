@@ -6,6 +6,7 @@ import (
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
+	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/tax"
 )
@@ -142,7 +143,7 @@ func goblPaymentChannel(instr *pay.Instructions, paymentMeans *PaymentMeans) {
 		return
 	}
 	switch paymentMeans.PaymentChannelCode.Value {
-	case paymentChannelIBAN, paymentChannelNemKonto:
+	case paymentChannelIBAN, paymentChannelDKBank, paymentChannelNemKonto:
 		instr.Key = pay.MeansKeyOther
 		return
 	case paymentChannelGiro, paymentChannelFIK:
@@ -161,12 +162,24 @@ func goblPaymentChannel(instr *pay.Instructions, paymentMeans *PaymentMeans) {
 	}
 }
 
-// goblCreditTransfer reads the BIC from FinancialInstitution/ID when the base
-// doesn't find one on the branch itself (OIOUBL strips it there for IBAN
-// accounts and nests it under FinancialInstitution instead, F-LIB295).
+// goblCreditTransfer adjusts the base's credit transfer for OIOUBL's branch
+// shapes: for DK:BANK the flat branch ID the base read as a BIC is really the
+// Danish bank registration number, moved onto the branch address label; for
+// IBAN accounts the BIC is read from FinancialInstitution/ID, where OIOUBL
+// nests it after stripping the branch ID (F-LIB295).
 func goblCreditTransfer(paymentMeans *PaymentMeans) []*pay.CreditTransfer {
 	ct := ubl.GoblCreditTransfer(paymentMeans)
-	if len(ct) == 0 || ct[0].BIC != "" {
+	if len(ct) == 0 {
+		return ct
+	}
+	if isDKBankChannel(paymentMeans) {
+		if ct[0].BIC != "" {
+			ct[0].Branch = &org.Address{Label: ct[0].BIC}
+			ct[0].BIC = ""
+		}
+		return ct
+	}
+	if ct[0].BIC != "" {
 		return ct
 	}
 	if branch := paymentMeans.PayeeFinancialAccount.FinancialInstitutionBranch; branch != nil &&
@@ -174,4 +187,9 @@ func goblCreditTransfer(paymentMeans *PaymentMeans) []*pay.CreditTransfer {
 		ct[0].BIC = ubl.CleanString(*branch.FinancialInstitution.ID)
 	}
 	return ct
+}
+
+func isDKBankChannel(paymentMeans *PaymentMeans) bool {
+	return paymentMeans.PaymentChannelCode != nil &&
+		paymentMeans.PaymentChannelCode.Value == paymentChannelDKBank
 }

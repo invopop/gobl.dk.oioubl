@@ -45,6 +45,31 @@ func TestParseDueDateAndNestedBIC(t *testing.T) {
 	require.NotNil(t, inv.Payment.Instructions)
 	require.Len(t, inv.Payment.Instructions.CreditTransfer, 1)
 	assert.Equal(t, "DABADKKK", inv.Payment.Instructions.CreditTransfer[0].BIC)
+	// The reg.-nr. relabelling is DK:BANK-only; an IBAN account keeps its BIC.
+	assert.Nil(t, inv.Payment.Instructions.CreditTransfer[0].Branch)
+}
+
+func TestParseDKBankRegNr(t *testing.T) {
+	// For DK:BANK (means 42) the flat FinancialInstitutionBranch/ID is the
+	// Danish bank registration number, not a BIC: it lands on the credit
+	// transfer's branch label, and the key is pinned to "other" so the explicit
+	// means code survives EN 16931 normalization.
+	env := parseXMLInvoice(t, "dk-bank.xml")
+	inv, ok := env.Extract().(*bill.Invoice)
+	require.True(t, ok)
+	require.NotNil(t, inv.Payment)
+
+	instr := inv.Payment.Instructions
+	require.NotNil(t, instr)
+	assert.Equal(t, pay.MeansKeyOther, instr.Key)
+	assert.Equal(t, "42", instr.Ext.Get(untdid.ExtKeyPaymentMeans).String())
+
+	require.Len(t, instr.CreditTransfer, 1)
+	ct := instr.CreditTransfer[0]
+	assert.Equal(t, "0440116243", ct.Number)
+	assert.Empty(t, ct.BIC)
+	require.NotNil(t, ct.Branch)
+	assert.Equal(t, "1234", ct.Branch.Label)
 }
 
 func TestParseNemKonto(t *testing.T) {

@@ -48,6 +48,36 @@ func TestPaymentMeans(t *testing.T) {
 		assert.Equal(t, "31", doc.PaymentMeans[0].PaymentMeansCode.Value)
 	})
 
+	t.Run("DK:BANK carries the reg. nr. and never a BIC", func(t *testing.T) {
+		env := loadTestEnvelope(t, filepath.Join(getConvertPath(), "dk-bank.json"))
+
+		// A BIC-shaped value on the GOBL side must not survive: for means 42 the
+		// flat branch ID is the reg. nr. from the branch label (F-LIB124/130).
+		inv, ok := env.Extract().(*bill.Invoice)
+		require.True(t, ok)
+		inv.Payment.Instructions.CreditTransfer[0].BIC = "DABADKKK"
+
+		doc, err := dkoioubl.ConvertInvoice(env)
+		require.NoError(t, err)
+		require.NotEmpty(t, doc.PaymentMeans)
+		pm := doc.PaymentMeans[0]
+		assert.Equal(t, "42", pm.PaymentMeansCode.Value)
+		require.NotNil(t, pm.PaymentChannelCode)
+		assert.Equal(t, "DK:BANK", pm.PaymentChannelCode.Value)
+		require.NotNil(t, pm.PayeeFinancialAccount)
+		require.NotNil(t, pm.PayeeFinancialAccount.ID)
+		assert.Equal(t, "0440116243", *pm.PayeeFinancialAccount.ID)
+		branch := pm.PayeeFinancialAccount.FinancialInstitutionBranch
+		require.NotNil(t, branch)
+		require.NotNil(t, branch.ID)
+		assert.Equal(t, "1234", *branch.ID)
+		assert.Nil(t, branch.FinancialInstitution)
+
+		data, err := dkoioubl.Bytes(doc)
+		require.NoError(t, err)
+		assert.NotContains(t, string(data), "DABADKKK")
+	})
+
 	t.Run("NemKonto keeps only the means and channel codes", func(t *testing.T) {
 		env := loadTestEnvelope(t, filepath.Join(getConvertPath(), "nemkonto.json"))
 
