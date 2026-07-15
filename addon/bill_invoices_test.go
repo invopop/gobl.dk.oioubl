@@ -582,6 +582,31 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(inv), "F-LIB107")
 	})
 
+	t.Run("NemKonto code 97 without a credit transfer passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Instructions: &pay.Instructions{
+				Key: pay.MeansKeyOther,
+				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "97"}),
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+
+	t.Run("NemKonto code 97 with a credit transfer fails (F-LIB164)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Instructions: &pay.Instructions{
+				Key:            pay.MeansKeyOther,
+				Ext:            tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "97"}),
+				CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK5000400440116243", BIC: "DABADKKK"}},
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB164")
+	})
+
 	t.Run("FIK code 93 with a non-8-character account fails (F-LIB305)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Payment = &bill.PaymentDetails{

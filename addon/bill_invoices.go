@@ -112,6 +112,8 @@ func billInvoiceRules() *rules.Set {
 					is.Func("giro has a 7-8 digit payee account", giroAccountValid)),
 				rules.Assert("22", "FIK (payment-means 93) requires an 8-character creditor account (F-LIB305)",
 					is.Func("fik has an 8-character creditor account", fikAccountValid)),
+				rules.Assert("40", "NemKonto (payment-means 97) must not carry a credit transfer: the payer resolves the payee's registered account via NemKonto (F-LIB164)",
+					is.Func("nemkonto has no credit transfer", nemKontoHasNoCreditTransfer)),
 			),
 		),
 		rules.Field("lines",
@@ -435,6 +437,17 @@ func fikAccountValid(val any) bool {
 	}
 	ct := firstCreditTransfer(instr)
 	return ct != nil && len(ct.Number) == 8
+}
+
+// nemKontoHasNoCreditTransfer checks F-LIB164: a NemKonto payment (means 97)
+// gives no account — the payer looks up the payee's registered account — so a
+// credit transfer would emit a forbidden PayeeFinancialAccount.
+func nemKontoHasNoCreditTransfer(val any) bool {
+	instr, ok := val.(*pay.Instructions)
+	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "97" {
+		return true
+	}
+	return len(instr.CreditTransfer) == 0
 }
 
 func isNumericOfLen(s string, minLen, maxLen int) bool {
