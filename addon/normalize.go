@@ -88,6 +88,22 @@ func hasLegalIdentity(p *org.Party) bool {
 // OIOUBL's bank-transfer code (F-LIB100).
 func normalizePayInstructions(instr *pay.Instructions) {
 	instr.Ext = oioublPaymentMeans(instr.Ext)
+	normalizeDKBankBranch(instr)
+}
+
+// normalizeDKBankBranch stamps DK on a domestic bank transfer's (means 42)
+// credit-transfer branch: the branch address only carries the Danish bank
+// registration number as its label, and EN 16931 requires a country on every
+// address (BR-9 et al.).
+func normalizeDKBankBranch(instr *pay.Instructions) {
+	if instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "42" {
+		return
+	}
+	ct := firstCreditTransfer(instr)
+	if ct == nil || ct.Branch == nil || ct.Branch.Country != "" {
+		return
+	}
+	ct.Branch.Country = "DK"
 }
 
 // oioublPaymentMeans rewrites EN 16931 credit-transfer means 30 to OIOUBL's

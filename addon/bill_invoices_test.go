@@ -453,19 +453,62 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "F-LIB100")
 	})
 
-	t.Run("payment-means code 42 is rejected (F-LIB100)", func(t *testing.T) {
-		// 42 (domestic bank transfer) needs DK:BANK + a Registreringsnummer that
-		// the IBAN mapping can't produce, so it is excluded from the allowed set.
+	t.Run("domestic bank transfer 42 with account and reg. nr. passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Instructions: &pay.Instructions{
+				Key: pay.MeansKeyOther,
+				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
+				CreditTransfer: []*pay.CreditTransfer{
+					{Number: "0440116243", Branch: &org.Address{Label: "1234"}},
+				},
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+
+	t.Run("domestic bank transfer 42 without a reg. nr. fails (F-LIB124)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Payment = &bill.PaymentDetails{
 			Instructions: &pay.Instructions{
 				Key:            pay.MeansKeyOther,
 				Ext:            tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
-				CreditTransfer: []*pay.CreditTransfer{{Number: "1234567890"}},
+				CreditTransfer: []*pay.CreditTransfer{{Number: "0440116243"}},
 			},
 		}
 		require.NoError(t, inv.Calculate())
-		assert.ErrorContains(t, rules.Validate(inv), "F-LIB100")
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB124")
+	})
+
+	t.Run("domestic bank transfer 42 with a non-numeric reg. nr. fails (F-LIB130)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Instructions: &pay.Instructions{
+				Key: pay.MeansKeyOther,
+				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
+				CreditTransfer: []*pay.CreditTransfer{
+					{Number: "0440116243", Branch: &org.Address{Label: "DABADKKK"}},
+				},
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB130")
+	})
+
+	t.Run("domestic bank transfer 42 without an account number fails (F-LIB126)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Instructions: &pay.Instructions{
+				Key: pay.MeansKeyOther,
+				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
+				CreditTransfer: []*pay.CreditTransfer{
+					{Branch: &org.Address{Label: "1234"}},
+				},
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB126")
 	})
 
 	t.Run("SEPA credit-transfer code 58 with account passes", func(t *testing.T) {

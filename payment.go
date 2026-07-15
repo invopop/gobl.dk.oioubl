@@ -31,6 +31,8 @@ func (ui *Invoice) decoratePayment(inv *bill.Invoice) error {
 			pm.CreditAccount = &CreditAccount{AccountID: instr.CreditTransfer[0].Number}
 			pm.PayeeFinancialAccount = nil
 		}
+	case "42":
+		applyRegNr(pm, instr)
 	case "97":
 		clearNemKontoDetails(pm)
 	}
@@ -60,25 +62,48 @@ const (
 	paymentChannelIBAN     = "IBAN"
 	paymentChannelGiro     = "DK:GIRO"
 	paymentChannelFIK      = "DK:FIK"
+	paymentChannelDKBank   = "DK:BANK"
 	paymentChannelNemKonto = "DK:NEMKONTO"
 )
 
 // paymentChannel maps a UNTDID 4461 payment means to its OIOUBL
 // paymentchannelcode-1.1 value: Giro (50) → DK:GIRO, FIK (93) → DK:FIK,
-// NemKonto (97) → DK:NEMKONTO, account transfers (30/31/58) → IBAN.
-// Every other means carries none.
+// domestic bank transfers (42) → DK:BANK, NemKonto (97) → DK:NEMKONTO,
+// account transfers (30/31/58) → IBAN. Every other means carries none.
 func paymentChannel(means string) string {
 	switch means {
 	case "50":
 		return paymentChannelGiro
 	case "93":
 		return paymentChannelFIK
+	case "42":
+		return paymentChannelDKBank
 	case "97":
 		return paymentChannelNemKonto
 	case "30", "31", "58":
 		return paymentChannelIBAN
 	}
 	return ""
+}
+
+// applyRegNr replaces the branch the base built from the BIC: for a domestic
+// bank transfer (42) the flat FinancialInstitutionBranch/ID is the Danish bank
+// registration number — 4 digits, carried on the credit transfer's branch
+// label — and never a BIC (F-LIB124 / F-LIB130).
+func applyRegNr(pm *PaymentMeans, instr *pay.Instructions) {
+	if pm.PayeeFinancialAccount == nil {
+		return
+	}
+	pm.PayeeFinancialAccount.FinancialInstitutionBranch = nil
+	if len(instr.CreditTransfer) == 0 {
+		return
+	}
+	branch := instr.CreditTransfer[0].Branch
+	if branch == nil || branch.Label == "" {
+		return
+	}
+	regNr := branch.Label
+	pm.PayeeFinancialAccount.FinancialInstitutionBranch = &Branch{ID: &regNr}
 }
 
 // clearNemKontoDetails strips everything but the means and channel codes: a
