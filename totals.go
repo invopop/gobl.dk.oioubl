@@ -311,13 +311,13 @@ func taxCurrencyTaxAmount(taxTotals []TaxTotal) (num.Amount, bool) {
 }
 
 // OIOUBL taxcategoryid-1.1 category codes and the serialization-only
-// taxschemeid-1.1 VAT (Moms) code.
+// taxschemeid-1.5 VAT (Moms) code.
 const (
 	taxCategoryStandardRated = "StandardRated"
 	taxCategoryZeroRated     = "ZeroRated"
 	taxCategoryReverseCharge = "ReverseCharge"
 
-	taxSchemeVATCode = "63" // taxschemeid-1.1 VAT (Moms)
+	taxSchemeVATCode = "63" // taxschemeid-1.5 VAT (Moms)
 )
 
 // transactionTax restates a subtotal's tax in the tax currency, returning nil

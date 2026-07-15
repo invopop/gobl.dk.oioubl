@@ -31,7 +31,7 @@
       <cac:PartyTaxScheme>
         <cbc:CompanyID schemeID="DK:SE">DK12345674</cbc:CompanyID>
         <cac:TaxScheme>
-          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
         </cac:TaxScheme>
       </cac:PartyTaxScheme>
@@ -65,7 +65,7 @@
       <cac:PartyTaxScheme>
         <cbc:CompanyID schemeID="DK:SE">DK76543216</cbc:CompanyID>
         <cac:TaxScheme>
-          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
         </cac:TaxScheme>
       </cac:PartyTaxScheme>
@@ -107,7 +107,7 @@
         <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
         <cbc:Percent>25</cbc:Percent>
         <cac:TaxScheme>
-          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
         </cac:TaxScheme>
       </cac:TaxCategory>
@@ -119,7 +119,7 @@
         <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">ZeroRated</cbc:ID>
         <cbc:Percent>0</cbc:Percent>
         <cac:TaxScheme>
-          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
         </cac:TaxScheme>
       </cac:TaxCategory>
@@ -144,7 +144,7 @@
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
           <cbc:Percent>25</cbc:Percent>
           <cac:TaxScheme>
-            <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+            <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
             <cbc:Name>Moms</cbc:Name>
           </cac:TaxScheme>
         </cac:TaxCategory>
@@ -156,7 +156,7 @@
         <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
         <cbc:Percent>25</cbc:Percent>
         <cac:TaxScheme>
-          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
         </cac:TaxScheme>
       </cac:ClassifiedTaxCategory>
@@ -178,7 +178,7 @@
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">ZeroRated</cbc:ID>
           <cbc:Percent>0</cbc:Percent>
           <cac:TaxScheme>
-            <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+            <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
             <cbc:Name>Moms</cbc:Name>
           </cac:TaxScheme>
         </cac:TaxCategory>
@@ -190,7 +190,7 @@
         <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">ZeroRated</cbc:ID>
         <cbc:Percent>0</cbc:Percent>
         <cac:TaxScheme>
-          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
         </cac:TaxScheme>
       </cac:ClassifiedTaxCategory>
