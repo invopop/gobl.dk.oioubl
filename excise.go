@@ -211,9 +211,25 @@ func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, erro
 	return charges, nil
 }
 
+// lineExciseMirrors returns the (duty code, amount) pairs already parsed as
+// line-level excise charges, identifying which document-level TaxTotal/Excise
+// entries are just their mirror rather than a genuine document-only duty.
+func lineExciseMirrors(lines []*bill.Line) map[string]bool {
+	mirrors := make(map[string]bool)
+	for _, l := range lines {
+		for _, ch := range l.Charges {
+			if chargeIsExcise(ch.Key) {
+				mirrors[chargeDutyCode(ch.Ext)+"|"+ch.Amount.String()] = true
+			}
+		}
+	}
+	return mirrors
+}
+
 // exciseChargesFromTaxTotals is exciseLineChargesFromTaxTotals's document-level
 // analogue, also reading the duty's own TaxTypeCode back into its VAT combo.
-func exciseChargesFromTaxTotals(totals []TaxTotal) ([]*bill.Charge, error) {
+// mirrors is skipped rather than double-counted as a genuine document charge.
+func exciseChargesFromTaxTotals(totals []TaxTotal, mirrors map[string]bool) ([]*bill.Charge, error) {
 	var charges []*bill.Charge
 	for _, tt := range totals {
 		for i := range tt.TaxSubtotal {
@@ -227,6 +243,9 @@ func exciseChargesFromTaxTotals(totals []TaxTotal) ([]*bill.Charge, error) {
 			amount, err := num.AmountFromString(ubl.NormalizeNumericString(st.TaxAmount.Value))
 			if err != nil {
 				return nil, err
+			}
+			if mirrors[st.TaxCategory.TaxScheme.ID.Value+"|"+amount.String()] {
+				continue
 			}
 			ch := &bill.Charge{
 				Key:    oioubl.ChargeKeyExcise,
@@ -248,16 +267,9 @@ func exciseChargesFromTaxTotals(totals []TaxTotal) ([]*bill.Charge, error) {
 }
 
 // goblAddExciseCharges parses the document's own cac:TaxTotal/Excise blocks,
-// unless a line already carries its own (then the document ones just mirror it).
+// skipping any that just mirror a duty already parsed from a line.
 func (ui *Invoice) goblAddExciseCharges(out *bill.Invoice) error {
-	for _, l := range out.Lines {
-		for _, ch := range l.Charges {
-			if chargeIsExcise(ch.Key) {
-				return nil
-			}
-		}
-	}
-	charges, err := exciseChargesFromTaxTotals(ui.TaxTotal)
+	charges, err := exciseChargesFromTaxTotals(ui.TaxTotal, lineExciseMirrors(out.Lines))
 	if err != nil {
 		return err
 	}
