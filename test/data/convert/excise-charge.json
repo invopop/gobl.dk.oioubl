@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
 		"dig": {
 			"alg": "sha256",
-			"val": "a90378801c3b4a5882d9ec393500547303d1aabb4c62fa9715baad2177eafec4"
+			"val": "054bc395a7083d98d3e09dd56f170430560e284ca2a178f6d47470bd08b0cc55"
 		},
 		"from": "DK:CVR:12345674",
 		"to": "DK:CVR:76543216"
@@ -23,6 +23,7 @@
 		"issue_date": "2026-05-29",
 		"currency": "DKK",
 		"tax": {
+			"rounding": "currency",
 			"ext": {
 				"untdid-document-type": "380"
 			}
@@ -116,14 +117,14 @@
 				"charges": [
 					{
 						"key": "excise",
-						"ext": {
-							"dk-oioubl-duty-code": "16"
-						},
 						"reason": "Mineralvandsafgift",
 						"quantity": "20",
 						"unit": "l",
 						"rate": "0.50",
-						"amount": "10.00"
+						"amount": "10.00",
+						"ext": {
+							"dk-oioubl-duty-code": "16"
+						}
 					}
 				],
 				"taxes": [
@@ -137,9 +138,27 @@
 				"total": "1810.00"
 			}
 		],
+		"charges": [
+			{
+				"i": 1,
+				"key": "excise",
+				"reason": "Registreringsafgift",
+				"amount": "100000.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "zero",
+						"percent": "0%"
+					}
+				],
+				"ext": {
+					"dk-oioubl-duty-code": "66"
+				}
+			}
+		],
 		"payment": {
 			"instructions": {
-				"key": "credit-transfer",
+				"key": "other",
 				"ref": "TEST-EXC-CHG",
 				"credit_transfer": [
 					{
@@ -154,7 +173,8 @@
 		},
 		"totals": {
 			"sum": "1810.00",
-			"total": "1810.00",
+			"charge": "100000.00",
+			"total": "101810.00",
 			"taxes": {
 				"categories": [
 					{
@@ -165,6 +185,12 @@
 								"base": "1810.00",
 								"percent": "25.0%",
 								"amount": "452.50"
+							},
+							{
+								"key": "zero",
+								"base": "100000.00",
+								"percent": "0%",
+								"amount": "0.00"
 							}
 						],
 						"amount": "452.50"
@@ -173,8 +199,8 @@
 				"sum": "452.50"
 			},
 			"tax": "452.50",
-			"total_with_tax": "2262.50",
-			"payable": "2262.50"
+			"total_with_tax": "102262.50",
+			"payable": "102262.50"
 		}
 	}
 }
