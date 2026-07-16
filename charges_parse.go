@@ -61,60 +61,75 @@ func goblAllowancePercent(ac *AllowanceCharge) (*num.Percentage, error) {
 	return &p, nil
 }
 
-// OIOUBL: maps the 63/Moms scheme + taxcategoryid codes and reads a decimal-multiplier percent.
-func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Charge, error) {
-	ch := &bill.Charge{}
+// parsedAllowanceCharge holds the fields shared by a document-level
+// bill.Charge and bill.Discount, parsed once from the wire's common
+// AllowanceCharge shape.
+type parsedAllowanceCharge struct {
+	Reason  string
+	Amount  num.Amount
+	Base    *num.Amount
+	Percent *num.Percentage
+	Ext     tax.Extensions
+	Taxes   tax.Set
+}
+
+// parseAllowanceCharge reads the reason, amount, base, OIOUBL decimal-factor
+// percent (F-LIB228) and tax category shared by document-level charges and
+// discounts, tagging the reason code under extKey (untdid.ExtKeyCharge or
+// untdid.ExtKeyAllowance) and mapping the 63/Moms scheme + taxcategoryid codes.
+func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap map[string]*taxCategoryInfo) (parsedAllowanceCharge, error) {
+	var out parsedAllowanceCharge
 	if ac.AllowanceChargeReason != nil {
-		ch.Reason = *ac.AllowanceChargeReason
+		out.Reason = *ac.AllowanceChargeReason
 	}
 	if ac.Amount.Value != "" {
 		a, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
 		if err != nil {
-			return nil, err
+			return out, err
 		}
-		ch.Amount = a
+		out.Amount = a
 	}
 	if ac.AllowanceChargeReasonCode != nil {
-		ch.Ext = tax.ExtensionsOf(cbc.CodeMap{
-			untdid.ExtKeyCharge: cbc.Code(*ac.AllowanceChargeReasonCode),
+		out.Ext = tax.ExtensionsOf(cbc.CodeMap{
+			extKey: cbc.Code(*ac.AllowanceChargeReasonCode),
 		})
 	}
 	if ac.BaseAmount != nil {
 		b, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 		if err != nil {
-			return nil, err
+			return out, err
 		}
-		ch.Base = &b
+		out.Base = &b
 	}
 	pct, err := goblAllowancePercent(ac)
 	if err != nil {
-		return nil, err
+		return out, err
 	}
 	if pct != nil {
-		ch.Percent = pct
+		out.Percent = pct
 
 		if ac.BaseAmount != nil {
 			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 			if err != nil {
-				return nil, err
+				return out, err
 			}
-			ch.Base = &base
+			out.Base = &base
 		}
 	}
 	if len(ac.TaxCategory) > 0 && ac.TaxCategory[0].TaxScheme != nil {
-		ch.Taxes = tax.Set{
+		out.Taxes = tax.Set{
 			{
 				Category: goblTaxSchemeCategory(ac.TaxCategory[0].TaxScheme.ID.Value),
 			},
 		}
 
 		if ac.TaxCategory[0].ID != nil {
-			ch.Taxes[0].Ext = ch.Taxes[0].Ext.Set(untdid.ExtKeyTaxCategory, goblTaxCategoryCode(ac.TaxCategory[0].ID.Value))
+			out.Taxes[0].Ext = out.Taxes[0].Ext.Set(untdid.ExtKeyTaxCategory, goblTaxCategoryCode(ac.TaxCategory[0].ID.Value))
 
 			// Look up exemption code from TaxTotal
 			key := ubl.BuildTaxCategoryKey(ac.TaxCategory[0].TaxScheme.ID.Value, ac.TaxCategory[0].ID.Value, ac.TaxCategory[0].Percent)
 			if info, ok := taxCategoryMap[key]; ok && info.exemptionReasonCode != "" {
-				ch.Taxes[0].Ext = ch.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.exemptionReasonCode))
+				out.Taxes[0].Ext = out.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.exemptionReasonCode))
 			}
 		}
 
@@ -125,160 +140,109 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo)
 			}
 			p, err := num.PercentageFromString(percent)
 			if err != nil {
-				return nil, err
+				return out, err
 			}
 
 			// Skip 0% unless zero-rated ("Z"), so GOBL doesn't normalize exempt/reverse-charge to "zero".
 			if !p.IsZero() || (ac.TaxCategory[0].ID != nil && ac.TaxCategory[0].ID.Value == "Z") {
-				ch.Taxes[0].Percent = &p
+				out.Taxes[0].Percent = &p
 			}
 		}
 	}
-	return ch, nil
+	return out, nil
 }
 
-// OIOUBL: maps the 63/Moms scheme + taxcategoryid codes and reads a decimal-multiplier percent.
-func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Discount, error) {
-	d := &bill.Discount{}
-	if ac.AllowanceChargeReason != nil {
-		d.Reason = *ac.AllowanceChargeReason
-	}
-	if ac.Amount.Value != "" {
-		a, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
-		if err != nil {
-			return nil, err
-		}
-		d.Amount = a
-	}
-	if ac.AllowanceChargeReasonCode != nil {
-		d.Ext = tax.ExtensionsOf(cbc.CodeMap{
-			untdid.ExtKeyAllowance: cbc.Code(*ac.AllowanceChargeReasonCode),
-		})
-	}
-	if ac.BaseAmount != nil {
-		b, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
-		if err != nil {
-			return nil, err
-		}
-		d.Base = &b
-	}
-	pct, err := goblAllowancePercent(ac)
+func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Charge, error) {
+	p, err := parseAllowanceCharge(ac, untdid.ExtKeyCharge, taxCategoryMap)
 	if err != nil {
 		return nil, err
 	}
-	if pct != nil {
-		d.Percent = pct
-
-		if ac.BaseAmount != nil {
-			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
-			if err != nil {
-				return nil, err
-			}
-			d.Base = &base
-		}
-	}
-	if len(ac.TaxCategory) > 0 && ac.TaxCategory[0].TaxScheme != nil {
-		d.Taxes = tax.Set{
-			{
-				Category: goblTaxSchemeCategory(ac.TaxCategory[0].TaxScheme.ID.Value),
-			},
-		}
-
-		if ac.TaxCategory[0].ID != nil {
-			d.Taxes[0].Ext = d.Taxes[0].Ext.Set(untdid.ExtKeyTaxCategory, goblTaxCategoryCode(ac.TaxCategory[0].ID.Value))
-
-			// Look up exemption code from TaxTotal
-			key := ubl.BuildTaxCategoryKey(ac.TaxCategory[0].TaxScheme.ID.Value, ac.TaxCategory[0].ID.Value, ac.TaxCategory[0].Percent)
-			if info, ok := taxCategoryMap[key]; ok && info.exemptionReasonCode != "" {
-				d.Taxes[0].Ext = d.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.exemptionReasonCode))
-			}
-		}
-
-		if ac.TaxCategory[0].Percent != nil {
-			percentStr := ubl.NormalizeNumericString(*ac.TaxCategory[0].Percent)
-			if !strings.HasSuffix(percentStr, "%") {
-				percentStr += "%"
-			}
-			percent, err := num.PercentageFromString(percentStr)
-			if err != nil {
-				return nil, err
-			}
-
-			// Skip 0% unless zero-rated ("Z"), so GOBL doesn't normalize exempt/reverse-charge to "zero".
-			if !percent.IsZero() || (ac.TaxCategory[0].ID != nil && ac.TaxCategory[0].ID.Value == "Z") {
-				d.Taxes[0].Percent = &percent
-			}
-		}
-	}
-	return d, nil
+	return &bill.Charge{
+		Reason:  p.Reason,
+		Amount:  p.Amount,
+		Base:    p.Base,
+		Percent: p.Percent,
+		Ext:     p.Ext,
+		Taxes:   p.Taxes,
+	}, nil
 }
 
-// OIOUBL: reads the percent from the decimal MultiplierFactorNumeric via goblAllowancePercent (F-LIB228).
-func goblLineCharge(ac *AllowanceCharge) (*bill.LineCharge, error) {
+func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Discount, error) {
+	p, err := parseAllowanceCharge(ac, untdid.ExtKeyAllowance, taxCategoryMap)
+	if err != nil {
+		return nil, err
+	}
+	return &bill.Discount{
+		Reason:  p.Reason,
+		Amount:  p.Amount,
+		Base:    p.Base,
+		Percent: p.Percent,
+		Ext:     p.Ext,
+		Taxes:   p.Taxes,
+	}, nil
+}
+
+// parseLineAllowanceCharge reads the reason, amount, base and OIOUBL
+// decimal-factor percent (F-LIB228) shared by line-level charges and
+// discounts, tagging the reason code under extKey (untdid.ExtKeyCharge or
+// untdid.ExtKeyAllowance).
+func parseLineAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key) (parsedAllowanceCharge, error) {
+	var out parsedAllowanceCharge
 	amount, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
 	if err != nil {
-		return nil, err
+		return out, err
 	}
-	ch := &bill.LineCharge{
-		Amount: amount,
-	}
+	out.Amount = amount
 	if ac.AllowanceChargeReasonCode != nil {
-		ch.Ext = tax.ExtensionsOf(cbc.CodeMap{
-			untdid.ExtKeyCharge: cbc.Code(*ac.AllowanceChargeReasonCode),
+		out.Ext = tax.ExtensionsOf(cbc.CodeMap{
+			extKey: cbc.Code(*ac.AllowanceChargeReasonCode),
 		})
 	}
 	if ac.AllowanceChargeReason != nil {
-		ch.Reason = *ac.AllowanceChargeReason
+		out.Reason = *ac.AllowanceChargeReason
 	}
 	pct, err := goblAllowancePercent(ac)
 	if err != nil {
-		return nil, err
+		return out, err
 	}
 	if pct != nil {
-		ch.Percent = pct
+		out.Percent = pct
 
 		if ac.BaseAmount != nil {
 			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
 			if err != nil {
-				return nil, err
+				return out, err
 			}
-			ch.Base = &base
+			out.Base = &base
 		}
 	}
-	return ch, nil
+	return out, nil
 }
 
-// OIOUBL: reads the percent from the decimal MultiplierFactorNumeric via goblAllowancePercent (F-LIB228).
-func goblLineDiscount(ac *AllowanceCharge) (*bill.LineDiscount, error) {
-	a, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
+func goblLineCharge(ac *AllowanceCharge) (*bill.LineCharge, error) {
+	p, err := parseLineAllowanceCharge(ac, untdid.ExtKeyCharge)
 	if err != nil {
 		return nil, err
 	}
-	d := &bill.LineDiscount{
-		Amount: a,
-	}
-	if ac.AllowanceChargeReasonCode != nil {
-		d.Ext = tax.ExtensionsOf(cbc.CodeMap{
-			untdid.ExtKeyAllowance: cbc.Code(*ac.AllowanceChargeReasonCode),
-		})
-	}
-	if ac.AllowanceChargeReason != nil {
-		d.Reason = *ac.AllowanceChargeReason
-	}
-	pct, err := goblAllowancePercent(ac)
-	if err != nil {
-		return nil, err
-	}
-	if pct != nil {
-		d.Percent = pct
+	return &bill.LineCharge{
+		Reason:  p.Reason,
+		Amount:  p.Amount,
+		Base:    p.Base,
+		Percent: p.Percent,
+		Ext:     p.Ext,
+	}, nil
+}
 
-		if ac.BaseAmount != nil {
-			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
-			if err != nil {
-				return nil, err
-			}
-			d.Base = &base
-		}
+func goblLineDiscount(ac *AllowanceCharge) (*bill.LineDiscount, error) {
+	p, err := parseLineAllowanceCharge(ac, untdid.ExtKeyAllowance)
+	if err != nil {
+		return nil, err
 	}
-	return d, nil
+	return &bill.LineDiscount{
+		Reason:  p.Reason,
+		Amount:  p.Amount,
+		Base:    p.Base,
+		Percent: p.Percent,
+		Ext:     p.Ext,
+	}, nil
 }

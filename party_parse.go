@@ -42,6 +42,15 @@ func goblParty(party *Party) *org.Party {
 	return p
 }
 
+// dkUnprefixed reverses the wire-only "DK" prefix OIOUBL mandates on
+// DK:CVR/DK:SE identifier values (F-LIB180), leaving other schemes untouched.
+func dkUnprefixed(schemeID, code string) string {
+	if schemeID == schemeDKCVR || schemeID == schemeDKSE {
+		return strings.TrimPrefix(code, "DK")
+	}
+	return code
+}
+
 // goblPartyEndpoint restores the participant identifier as an org.Endpoint
 // (org.Inbox is deprecated); scheme and code round-trip verbatim, reversing
 // only the wire-only DK prefix (F-LIB180).
@@ -54,10 +63,7 @@ func goblPartyEndpoint(party *Party, p *org.Party) {
 		p.Inboxes = append(p.Inboxes, &org.Inbox{Email: eID.Value})
 		return
 	}
-	code := eID.Value
-	if eID.SchemeID == schemeDKCVR || eID.SchemeID == schemeDKSE {
-		code = strings.TrimPrefix(code, "DK")
-	}
+	code := dkUnprefixed(eID.SchemeID, eID.Value)
 	p.Endpoints = append(p.Endpoints, &org.Endpoint{
 		URI: cbc.URI(oioubl.OIOUBLEndpointURI(eID.SchemeID, code)),
 	})
@@ -266,10 +272,7 @@ func handlePartyIdentifications(party *Party, p *org.Party) {
 				identity.Ext = tax.ExtensionsOf(cbc.CodeMap{
 					iso.ExtKeySchemeID: cbc.Code(s),
 				})
-				if s == schemeDKCVR || s == schemeDKSE {
-					// Reverse the wire-only DK prefix (F-LIB180).
-					code = strings.TrimPrefix(code, "DK")
-				}
+				code = dkUnprefixed(s, code)
 			}
 			identity.Code = cbc.Code(code)
 			if p.Identities == nil {
