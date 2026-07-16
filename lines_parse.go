@@ -70,7 +70,12 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 	}
 	if di := docLine.Item; di != nil {
 		goblConvertLineItem(di, line.Item)
-		goblConvertLineItemTaxes(di, line, taxCategoryMap)
+		goblApplyLineTaxCategory(di.ClassifiedTaxCategory, line, taxCategoryMap)
+	}
+	// cac:ClassifiedTaxCategory is authoritative when present, but most real
+	// OIOUBL documents state line VAT only in the line's own cac:TaxTotal.
+	if len(line.Taxes) == 0 {
+		goblLineTaxesFromTaxTotals(docLine.TaxTotal, line, taxCategoryMap)
 	}
 
 	notes := make([]*org.Note, 0)
@@ -193,9 +198,32 @@ func goblConvertLineItem(di *Item, item *org.Item) {
 	}
 }
 
-// OIOUBL: maps the 63/Moms scheme and taxcategoryid-1.1 values back via goblTaxSchemeCategory/goblTaxCategoryCode.
-func goblConvertLineItemTaxes(di *Item, line *bill.Line, taxCategoryMap map[string]*taxCategoryInfo) {
-	ctc := di.ClassifiedTaxCategory
+// goblLineTaxesFromTaxTotals reads the line's VAT category from its own
+// cac:TaxTotal subtotal — where real OIOUBL documents state line VAT when the
+// item carries no cac:ClassifiedTaxCategory — reusing the same category
+// mapping. Excise subtotals become line charges instead (see
+// exciseLineChargesFromTaxTotals).
+func goblLineTaxesFromTaxTotals(totals []TaxTotal, line *bill.Line, taxCategoryMap map[string]*taxCategoryInfo) {
+	for _, tt := range totals {
+		for i := range tt.TaxSubtotal {
+			tc := &tt.TaxSubtotal[i].TaxCategory
+			if tc.ID == nil || tc.TaxScheme == nil || tc.ID.Value == taxCategoryExcise {
+				continue
+			}
+			goblApplyLineTaxCategory(&ClassifiedTaxCategory{
+				ID:        tc.ID,
+				Percent:   tc.Percent,
+				TaxScheme: tc.TaxScheme,
+			}, line, taxCategoryMap)
+			return
+		}
+	}
+}
+
+// goblApplyLineTaxCategory maps a tax category onto the line's taxes: the
+// 63/Moms scheme and taxcategoryid-1.1 values map back via
+// goblTaxSchemeCategory/goblTaxCategoryCode.
+func goblApplyLineTaxCategory(ctc *ClassifiedTaxCategory, line *bill.Line, taxCategoryMap map[string]*taxCategoryInfo) {
 	if ctc == nil || ctc.TaxScheme == nil {
 		return
 	}
