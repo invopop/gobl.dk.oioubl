@@ -7,6 +7,7 @@ import (
 	en16931 "github.com/invopop/gobl/addons/eu/en16931"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/cef"
+	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
@@ -74,6 +75,33 @@ func TestNormalizeStandardUnchanged(t *testing.T) {
 	require.NoError(t, inv.Calculate())
 	assert.Equal(t, tax.KeyStandard, inv.Lines[0].Taxes[0].Key)
 	require.NoError(t, rules.Validate(inv))
+}
+
+func TestNormalizeDKBankBranch(t *testing.T) {
+	t.Run("stamps DK on a means-42 branch", func(t *testing.T) {
+		// The branch address only exists to carry the reg. nr. label, but
+		// EN 16931 requires a country on every address (BR-9 et al.).
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Instructions: &pay.Instructions{
+				Key: pay.MeansKeyOther,
+				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
+				CreditTransfer: []*pay.CreditTransfer{
+					{Number: "0440116243", Branch: &org.Address{Label: "1234"}},
+				},
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.Equal(t, "DK", inv.Payment.Instructions.CreditTransfer[0].Branch.Country.String())
+	})
+
+	t.Run("leaves other means untouched", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Payment = bankPayment()
+		inv.Payment.Instructions.CreditTransfer[0].Branch = &org.Address{Label: "1234"}
+		require.NoError(t, inv.Calculate())
+		assert.Empty(t, inv.Payment.Instructions.CreditTransfer[0].Branch.Country)
+	})
 }
 
 func TestNormalizePartyParticipant(t *testing.T) {

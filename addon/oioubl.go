@@ -43,6 +43,7 @@ func init() {
 		norm.For(normalizeParty),
 		norm.For(normalizeTaxCombo),
 		norm.For(normalizeTaxNote),
+		norm.For(normalizePayInstructions),
 	)
 }
 

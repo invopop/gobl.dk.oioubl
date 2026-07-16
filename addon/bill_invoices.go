@@ -20,7 +20,7 @@ var validDocumentTypes = []cbc.Code{"325", "380", "381", "393"}
 
 // validPaymentMeansCodes are the UNTDID 4461 means accepted for OIOUBL (F-LIB100).
 var validPaymentMeansCodes = []cbc.Code{
-	"1", "10", "20", "31", "48", "49", "50", "58", "59", "93", "97",
+	"1", "10", "20", "31", "42", "48", "49", "50", "58", "59", "93", "97",
 }
 
 // Rule citations reference the OIOUBL Invoice schematron (F-INV) first and the
@@ -114,6 +114,10 @@ func billInvoiceRules() *rules.Set {
 					is.Func("giro has a 7-8 digit payee account", giroAccountValid)),
 				rules.Assert("22", "FIK (payment-means 93) requires an 8-character creditor account (F-LIB305)",
 					is.Func("fik has an 8-character creditor account", fikAccountValid)),
+				rules.Assert("23", "a domestic bank transfer (payment-means 42) requires a payee account number of at most 10 characters (F-LIB126 / F-LIB131)",
+					is.Func("dk bank transfer has a valid account number", dkBankAccountValid)),
+				rules.Assert("24", "a domestic bank transfer (payment-means 42) requires the bank registration number (up to 4 digits) as the credit-transfer branch label (F-LIB124 / F-LIB130)",
+					is.Func("dk bank transfer has a bank registration number", dkBankRegNrValid)),
 				rules.Assert("40", "NemKonto (payment-means 97) must not carry a credit transfer: the payer resolves the payee's registered account via NemKonto (F-LIB164)",
 					is.Func("nemkonto has no credit transfer", nemKontoHasNoCreditTransfer)),
 			),
@@ -471,6 +475,29 @@ func fikAccountValid(val any) bool {
 	}
 	ct := firstCreditTransfer(instr)
 	return ct != nil && len(ct.Number) == 8
+}
+
+// dkBankAccountValid checks F-LIB126/F-LIB131: a domestic bank transfer
+// (means 42) must carry a payee account number of at most 10 characters.
+func dkBankAccountValid(val any) bool {
+	instr, ok := val.(*pay.Instructions)
+	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "42" {
+		return true
+	}
+	ct := firstCreditTransfer(instr)
+	return ct != nil && ct.Number != "" && len(ct.Number) <= 10
+}
+
+// dkBankRegNrValid checks F-LIB124/F-LIB130: a domestic bank transfer (means
+// 42) must carry the Danish bank registration number — at most 4 digits, on
+// the credit-transfer branch label — for FinancialInstitutionBranch/ID.
+func dkBankRegNrValid(val any) bool {
+	instr, ok := val.(*pay.Instructions)
+	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "42" {
+		return true
+	}
+	ct := firstCreditTransfer(instr)
+	return ct != nil && ct.Branch != nil && isNumericOfLen(ct.Branch.Label, 1, 4)
 }
 
 // nemKontoHasNoCreditTransfer checks F-LIB164: a NemKonto payment (means 97)

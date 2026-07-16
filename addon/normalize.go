@@ -5,6 +5,7 @@ import (
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
+	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/tax"
 )
 
@@ -79,6 +80,20 @@ func hasLegalIdentity(p *org.Party) bool {
 		}
 	}
 	return false
+}
+
+// normalizePayInstructions stamps DK on a domestic bank transfer's (means 42)
+// credit-transfer branch, since only the reg. nr. is set there and EN 16931
+// requires a country on every address (BR-9 et al.).
+func normalizePayInstructions(instr *pay.Instructions) {
+	if instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "42" {
+		return
+	}
+	ct := firstCreditTransfer(instr)
+	if ct == nil || ct.Branch == nil || ct.Branch.Country != "" {
+		return
+	}
+	ct.Branch.Country = "DK"
 }
 
 // normalizeTaxCombo strips the EN 16931 UNTDID tax-category ext; the OIOUBL code
