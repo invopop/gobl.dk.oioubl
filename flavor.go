@@ -6,14 +6,8 @@ import (
 	"github.com/invopop/gobl/bill"
 )
 
-// applyOIOUBLFlavor turns gobl.ubl's EN 16931 base document into an OIOUBL 2.1
-// one. gobl.ubl already builds the header, ordering (including the
-// seller/tax-representative swap), preceding references, notes, attachments,
-// parties, and the ordinary (non-excise, non-Giro/FIK) parts of payment —
-// those subtrees are decorated in place rather than rebuilt. Charges, totals,
-// and lines use OIOUBL-specific business rules (gross line amounts, excise
-// duties as their own tax category, per-line rounding) with no equivalent in
-// the generic base, so those are still fully replaced.
+// applyOIOUBLFlavor turns gobl.ubl's EN 16931 base into OIOUBL 2.1: most
+// subtrees are decorated in place, but charges/totals/lines are rebuilt.
 func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 	ui.UBLVersionID = Version
 	stampProfileID(ui.ProfileID)
@@ -32,10 +26,8 @@ func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 
 	ui.decorateParties(inv)
 
-	// Reset contract: charges/totals/lines have no reusable equivalent in the
-	// base (gross vs net amounts, excise-as-tax, per-line rounding), so they're
-	// still replaced outright. A gobl.ubl bump that starts populating these
-	// differently would double-emit, so bump reviews must re-audit this list.
+	// No reusable equivalent in the base (gross vs net, excise-as-tax,
+	// per-line rounding), so these are rebuilt outright rather than decorated.
 	ui.AllowanceCharge = nil
 	ui.TaxTotal = nil
 	ui.addCharges(inv)
@@ -44,10 +36,8 @@ func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 	ui.CreditNoteLines = nil
 	ui.addLines(inv)
 
-	// Payment: the base's AddPayment already built the ordinary (bank
-	// transfer/direct debit/card) case; decorate it in place for OIOUBL's
-	// channel code and BIC nesting, and only replace it outright for Giro/FIK,
-	// which have no equivalent shape in the base (CreditAccount + kortart).
+	// The base already builds the ordinary payment case; decorate it for
+	// OIOUBL's channel code/BIC, replacing it outright only for Giro/FIK.
 	if err := ui.decoratePayment(inv); err != nil {
 		return err
 	}
@@ -65,10 +55,8 @@ func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 	return nil
 }
 
-// decorateParties adjusts the base's already-correct supplier/customer/
-// tax-representative/payee parties (built by gobl.ubl's NewParty, including
-// the ordering.seller tax-representative swap) with OIOUBL's extras and
-// scheme stamping, instead of rebuilding them from scratch.
+// decorateParties adjusts the base's already-correct parties (built by
+// gobl.ubl's NewParty) with OIOUBL's extras, instead of rebuilding them.
 func (ui *Invoice) decorateParties(inv *bill.Invoice) {
 	supplierSrc := inv.Supplier
 	if inv.Ordering != nil && inv.Ordering.Seller != nil {
@@ -117,9 +105,8 @@ func stampProfileID(id *IDType) {
 	id.SchemeAgencyID = &schemeAgencyID
 }
 
-// ContextOIOUBL drives gobl.ubl's generic builder with OIOUBL's document
-// identifiers and addon. Only the dk-oioubl addon is listed; it requires
-// en16931, so the base is calculated and validated exactly as before.
+// ContextOIOUBL is gobl.ubl's own extension point (ubl.WithContext) for
+// injecting OIOUBL's identifiers and addon into its generic builder.
 var ContextOIOUBL = ubl.Context{
 	CustomizationID: CustomizationID,
 	ProfileID:       ProfileID,

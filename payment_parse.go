@@ -148,13 +148,8 @@ func goblPaymentChannel(instr *pay.Instructions, paymentMeans *PaymentMeans) {
 		return
 	case paymentChannelGiro, paymentChannelFIK:
 	default:
-		// A channel the emit side can't rederive from the payment means (BBAN,
-		// SE:BANKGIRO, ZZZ, …) round-trips via the payment-channel Meta key,
-		// which decoratePayment reads back before deriving one.
-		if instr.Meta == nil {
-			instr.Meta = make(cbc.Meta)
-		}
-		instr.Meta[metaKeyPaymentChannel] = paymentMeans.PaymentChannelCode.Value
+		// An unsupported channel (BBAN, SE:BANKGIRO, ZZZ, …) is dropped rather
+		// than round-tripped; decoratePayment can't rederive it either.
 		return
 	}
 

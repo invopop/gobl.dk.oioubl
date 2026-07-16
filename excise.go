@@ -16,18 +16,14 @@ import (
 const taxCategoryExcise = "Excise"
 
 // legacyExciseCategoryMin/Max bound the legacy UNCL5305 numeric tax-category
-// codes (3010-3671) that predate taxcategoryid-1.1's "Excise" value; zero
-// occurrences in the 428-file ERST real corpus, but treated as excise on parse
-// if one ever shows up, since the alternative is silently dropping a real duty.
+// codes (3010-3671) that predate taxcategoryid-1.1's "Excise" value.
 const (
 	legacyExciseCategoryMin = 3010
 	legacyExciseCategoryMax = 3671
 )
 
-// isExciseCategoryID reports whether a taxcategoryid-1.1 value is either
-// OIOUBL's own "Excise" or a legacy UNCL5305 numeric duty code. Only "Excise"
-// is ever emitted outbound -- this widening is inbound-only and lossy (the
-// specific legacy code is discarded).
+// isExciseCategoryID reports whether a taxcategoryid-1.1 value is "Excise" or
+// a legacy UNCL5305 duty code; only "Excise" is ever emitted outbound.
 func isExciseCategoryID(id string) bool {
 	if id == taxCategoryExcise {
 		return true
@@ -128,9 +124,8 @@ func lineVATTypeCode(line *bill.Line) string {
 	return taxCategoryID(combo.Key)
 }
 
-// exciseVATBases sums, per VAT key, the base the document-level excise charges'
-// own VAT combos contribute to the invoice's tax totals (in the invoice
-// currency), so addTotals can recognize a VAT rate row owed entirely to excise.
+// exciseVATBases sums, per VAT key, the base document-level excise charges
+// contribute to the invoice's tax totals, so addTotals can spot excise-only rows.
 func exciseVATBases(inv *bill.Invoice) map[cbc.Key]num.Amount {
 	bases := make(map[cbc.Key]num.Amount)
 	for _, ch := range inv.Charges {
@@ -216,9 +211,8 @@ func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, erro
 	return charges, nil
 }
 
-// exciseChargesFromTaxTotals is the document-level analogue of
-// exciseLineChargesFromTaxTotals, reading the duty's own TaxTypeCode back into
-// the charge's VAT combo.
+// exciseChargesFromTaxTotals is exciseLineChargesFromTaxTotals's document-level
+// analogue, also reading the duty's own TaxTypeCode back into its VAT combo.
 func exciseChargesFromTaxTotals(totals []TaxTotal) ([]*bill.Charge, error) {
 	var charges []*bill.Charge
 	for _, tt := range totals {
@@ -253,11 +247,8 @@ func exciseChargesFromTaxTotals(totals []TaxTotal) ([]*bill.Charge, error) {
 	return charges, nil
 }
 
-// goblAddExciseCharges parses the document's own cac:TaxTotal/Excise blocks
-// (ui.TaxTotal, which by XML structure never includes a line's nested
-// blocks — those are parsed separately in goblConvertLine) into genuine
-// bill.Charge entries, unless a line already carries its own excise block, in
-// which case the document totals are just that duty's mirror and are skipped.
+// goblAddExciseCharges parses the document's own cac:TaxTotal/Excise blocks,
+// unless a line already carries its own (then the document ones just mirror it).
 func (ui *Invoice) goblAddExciseCharges(out *bill.Invoice) error {
 	for _, l := range out.Lines {
 		for _, ch := range l.Charges {

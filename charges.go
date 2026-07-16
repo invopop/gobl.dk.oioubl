@@ -15,8 +15,7 @@ func (ui *Invoice) addCharges(inv *bill.Invoice) {
 	// Invoice sum (before discounts) is the base for percentage calculations.
 	baseAmount := inv.Totals.Sum
 	for _, ch := range inv.Charges {
-		// An excise-keyed charge is skipped here: addTotals emits it as its own
-		// cac:TaxTotal, not as a cac:AllowanceCharge.
+		// Excise charges are skipped here; addTotals emits them instead.
 		if chargeIsExcise(ch.Key) {
 			continue
 		}

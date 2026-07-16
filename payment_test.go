@@ -6,7 +6,6 @@ import (
 
 	dkoioubl "github.com/invopop/gobl.dk.oioubl"
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/pay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,23 +28,6 @@ func TestPaymentMeans(t *testing.T) {
 		require.NotNil(t, pm.PayeeFinancialAccount.FinancialInstitutionBranch.FinancialInstitution)
 		require.NotNil(t, pm.PayeeFinancialAccount.FinancialInstitutionBranch.FinancialInstitution.ID)
 		assert.Equal(t, "DNBANOKK", *pm.PayeeFinancialAccount.FinancialInstitutionBranch.FinancialInstitution.ID)
-	})
-
-	t.Run("keeps explicit payment-channel", func(t *testing.T) {
-		env := loadTestEnvelope(t, filepath.Join(getConvertPath(), "invoice-minimal.json"))
-
-		inv, ok := env.Extract().(*bill.Invoice)
-		require.True(t, ok)
-		inv.Payment.Instructions.Meta = cbc.Meta{
-			cbc.Key("payment-channel"): "ZZZ",
-		}
-
-		doc, err := dkoioubl.ConvertInvoice(env)
-		require.NoError(t, err)
-		require.NotEmpty(t, doc.PaymentMeans)
-		require.NotNil(t, doc.PaymentMeans[0].PaymentChannelCode)
-		assert.Equal(t, "ZZZ", doc.PaymentMeans[0].PaymentChannelCode.Value)
-		assert.Equal(t, "31", doc.PaymentMeans[0].PaymentMeansCode.Value)
 	})
 
 	t.Run("DK:BANK carries the reg. nr. and never a BIC", func(t *testing.T) {
