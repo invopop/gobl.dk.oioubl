@@ -21,23 +21,7 @@ func goblParty(party *Party) *org.Party {
 	if party.PartyLegalEntity != nil && party.PartyLegalEntity.RegistrationName != nil {
 		p.Name = ubl.CleanString(*party.PartyLegalEntity.RegistrationName)
 	}
-
-	if eID := party.EndpointID; eID != nil {
-		if eID.SchemeID == ubl.SchemeIDEmail {
-			p.Inboxes = append(p.Inboxes, &org.Inbox{Email: eID.Value})
-		} else {
-			// Restored as org.Endpoints (org.Inbox is deprecated); scheme and code
-			// round-trip verbatim, reversing only the wire-only DK prefix (F-LIB180).
-			code := eID.Value
-			if eID.SchemeID == schemeDKCVR || eID.SchemeID == schemeDKSE {
-				code = strings.TrimPrefix(code, "DK")
-			}
-			p.Endpoints = append(p.Endpoints, &org.Endpoint{
-				URI: cbc.URI(oioubl.OIOUBLEndpointURI(eID.SchemeID, code)),
-			})
-		}
-	}
-
+	goblPartyEndpoint(party, p)
 	if party.PartyName != nil {
 		if p.Name == "" {
 			p.Name = ubl.CleanString(party.PartyName.Name)
@@ -46,50 +30,9 @@ func goblParty(party *Party) *org.Party {
 		}
 	}
 
-	if c := party.Contact; c != nil {
-		person := new(org.Person)
-		if c.Name != nil {
-			person.Name = &org.Name{
-				Given: ubl.CleanString(*c.Name),
-			}
-		}
-		// Restore cac:Contact/cbc:ID to the person's identities for a lossless
-		// round-trip (the outbound side sources it from there for F-INV051).
-		if c.ID != nil {
-			if code := ubl.CleanString(*c.ID); code != "" {
-				person.Identities = []*org.Identity{{Code: cbc.Code(code)}}
-			}
-		}
-		if person.Name != nil || len(person.Identities) > 0 {
-			p.People = []*org.Person{person}
-		}
-	}
-
+	goblPartyContact(party, p)
 	if party.PostalAddress != nil {
-		p.Addresses = []*org.Address{
-			parseAddress(party.PostalAddress),
-		}
-	}
-
-	if party.Contact != nil {
-		// Real documents carry empty <cbc:Telephone/> elements; a telephone
-		// without a number is invalid in GOBL.
-		if party.Contact.Telephone != nil {
-			if number := ubl.CleanString(*party.Contact.Telephone); number != "" {
-				p.Telephones = []*org.Telephone{
-					{
-						Number: number,
-					},
-				}
-			}
-		}
-		if party.Contact.ElectronicMail != nil {
-			p.Emails = []*org.Email{
-				{
-					Address: ubl.CleanString(*party.Contact.ElectronicMail),
-				},
-			}
-		}
+		p.Addresses = []*org.Address{parseAddress(party.PostalAddress)}
 	}
 
 	ubl.HandleLegalEntityIdentity(party, p)
@@ -97,6 +40,60 @@ func goblParty(party *Party) *org.Party {
 	handlePartyIdentifications(party, p)
 
 	return p
+}
+
+// goblPartyEndpoint restores the participant identifier as an org.Endpoint
+// (org.Inbox is deprecated); scheme and code round-trip verbatim, reversing
+// only the wire-only DK prefix (F-LIB180).
+func goblPartyEndpoint(party *Party, p *org.Party) {
+	eID := party.EndpointID
+	if eID == nil {
+		return
+	}
+	if eID.SchemeID == ubl.SchemeIDEmail {
+		p.Inboxes = append(p.Inboxes, &org.Inbox{Email: eID.Value})
+		return
+	}
+	code := eID.Value
+	if eID.SchemeID == schemeDKCVR || eID.SchemeID == schemeDKSE {
+		code = strings.TrimPrefix(code, "DK")
+	}
+	p.Endpoints = append(p.Endpoints, &org.Endpoint{
+		URI: cbc.URI(oioubl.OIOUBLEndpointURI(eID.SchemeID, code)),
+	})
+}
+
+// goblPartyContact restores the contact person and their telephone/email;
+// real documents carry empty <cbc:Telephone/> elements, invalid in GOBL, so
+// an empty number is dropped rather than kept.
+func goblPartyContact(party *Party, p *org.Party) {
+	c := party.Contact
+	if c == nil {
+		return
+	}
+	person := new(org.Person)
+	if c.Name != nil {
+		person.Name = &org.Name{Given: ubl.CleanString(*c.Name)}
+	}
+	// Restore cac:Contact/cbc:ID to the person's identities for a lossless
+	// round-trip (the outbound side sources it from there for F-INV051).
+	if c.ID != nil {
+		if code := ubl.CleanString(*c.ID); code != "" {
+			person.Identities = []*org.Identity{{Code: cbc.Code(code)}}
+		}
+	}
+	if person.Name != nil || len(person.Identities) > 0 {
+		p.People = []*org.Person{person}
+	}
+
+	if c.Telephone != nil {
+		if number := ubl.CleanString(*c.Telephone); number != "" {
+			p.Telephones = []*org.Telephone{{Number: number}}
+		}
+	}
+	if c.ElectronicMail != nil {
+		p.Emails = []*org.Email{{Address: ubl.CleanString(*c.ElectronicMail)}}
+	}
 }
 
 // parseAddress builds on gobl.ubl's generic parsing, adding OIOUBL-specific
