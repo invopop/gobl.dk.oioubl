@@ -124,6 +124,18 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(inv))
 	})
 
+	t.Run("document-level charge with an empty (non-nil) tax set is rejected (F-LIB226)", func(t *testing.T) {
+		// Rule 28 requires a VAT combo specifically (same check as the excise
+		// VAT-tax requirement, rule 02), not just a non-nil Taxes slice -- an
+		// empty slice is present but has no VAT combo, so it must still fail.
+		inv := testInvoiceStandard(t)
+		inv.Charges = []*bill.Charge{
+			{Reason: "Freight", Amount: num.MakeAmount(10000, 2), Taxes: tax.Set{}},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB226")
+	})
+
 	t.Run("excise duty charge without a reason is rejected (F-LIB066)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Charges = []*bill.LineCharge{
