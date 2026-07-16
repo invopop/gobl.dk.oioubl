@@ -277,7 +277,7 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 	// An excise duty is emitted as its own tax, not an AllowanceCharge, so fold
 	// it into the VAT taxable base here: VAT lands on the duty-inclusive amount (F-LIB402).
 	for _, ch := range line.Charges {
-		if chargeExciseScheme(ch.Key) != "" {
+		if chargeIsExcise(ch.Key) {
 			taxable = taxable.Add(rescaleToCurrency(ch.Amount, ccy))
 		}
 	}

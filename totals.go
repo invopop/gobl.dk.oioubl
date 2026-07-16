@@ -33,7 +33,7 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 		}
 		ordinary := make([]*bill.LineCharge, 0, len(l.Charges))
 		for _, c := range l.Charges {
-			if chargeExciseScheme(c.Key) != "" {
+			if chargeIsExcise(c.Key) {
 				excise = excise.Add(rescaleToCurrency(c.Amount, currency))
 				continue
 			}
@@ -58,7 +58,7 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 		chg = chg.Add(*t.Charge)
 	}
 	for _, ch := range inv.Charges {
-		if chargeExciseScheme(ch.Key) != "" {
+		if chargeIsExcise(ch.Key) {
 			excise = excise.Add(ch.Amount)
 			chg = chg.Subtract(ch.Amount) // counted in t.Charge above; OIOUBL emits it as tax
 		}

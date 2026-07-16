@@ -1,8 +1,7 @@
 package dkoioubl
 
 import (
-	"strings"
-
+	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
@@ -19,52 +18,34 @@ type exciseDuty struct {
 	scheme string
 	name   string
 	amount num.Amount
-	// typeCode is the duty's own taxtypecode-1.1/-1.2 value: read from the
-	// charge's own VAT combo for a document-level duty (stated explicitly,
-	// since it diverges from any one line's own category by definition), or
-	// inherited from the line's own VAT category for a line-level duty
-	// (never independently stated).
+	// typeCode is the duty's taxtypecode value: a document-level duty states its
+	// own, a line-level duty inherits the line's VAT category.
 	typeCode string
 }
 
-// chargeExciseScheme returns the taxschemeid duty code an all-digit charge Key
-// carries (e.g. "16"), or "" for an ordinary charge; a zero-padded "09" → "9".
-func chargeExciseScheme(key cbc.Key) string {
-	s := key.String()
-	if s == "" || !isAllDigits(s) {
-		return ""
-	}
-	if code := strings.TrimLeft(s, "0"); code != "" {
-		return code
-	}
-	return "0"
+// chargeIsExcise reports whether a charge Key marks an OIOUBL excise duty.
+func chargeIsExcise(key cbc.Key) bool {
+	return key == oioubl.ChargeKeyExcise
 }
 
-// exciseSchemeKey builds the charge Key for an OIOUBL taxschemeid duty code,
-// zero-padding a single digit so it is a valid cbc.Key.
-func exciseSchemeKey(code string) cbc.Key {
-	if len(code) == 1 {
-		return cbc.Key("0" + code)
-	}
-	return cbc.Key(code)
+// chargeDutyCode returns an excise charge's SKAT duty code (its OIOUBL
+// taxschemeid value, e.g. "16"), carried in the duty-code extension.
+func chargeDutyCode(ext tax.Extensions) string {
+	return ext.Get(oioubl.ExtKeyDutyCode).String()
 }
 
-func isAllDigits(s string) bool {
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
+// dutyCodeExt builds the extension carrying a parsed duty code.
+func dutyCodeExt(code string) tax.Extensions {
+	return tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyDutyCode: cbc.Code(code)})
 }
 
 // collectExcise gathers every excise duty across document- and line-level charges.
 func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
 	var out []exciseDuty
 	for _, ch := range inv.Charges {
-		if s := chargeExciseScheme(ch.Key); s != "" {
+		if chargeIsExcise(ch.Key) {
 			out = append(out, exciseDuty{
-				scheme:   s,
+				scheme:   chargeDutyCode(ch.Ext),
 				name:     ch.Reason,
 				amount:   ch.Amount,
 				typeCode: chargeVATTypeCode(ch),
@@ -77,17 +58,15 @@ func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
 	return out
 }
 
-// collectLineExcise gathers a single line's excise duties, mirrored as a
-// line-level cac:TaxTotal so the wire records which line each duty belongs to.
-// A line-level duty's TaxTypeCode is always inherited from the line's own VAT
-// category (never independently stated — see lineVATTypeCode).
+// collectLineExcise gathers a line's excise duties, mirrored as line-level
+// cac:TaxTotal blocks so the wire records which line each duty belongs to.
 func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
 	var out []exciseDuty
 	typeCode := lineVATTypeCode(line)
 	for _, ch := range line.Charges {
-		if s := chargeExciseScheme(ch.Key); s != "" {
+		if chargeIsExcise(ch.Key) {
 			out = append(out, exciseDuty{
-				scheme:   s,
+				scheme:   chargeDutyCode(ch.Ext),
 				name:     ch.Reason,
 				amount:   rescaleToCurrency(ch.Amount, currency),
 				typeCode: typeCode,
@@ -97,10 +76,8 @@ func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
 	return out
 }
 
-// chargeVATTypeCode resolves a document-level charge's own VAT combo into the
-// OIOUBL taxtypecode-1.1/-1.2 value, mirroring lineVATTypeCode: a duty is
-// document-level precisely because its VAT type diverges from any one line's
-// own category, so the charge states it in its own taxes.
+// chargeVATTypeCode resolves a document-level duty's own VAT combo into its
+// OIOUBL taxtypecode value.
 func chargeVATTypeCode(ch *bill.Charge) string {
 	if ch == nil {
 		return ""
@@ -112,10 +89,8 @@ func chargeVATTypeCode(ch *bill.Charge) string {
 	return taxCategoryID(combo.Key)
 }
 
-// lineVATTypeCode resolves a line's own VAT category into the OIOUBL
-// taxtypecode-1.1/-1.2 value, reusing the same mapping (taxCategoryID) used
-// for the line's own cac:TaxCategory/ID — the OIOUBL Skat guideline requires
-// a line-level excise duty to inherit this rather than state it independently.
+// lineVATTypeCode resolves the taxtypecode a line's duties inherit from the
+// line's own VAT category (OIOUBL Skat guideline).
 func lineVATTypeCode(line *bill.Line) string {
 	if line == nil {
 		return ""
@@ -133,7 +108,7 @@ func lineVATTypeCode(line *bill.Line) string {
 func exciseVATBases(inv *bill.Invoice) map[cbc.Key]num.Amount {
 	bases := make(map[cbc.Key]num.Amount)
 	for _, ch := range inv.Charges {
-		if chargeExciseScheme(ch.Key) == "" {
+		if !chargeIsExcise(ch.Key) {
 			continue
 		}
 		combo := ch.Taxes.Get(tax.CategoryVAT)
@@ -149,10 +124,8 @@ func exciseVATBases(inv *bill.Invoice) map[cbc.Key]num.Amount {
 	return bases
 }
 
-// makeExciseTaxTotals builds one cac:TaxTotal per duty (category "Excise", the
-// duty code in the scheme, name from the reason, TaxTypeCode resolved by the
-// caller — from the charge's own VAT combo for a document-level duty, inherited
-// from the line's own VAT category for a line-level one; see exciseDuty.typeCode).
+// makeExciseTaxTotals builds one cac:TaxTotal per duty: category "Excise", the
+// duty code as the scheme ID, name from the reason, TaxTypeCode from the caller.
 func makeExciseTaxTotals(excises []exciseDuty, currency string) []TaxTotal {
 	var totals []TaxTotal
 	for _, e := range excises {
@@ -204,7 +177,8 @@ func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, erro
 				return nil, err
 			}
 			ch := &bill.LineCharge{
-				Key:    exciseSchemeKey(st.TaxCategory.TaxScheme.ID.Value),
+				Key:    oioubl.ChargeKeyExcise,
+				Ext:    dutyCodeExt(st.TaxCategory.TaxScheme.ID.Value),
 				Amount: amount,
 			}
 			if st.TaxCategory.TaxScheme.Name != nil {
@@ -217,10 +191,8 @@ func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, erro
 }
 
 // exciseChargesFromTaxTotals is the document-level analogue of
-// exciseLineChargesFromTaxTotals: each cac:TaxTotal/Excise subtotal becomes a
-// genuine bill.Charge, with the duty's own TaxTypeCode (only ever stated
-// because it diverges from a line's own VAT category) read back into the
-// charge's own VAT combo.
+// exciseLineChargesFromTaxTotals, reading the duty's own TaxTypeCode back into
+// the charge's VAT combo.
 func exciseChargesFromTaxTotals(totals []TaxTotal) ([]*bill.Charge, error) {
 	var charges []*bill.Charge
 	for _, tt := range totals {
@@ -237,7 +209,8 @@ func exciseChargesFromTaxTotals(totals []TaxTotal) ([]*bill.Charge, error) {
 				return nil, err
 			}
 			ch := &bill.Charge{
-				Key:    exciseSchemeKey(st.TaxCategory.TaxScheme.ID.Value),
+				Key:    oioubl.ChargeKeyExcise,
+				Ext:    dutyCodeExt(st.TaxCategory.TaxScheme.ID.Value),
 				Amount: amount,
 			}
 			if st.TaxCategory.TaxScheme.Name != nil {
@@ -262,7 +235,7 @@ func exciseChargesFromTaxTotals(totals []TaxTotal) ([]*bill.Charge, error) {
 func (ui *Invoice) goblAddExciseCharges(out *bill.Invoice) error {
 	for _, l := range out.Lines {
 		for _, ch := range l.Charges {
-			if chargeExciseScheme(ch.Key) != "" {
+			if chargeIsExcise(ch.Key) {
 				return nil
 			}
 		}

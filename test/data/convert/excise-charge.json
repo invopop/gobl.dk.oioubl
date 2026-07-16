@@ -115,7 +115,10 @@
 				"sum": "1800.00",
 				"charges": [
 					{
-						"key": "16",
+						"key": "excise",
+						"ext": {
+							"dk-oioubl-duty-code": "16"
+						},
 						"reason": "Mineralvandsafgift",
 						"quantity": "20",
 						"unit": "l",
