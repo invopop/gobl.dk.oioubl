@@ -17,51 +17,62 @@ func (ui *Invoice) goblAddPayment(out *bill.Invoice) error {
 	if ui.PayeeParty != nil {
 		payment.Payee = goblParty(ui.PayeeParty)
 	}
+	if err := ui.goblPaymentTerms(payment); err != nil {
+		return err
+	}
+	if len(ui.PaymentMeans) > 0 {
+		payment.Instructions = goblInvoiceInstructions(out, &ui.PaymentMeans[0])
+	}
+	if err := ui.goblPaymentAdvances(payment); err != nil {
+		return err
+	}
 
+	if payment.Payee != nil || payment.Terms != nil || payment.Instructions != nil || len(payment.Advances) > 0 {
+		out.Payment = payment
+	}
+	return nil
+}
+
+// goblPaymentTerms reads the due date (root, or the payment means when the
+// root is absent, as on credit notes) plus any notes; a single due date takes 100%.
+func (ui *Invoice) goblPaymentTerms(payment *bill.PaymentDetails) error {
 	if ui.PaymentTerms != nil {
-		payment.Terms = &pay.Terms{
-			Notes: ubl.CleanString(ui.PaymentTerms.Note),
-		}
+		payment.Terms = &pay.Terms{Notes: ubl.CleanString(ui.PaymentTerms.Note)}
 	}
 
 	var dueDate string
 	if ui.CreditNoteTypeCode == nil {
 		dueDate = ui.DueDate
 	}
-	// OIOUBL (and credit notes, with no root DueDate) carry the due date on the
-	// payment means; read it back when the root is absent.
 	if dueDate == "" && len(ui.PaymentMeans) > 0 && ui.PaymentMeans[0].PaymentDueDate != nil {
 		dueDate = *ui.PaymentMeans[0].PaymentDueDate
 	}
-
-	if dueDate != "" {
-		d, err := ubl.ParseDate(dueDate)
-		if err != nil {
-			return err
-		}
-		if payment.Terms == nil {
-			payment.Terms = &pay.Terms{}
-		}
-		payment.Terms.DueDates = append(payment.Terms.DueDates, &pay.DueDate{
-			Date: &d,
-		})
+	if dueDate == "" {
+		return nil
 	}
 
-	// A single due date takes 100%.
-	if payment.Terms != nil && len(payment.Terms.DueDates) == 1 {
+	d, err := ubl.ParseDate(dueDate)
+	if err != nil {
+		return err
+	}
+	if payment.Terms == nil {
+		payment.Terms = &pay.Terms{}
+	}
+	payment.Terms.DueDates = append(payment.Terms.DueDates, &pay.DueDate{Date: &d})
+
+	if len(payment.Terms.DueDates) == 1 {
 		percent, err := num.PercentageFromString("100%")
 		if err != nil {
 			return err
 		}
 		payment.Terms.DueDates[0].Percent = &percent
 	}
+	return nil
+}
 
-	if len(ui.PaymentMeans) > 0 {
-		payment.Instructions = goblInvoiceInstructions(out, &ui.PaymentMeans[0])
-	}
-
-	// OIOUBL records each advance as a cac:PrepaidPayment (F-INV131); reconstruct
-	// them individually, or recover a single advance from a total-only PrepaidAmount.
+// goblPaymentAdvances reconstructs each cac:PrepaidPayment (F-INV131), or
+// recovers a single advance from a total-only PrepaidAmount.
+func (ui *Invoice) goblPaymentAdvances(payment *bill.PaymentDetails) error {
 	switch {
 	case len(ui.PrepaidPayment) > 0:
 		payment.Advances = make([]*pay.Record, 0, len(ui.PrepaidPayment))
@@ -95,10 +106,6 @@ func (ui *Invoice) goblAddPayment(out *bill.Invoice) error {
 			Amount:      totalPrepaid,
 			Description: "Prepaid Amount",
 		})
-	}
-
-	if payment.Payee != nil || payment.Terms != nil || payment.Instructions != nil || len(payment.Advances) > 0 {
-		out.Payment = payment
 	}
 	return nil
 }

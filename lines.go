@@ -1,220 +1,54 @@
 package dkoioubl
 
 import (
-	"strconv"
-
-	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/catalogues/untdid"
-	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/currency"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/tax"
 )
 
-// OIOUBL: gross line total (F-INV348) and no line-level allowances (promoted to document level, F-INV126/128/129).
-func (ui *Invoice) addLines(inv *bill.Invoice) {
-	if len(inv.Lines) == 0 {
-		return
-	}
-
-	invoiceType := ui.getInvoiceTypeBasedOnXMLName()
-	var lines []InvoiceLine
-	for _, l := range inv.Lines {
-		lines = append(lines, buildInvoiceLine(l, invoiceType, inv.Currency.String()))
-	}
-	if invoiceType.In(bill.InvoiceTypeCreditNote) {
-		ui.CreditNoteLines = lines
-	} else {
-		ui.InvoiceLines = lines
-	}
-
+// decorateLines adjusts the base's already-built InvoiceLines/CreditNoteLines
+// for OIOUBL: gross line amount with no line-level allowances (promoted to
+// the document instead, F-INV126/128/129), no forbidden OriginCountry
+// (F-INV211/F-CRN109), and the OIOUBL ClassifiedTaxCategory ID (the base
+// reads it from the UNTDID tax-category ext, which our normalizer strips).
+func (ui *Invoice) decorateLines(inv *bill.Invoice) {
+	decorateLineSet(ui.InvoiceLines, inv.Lines)
+	decorateLineSet(ui.CreditNoteLines, inv.Lines)
 	applyLineTaxCategories(ui.InvoiceLines)
 	applyLineTaxCategories(ui.CreditNoteLines)
 }
 
-// buildInvoiceLine converts one GOBL line into its OIOUBL wire shape.
-func buildInvoiceLine(l *bill.Line, invoiceType cbc.Key, invCcy string) InvoiceLine {
-	ccy := l.Item.Currency.String()
-	if ccy == "" {
-		ccy = invCcy
-	}
-	// F-INV348: gross Price×Qty here; line allowances net at the document level.
-	lineExt := l.Total.String()
-	if l.Sum != nil {
-		lineExt = l.Sum.String()
-	}
-	invLine := InvoiceLine{
-		ID:                  strconv.Itoa(l.Index),
-		LineExtensionAmount: Amount{CurrencyID: &ccy, Value: lineExt},
-	}
-
-	setLineQuantity(&invLine, l, invoiceType)
-	setLineNotes(&invLine, l)
-	setLineDocumentReference(&invLine, l)
-	setLinePeriod(&invLine, l)
-	setLineOrderRef(&invLine, l)
-	setLineItem(&invLine, l, ccy)
-	invLine.TaxTotal = makeLineTaxTotals(l, ccy)
-
-	return invLine
-}
-
-func setLineQuantity(invLine *InvoiceLine, l *bill.Line, invoiceType cbc.Key) {
-	iq := &Quantity{Value: l.Quantity.String()}
-	if l.Item != nil && l.Item.Unit != "" {
-		iq.UnitCode = string(l.Item.Unit.UNECE())
-	}
-	if invoiceType.In(bill.InvoiceTypeCreditNote) {
-		invLine.CreditedQuantity = iq
-	} else {
-		invLine.InvoicedQuantity = iq
-	}
-}
-
-func setLineNotes(invLine *InvoiceLine, l *bill.Line) {
-	if len(l.Notes) == 0 {
-		return
-	}
-	var notes []string
-	for _, note := range l.Notes {
-		if note.Key == "buyer-accounting-ref" {
-			invLine.AccountingCost = &note.Text
-		} else {
-			notes = append(notes, note.Text)
-		}
-	}
-	if len(notes) > 0 {
-		invLine.Note = notes
-	}
-}
-
-// setLineDocumentReference maps a line's identifier to BT-128.
-func setLineDocumentReference(invLine *InvoiceLine, l *bill.Line) {
-	if l.Identifier == nil {
-		return
-	}
-	typeCode := "130"
-	ref := &LineDocReference{
-		ID:               IDType{Value: l.Identifier.Code.String()},
-		DocumentTypeCode: &typeCode,
-	}
-	if l.Identifier.Ext.Has(untdid.ExtKeyReference) {
-		s := l.Identifier.Ext.Get(untdid.ExtKeyReference).String()
-		ref.ID.SchemeID = &s
-	}
-	invLine.DocumentReference = ref
-}
-
-func setLinePeriod(invLine *InvoiceLine, l *bill.Line) {
-	if l.Period == nil {
-		return
-	}
-	invLine.InvoicePeriod = &Period{
-		StartDate: ubl.FormatDate(l.Period.Start),
-		EndDate:   ubl.FormatDate(l.Period.End),
-	}
-}
-
-func setLineOrderRef(invLine *InvoiceLine, l *bill.Line) {
-	if l.Order == "" {
-		return
-	}
-	invLine.OrderLineReference = &OrderLineReference{LineID: l.Order.String()}
-}
-
-// setLineItem builds cac:Item; OIOUBL forbids OriginCountry on a line item
-// (F-INV211/F-CRN109), so it's never mapped here.
-func setLineItem(invLine *InvoiceLine, l *bill.Line, ccy string) {
-	if l.Item == nil {
-		return
-	}
-	it := &Item{}
-
-	if l.Item.Description != "" {
-		d := l.Item.Description
-		it.Description = &d
-	}
-	if l.Item.Name != "" {
-		it.Name = l.Item.Name
-	}
-	if l.Item.Meta != nil {
-		var properties []AdditionalItemProperty
-		for key, value := range l.Item.Meta {
-			properties = append(properties, AdditionalItemProperty{Name: key.String(), Value: value})
-		}
-		it.AdditionalItemProperty = &properties
-	}
-
-	setLineClassifiedTaxCategory(it, l)
-	setLineItemIdentities(it, l)
-	invLine.Item = it
-
-	if l.Item.Price != nil {
-		invLine.Price = &Price{
-			PriceAmount: Amount{CurrencyID: &ccy, Value: l.Item.Price.String()},
-		}
-	}
-	if l.Item.Ref != "" {
-		invLine.Item.SellersItemIdentification = &ItemIdentification{
-			ID: &IDType{Value: l.Item.Ref.String()},
-		}
-	}
-}
-
-// setLineClassifiedTaxCategory stamps the line's VAT rate; percent is
-// required unless the category is "O" (outside scope).
-func setLineClassifiedTaxCategory(it *Item, l *bill.Line) {
-	if len(l.Taxes) == 0 || l.Taxes[0].Category == "" {
-		return
-	}
-	it.ClassifiedTaxCategory = &ClassifiedTaxCategory{
-		TaxScheme: &TaxScheme{ID: IDType{Value: l.Taxes[0].Category.String()}},
-	}
-	if cat := taxCategoryID(l.Taxes[0].Key); cat != "" {
-		it.ClassifiedTaxCategory.ID = &IDType{Value: cat}
-	}
-	if l.Taxes[0].Percent != nil {
-		p := l.Taxes[0].Percent.StringWithoutSymbol()
-		it.ClassifiedTaxCategory.Percent = &p
-	} else if it.ClassifiedTaxCategory.ID == nil || it.ClassifiedTaxCategory.ID.Value != "O" {
-		p := "0"
-		it.ClassifiedTaxCategory.Percent = &p
-	}
-}
-
-// setLineItemIdentities maps BT-158/159 classification, then buyer's or
-// standard item identification, from the line item's identities.
-func setLineItemIdentities(it *Item, l *bill.Line) {
-	for _, id := range l.Item.Identities {
-		if id.Label != "" && !id.Ext.Has(iso.ExtKeySchemeID) {
-			listID := id.Label
-			if it.CommodityClassification == nil {
-				it.CommodityClassification = &[]CommodityClassification{}
-			}
-			*it.CommodityClassification = append(*it.CommodityClassification, CommodityClassification{
-				ItemClassificationCode: &IDType{Value: id.Code.String(), ListID: &listID},
-			})
-			continue
-		}
-
-		if it.BuyersItemIdentification != nil && it.StandardItemIdentification != nil {
+func decorateLineSet(lines []InvoiceLine, glines []*bill.Line) {
+	for i := range lines {
+		if i >= len(glines) {
 			break
 		}
+		decorateLine(&lines[i], glines[i])
+	}
+}
 
-		s := id.Ext.Get(iso.ExtKeySchemeID).String()
-		// First identity without extension → BuyersItemIdentification.
-		if s == "" {
-			if it.BuyersItemIdentification == nil {
-				it.BuyersItemIdentification = &ItemIdentification{ID: &IDType{Value: id.Code.String()}}
-			}
-			continue
-		}
-		// First identity with extension → StandardItemIdentification.
-		if it.StandardItemIdentification == nil {
-			it.StandardItemIdentification = &ItemIdentification{ID: &IDType{SchemeID: &s, Value: id.Code.String()}}
-		}
+func decorateLine(invLine *InvoiceLine, l *bill.Line) {
+	invLine.AllowanceCharge = nil
+	ccy := ""
+	if invLine.LineExtensionAmount.CurrencyID != nil {
+		ccy = *invLine.LineExtensionAmount.CurrencyID
+	}
+	// F-INV348: gross Price×Qty here; line allowances net at the document level.
+	if l.Sum != nil {
+		invLine.LineExtensionAmount.Value = l.Sum.String()
+	}
+	invLine.TaxTotal = makeLineTaxTotals(l, ccy)
+	if invLine.Item == nil {
+		return
+	}
+	invLine.Item.OriginCountry = nil
+	if invLine.Item.ClassifiedTaxCategory == nil || len(l.Taxes) == 0 {
+		return
+	}
+	if cat := taxCategoryID(l.Taxes[0].Key); cat != "" {
+		invLine.Item.ClassifiedTaxCategory.ID = &IDType{Value: cat}
 	}
 }
 

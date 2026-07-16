@@ -39,34 +39,20 @@ func (ui *Invoice) goblAddLines(out *bill.Invoice) error {
 	return nil
 }
 
-// OIOUBL: also reconstructs the line-level cac:TaxTotal/Excise blocks as line charges.
+// goblConvertLine also reconstructs line-level cac:TaxTotal/Excise blocks as
+// line charges (see exciseLineChargesFromTaxTotals).
 func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Line, error) {
 	if docLine.Price == nil {
 		return nil, nil
 	}
-	price, err := num.AmountFromString(ubl.NormalizeNumericString(docLine.Price.PriceAmount.Value))
+	price, err := goblLinePrice(docLine.Price)
 	if err != nil {
 		return nil, err
 	}
 
-	if docLine.Price.BaseQuantity != nil {
-		// Base quantity is the number of item units to which the price applies
-		baseQuantity, err := num.AmountFromString(ubl.NormalizeNumericString(docLine.Price.BaseQuantity.Value))
-		if err != nil {
-			return nil, err
-		}
-		if !baseQuantity.IsZero() {
-			// Rescale to avoid rounding loss (see calculateRequiredPrecision).
-			precision := calculateRequiredPrecision(price, baseQuantity)
-			price = price.RescaleUp(precision).Divide(baseQuantity)
-		}
-	}
-
 	line := &bill.Line{
 		Quantity: num.MakeAmount(1, 0),
-		Item: &org.Item{
-			Price: &price,
-		},
+		Item:     &org.Item{Price: &price},
 	}
 	if di := docLine.Item; di != nil {
 		goblConvertLineItem(di, line.Item)
@@ -78,49 +64,15 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 		goblLineTaxesFromTaxTotals(docLine.TaxTotal, line, taxCategoryMap)
 	}
 
-	notes := make([]*org.Note, 0)
-
-	iq := docLine.InvoicedQuantity
-	if docLine.CreditedQuantity != nil {
-		iq = docLine.CreditedQuantity
+	if err := goblLineQuantity(line, docLine); err != nil {
+		return nil, err
 	}
-	if iq != nil {
-		line.Quantity, err = num.AmountFromString(ubl.NormalizeNumericString(iq.Value))
-		if err != nil {
-			return nil, err
-		}
-
-		if iq.UnitCode != "" {
-			line.Item.Unit = ubl.GoblUnitFromUNECE(cbc.Code(iq.UnitCode))
-		}
-	}
-
-	if len(docLine.Note) > 0 {
-		for _, note := range docLine.Note {
-			if note != "" {
-				notes = append(notes, &org.Note{
-					Text: ubl.CleanString(note),
-				})
-			}
-		}
-	}
+	line.Notes = goblLineNotes(docLine.Note)
 
 	if docLine.AccountingCost != nil {
-		// BT-133
-		line.Cost = cbc.Code(*docLine.AccountingCost)
+		line.Cost = cbc.Code(*docLine.AccountingCost) // BT-133
 	}
-
-	// BT-128: Invoice line object identifier
-	if docLine.DocumentReference != nil && docLine.DocumentReference.ID.Value != "" {
-		line.Identifier = &org.Identity{
-			Code: cbc.Code(docLine.DocumentReference.ID.Value),
-		}
-		if docLine.DocumentReference.ID.SchemeID != nil {
-			line.Identifier.Ext = tax.ExtensionsOf(cbc.CodeMap{
-				untdid.ExtKeyReference: cbc.Code(*docLine.DocumentReference.ID.SchemeID),
-			})
-		}
-	}
+	goblLineDocumentReference(line, docLine)
 
 	if docLine.InvoicePeriod != nil {
 		line.Period, err = ubl.GoblPeriodDates(docLine.InvoicePeriod)
@@ -128,7 +80,6 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 			return nil, err
 		}
 	}
-
 	if docLine.OrderLineReference != nil && docLine.OrderLineReference.LineID != "" {
 		line.Order = cbc.Code(docLine.OrderLineReference.LineID)
 	}
@@ -140,18 +91,77 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 		}
 	}
 
-	// OIOUBL mirrors each line's excise duties as line-level cac:TaxTotal/Excise
-	// blocks; reconstruct them as line charges so the duty stays on its line.
 	excise, err := exciseLineChargesFromTaxTotals(docLine.TaxTotal)
 	if err != nil {
 		return nil, err
 	}
 	line.Charges = append(line.Charges, excise...)
 
-	if len(notes) > 0 {
-		line.Notes = notes
-	}
 	return line, nil
+}
+
+// goblLinePrice reads the line's unit price, rescaling for a BaseQuantity
+// other than 1 to avoid rounding loss (see calculateRequiredPrecision).
+func goblLinePrice(p *Price) (num.Amount, error) {
+	price, err := num.AmountFromString(ubl.NormalizeNumericString(p.PriceAmount.Value))
+	if err != nil {
+		return num.Amount{}, err
+	}
+	if p.BaseQuantity == nil {
+		return price, nil
+	}
+	baseQuantity, err := num.AmountFromString(ubl.NormalizeNumericString(p.BaseQuantity.Value))
+	if err != nil {
+		return num.Amount{}, err
+	}
+	if baseQuantity.IsZero() {
+		return price, nil
+	}
+	precision := calculateRequiredPrecision(price, baseQuantity)
+	return price.RescaleUp(precision).Divide(baseQuantity), nil
+}
+
+// goblLineQuantity reads the (credited or invoiced) quantity and its unit.
+func goblLineQuantity(line *bill.Line, docLine *InvoiceLine) error {
+	iq := docLine.InvoicedQuantity
+	if docLine.CreditedQuantity != nil {
+		iq = docLine.CreditedQuantity
+	}
+	if iq == nil {
+		return nil
+	}
+	q, err := num.AmountFromString(ubl.NormalizeNumericString(iq.Value))
+	if err != nil {
+		return err
+	}
+	line.Quantity = q
+	if iq.UnitCode != "" {
+		line.Item.Unit = ubl.GoblUnitFromUNECE(cbc.Code(iq.UnitCode))
+	}
+	return nil
+}
+
+func goblLineNotes(docNotes []string) []*org.Note {
+	var notes []*org.Note
+	for _, note := range docNotes {
+		if note != "" {
+			notes = append(notes, &org.Note{Text: ubl.CleanString(note)})
+		}
+	}
+	return notes
+}
+
+// goblLineDocumentReference maps a line's own object identifier (BT-128).
+func goblLineDocumentReference(line *bill.Line, docLine *InvoiceLine) {
+	if docLine.DocumentReference == nil || docLine.DocumentReference.ID.Value == "" {
+		return
+	}
+	line.Identifier = &org.Identity{Code: cbc.Code(docLine.DocumentReference.ID.Value)}
+	if docLine.DocumentReference.ID.SchemeID != nil {
+		line.Identifier.Ext = tax.ExtensionsOf(cbc.CodeMap{
+			untdid.ExtKeyReference: cbc.Code(*docLine.DocumentReference.ID.SchemeID),
+		})
+	}
 }
 
 func calculateRequiredPrecision(price, baseQuantity num.Amount) uint32 {
@@ -198,11 +208,8 @@ func goblConvertLineItem(di *Item, item *org.Item) {
 	}
 }
 
-// goblLineTaxesFromTaxTotals reads the line's VAT category from its own
-// cac:TaxTotal subtotal — where real OIOUBL documents state line VAT when the
-// item carries no cac:ClassifiedTaxCategory — reusing the same category
-// mapping. Excise subtotals become line charges instead (see
-// exciseLineChargesFromTaxTotals).
+// goblLineTaxesFromTaxTotals falls back to the line's own cac:TaxTotal for VAT
+// when it carries no cac:ClassifiedTaxCategory (excise subtotals are skipped).
 func goblLineTaxesFromTaxTotals(totals []TaxTotal, line *bill.Line, taxCategoryMap map[string]*taxCategoryInfo) {
 	for _, tt := range totals {
 		for i := range tt.TaxSubtotal {
@@ -220,8 +227,7 @@ func goblLineTaxesFromTaxTotals(totals []TaxTotal, line *bill.Line, taxCategoryM
 	}
 }
 
-// goblApplyLineTaxCategory maps a tax category onto the line's taxes: the
-// 63/Moms scheme and taxcategoryid-1.1 values map back via
+// goblApplyLineTaxCategory maps a tax category onto the line's taxes via
 // goblTaxSchemeCategory/goblTaxCategoryCode.
 func goblApplyLineTaxCategory(ctc *ClassifiedTaxCategory, line *bill.Line, taxCategoryMap map[string]*taxCategoryInfo) {
 	if ctc == nil || ctc.TaxScheme == nil {

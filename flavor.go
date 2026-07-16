@@ -26,15 +26,13 @@ func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 
 	ui.decorateParties(inv)
 
-	// No reusable equivalent in the base (gross vs net, excise-as-tax,
-	// per-line rounding), so these are rebuilt outright rather than decorated.
+	// Charges/totals have no reusable equivalent in the base (excise-as-tax,
+	// document-level promotion), so they're rebuilt outright.
 	ui.AllowanceCharge = nil
 	ui.TaxTotal = nil
 	ui.addCharges(inv)
 	ui.addTotals(inv)
-	ui.InvoiceLines = nil
-	ui.CreditNoteLines = nil
-	ui.addLines(inv)
+	ui.decorateLines(inv)
 
 	// The base already builds the ordinary payment case; decorate it for
 	// OIOUBL's channel code/BIC, replacing it outright only for Giro/FIK.

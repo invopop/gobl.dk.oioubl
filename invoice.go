@@ -1,21 +1,7 @@
 package dkoioubl
 
-import (
-	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/cbc"
-)
-
 // rootNameCreditNote is the local name of a UBL CreditNote root element.
 const rootNameCreditNote = "CreditNote"
-
-func (ui *Invoice) getInvoiceTypeBasedOnXMLName() cbc.Key {
-	switch ui.XMLName.Local {
-	case rootNameCreditNote:
-		return bill.InvoiceTypeCreditNote
-	default:
-		return bill.InvoiceTypeStandard
-	}
-}
 
 func applyTypeCode(t *IDType) {
 	if t == nil {
