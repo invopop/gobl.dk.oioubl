@@ -145,9 +145,7 @@ func billInvoiceRules() *rules.Set {
 		rules.Field("charges",
 			rules.Each(
 				rules.Field("amount", rules.Assert("34", "document-level charge amount must be greater than zero (F-LIB019)", num.Positive)),
-				// A non-excise charge becomes a cac:AllowanceCharge, whose
-				// TaxCategory is a VAT rate (F-LIB226) — same requirement as an
-				// excise duty's own VAT tax (rule 02), just for the other charges.
+				// Same taxesHaveVAT check as rule 02, just for non-excise charges (mutually exclusive with it) with a distinct citation.
 				rules.When(is.Func("non-excise charge", func(val any) bool { return !chargeIsExcise(val) }),
 					rules.Field("taxes",
 						rules.Assert("28", "document-level charge requires a VAT tax for the OIOUBL TaxCategory (F-LIB226)",
