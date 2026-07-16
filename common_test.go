@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/tax"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,4 +24,13 @@ func TestGoblTaxCategoryCode(t *testing.T) {
 	// Already-UNTDID values pass through unchanged.
 	assert.Equal(t, cbc.Code("S"), goblTaxCategoryCode("S"))
 	assert.Equal(t, cbc.Code("E"), goblTaxCategoryCode("E"))
+}
+
+func TestGoblVATKey(t *testing.T) {
+	assert.Equal(t, tax.KeyStandard, goblVATKey("StandardRated"))
+	// ZeroRated maps to "zero" (not "exempt"), matching the line-parse path.
+	assert.Equal(t, tax.KeyZero, goblVATKey("ZeroRated"))
+	assert.Equal(t, tax.KeyReverseCharge, goblVATKey("ReverseCharge"))
+	// Unknown values yield no key rather than guessing.
+	assert.Equal(t, cbc.Key(""), goblVATKey("Excise"))
 }

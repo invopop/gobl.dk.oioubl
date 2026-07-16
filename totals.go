@@ -64,7 +64,13 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 			chg = chg.Subtract(a) // counted in t.Charge above; OIOUBL emits it as tax
 		}
 	}
-	if !chg.IsZero() {
+	// addTotals pre-sets ChargeTotalAmount from t.Charge, which also includes
+	// any excise duty; clear it back out here if excise absorbed all of it, or
+	// F-INV130/F-INV128/F-INV133 see a stale charge with no matching
+	// AllowanceCharge (an excise duty is never promoted to one).
+	if chg.IsZero() {
+		ui.LegalMonetaryTotal.ChargeTotalAmount = nil
+	} else {
 		ui.LegalMonetaryTotal.ChargeTotalAmount = &Amount{Value: chg.String(), CurrencyID: &currency}
 	}
 	// OIOUBL rounds per line then sums (F-INV128/F-INV133), which can differ from
@@ -152,8 +158,18 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 	}
 
 	if t.Taxes != nil && len(t.Taxes.Categories) > 0 {
+		exciseBases := exciseVATBases(inv, currency)
 		for _, cat := range t.Taxes.Categories {
 			for _, r := range cat.Rates {
+				// A VAT rate row owed entirely to excise charges has no OIOUBL
+				// subtotal of its own: the duty's VAT type travels as the excise
+				// TaxTotal's TaxTypeCode instead, and a document-level VAT
+				// category with no matching line category fails F-LIB404.
+				if cat.Code == tax.CategoryVAT && r.Amount.IsZero() {
+					if base, ok := exciseBases[r.Key]; ok && r.Base.Compare(base.Rescale(r.Base.Exp())) == 0 {
+						continue
+					}
+				}
 				subtotal := TaxSubtotal{
 					TaxAmount: Amount{Value: r.Amount.String(), CurrencyID: &currency},
 				}

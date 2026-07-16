@@ -45,7 +45,7 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 	return env, nil
 }
 
-// OIOUBL: also folds document-level excise duties onto their lines via goblAddExciseCharges.
+// OIOUBL: also parses document-level excise duties via goblAddExciseCharges.
 func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 	out := &bill.Invoice{
 		Addons:   tax.Addons{List: Addons},
