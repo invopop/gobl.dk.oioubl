@@ -1,6 +1,8 @@
 package dkoioubl
 
 import (
+	"strconv"
+
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
@@ -12,6 +14,30 @@ import (
 // taxCategoryExcise is the taxcategoryid-1.1 category OIOUBL emits for a non-VAT
 // excise duty (as a cac:TaxTotal, not a cac:AllowanceCharge).
 const taxCategoryExcise = "Excise"
+
+// legacyExciseCategoryMin/Max bound the legacy UNCL5305 numeric tax-category
+// codes (3010-3671) that predate taxcategoryid-1.1's "Excise" value; zero
+// occurrences in the 428-file ERST real corpus, but treated as excise on parse
+// if one ever shows up, since the alternative is silently dropping a real duty.
+const (
+	legacyExciseCategoryMin = 3010
+	legacyExciseCategoryMax = 3671
+)
+
+// isExciseCategoryID reports whether a taxcategoryid-1.1 value is either
+// OIOUBL's own "Excise" or a legacy UNCL5305 numeric duty code. Only "Excise"
+// is ever emitted outbound -- this widening is inbound-only and lossy (the
+// specific legacy code is discarded).
+func isExciseCategoryID(id string) bool {
+	if id == taxCategoryExcise {
+		return true
+	}
+	n, err := strconv.Atoi(id)
+	if err != nil {
+		return false
+	}
+	return n >= legacyExciseCategoryMin && n <= legacyExciseCategoryMax
+}
 
 // exciseDuty is a duty resolved into the values OIOUBL needs.
 type exciseDuty struct {
@@ -166,7 +192,7 @@ func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, erro
 	for _, tt := range totals {
 		for i := range tt.TaxSubtotal {
 			st := &tt.TaxSubtotal[i]
-			if st.TaxCategory.ID == nil || st.TaxCategory.ID.Value != taxCategoryExcise {
+			if st.TaxCategory.ID == nil || !isExciseCategoryID(st.TaxCategory.ID.Value) {
 				continue
 			}
 			if st.TaxCategory.TaxScheme == nil {
@@ -198,7 +224,7 @@ func exciseChargesFromTaxTotals(totals []TaxTotal) ([]*bill.Charge, error) {
 	for _, tt := range totals {
 		for i := range tt.TaxSubtotal {
 			st := &tt.TaxSubtotal[i]
-			if st.TaxCategory.ID == nil || st.TaxCategory.ID.Value != taxCategoryExcise {
+			if st.TaxCategory.ID == nil || !isExciseCategoryID(st.TaxCategory.ID.Value) {
 				continue
 			}
 			if st.TaxCategory.TaxScheme == nil {

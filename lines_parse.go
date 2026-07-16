@@ -207,7 +207,7 @@ func goblLineTaxesFromTaxTotals(totals []TaxTotal, line *bill.Line, taxCategoryM
 	for _, tt := range totals {
 		for i := range tt.TaxSubtotal {
 			tc := &tt.TaxSubtotal[i].TaxCategory
-			if tc.ID == nil || tc.TaxScheme == nil || tc.ID.Value == taxCategoryExcise {
+			if tc.ID == nil || tc.TaxScheme == nil || isExciseCategoryID(tc.ID.Value) {
 				continue
 			}
 			goblApplyLineTaxCategory(&ClassifiedTaxCategory{
