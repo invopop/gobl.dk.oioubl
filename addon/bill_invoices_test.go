@@ -895,4 +895,16 @@ func TestInvoiceEN16931Relaxations(t *testing.T) {
 		require.NoError(t, inv.Calculate())
 		assert.NoError(t, rules.Validate(inv))
 	})
+
+	t.Run("exempt with a note instead of a VATEX code passes", func(t *testing.T) {
+		// Mirrors en16931's own VATEX-or-note allowance (BR-E-10); the note's
+		// GOBL key survives normalization even though its UNTDID ext doesn't.
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Taxes = tax.Set{{Category: tax.CategoryVAT, Key: tax.KeyExempt}}
+		inv.Tax = &bill.Tax{
+			Notes: []*tax.Note{{Key: tax.KeyExempt, Text: "Exempt under local rules"}},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
 }

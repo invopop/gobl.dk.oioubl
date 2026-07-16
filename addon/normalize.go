@@ -9,9 +9,8 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// normalizeInvoice defaults to GOBL's currency rounding rule, since OIOUBL's
-// own rounding (F-INV128/F-INV133) matches tax.RoundingRuleCurrency, not
-// GOBL's default tax.RoundingRulePrecise.
+// normalizeInvoice defaults to GOBL's currency rounding rule to match OIOUBL's
+// own rounding (F-INV128/F-INV133).
 func normalizeInvoice(inv *bill.Invoice) {
 	if inv.Tax == nil {
 		inv.Tax = new(bill.Tax)

@@ -149,7 +149,7 @@ func billInvoiceRules() *rules.Set {
 				// promoted to a cac:AllowanceCharge; an excise duty is never
 				// promoted (it's emitted as its own cac:TaxTotal instead), so it's
 				// exempt here.
-				rules.When(is.Func("non-excise charge", chargeIsNotExcise),
+				rules.When(is.Func("non-excise charge", func(val any) bool { return !chargeIsExcise(val) }),
 					rules.Field("taxes",
 						rules.Assert("28", "document-level charge taxes are required for the OIOUBL TaxCategory (F-LIB226)", is.Present),
 					),
@@ -249,12 +249,6 @@ func chargeIsExcise(val any) bool {
 	return false
 }
 
-// chargeIsNotExcise is the negation of chargeIsExcise, for rules that apply
-// only to a document's ordinary (non-excise) charges.
-func chargeIsNotExcise(val any) bool {
-	return !chargeIsExcise(val)
-}
-
 // vatCategoryHasOIOUBLMapping reports whether a VAT combo's key maps to an OIOUBL
 // taxcategoryid-1.1 value (standard/zero/exempt/reverse-charge); others fail F-LIB309.
 func vatCategoryHasOIOUBLMapping(val any) bool {
@@ -312,18 +306,29 @@ func invoiceHasPositiveVAT(inv *bill.Invoice) bool {
 }
 
 // exemptVATHasReason reports whether every exempt VAT rate carries a CEF VATEX
-// reason (keyed on the GOBL exempt key, which survives normalization).
+// code or an exemption note (mirroring en16931's BR-E-10, whose own check
+// keys on the UNTDID tax-category ext our normalizer strips, so this
+// re-asserts on the GOBL exempt key instead, which survives normalization).
 func exemptVATHasReason(val any) bool {
 	inv, ok := val.(*bill.Invoice)
 	if !ok || inv == nil || inv.Totals == nil || inv.Totals.Taxes == nil {
 		return true
+	}
+	hasExemptNote := false
+	if inv.Tax != nil {
+		for _, n := range inv.Tax.Notes {
+			if n != nil && n.Key == tax.KeyExempt && n.Text != "" {
+				hasExemptNote = true
+				break
+			}
+		}
 	}
 	for _, cat := range inv.Totals.Taxes.Categories {
 		if cat.Code != tax.CategoryVAT {
 			continue
 		}
 		for _, r := range cat.Rates {
-			if r.Key == tax.KeyExempt && r.Ext.Get(cef.ExtKeyVATEX).IsEmpty() {
+			if r.Key == tax.KeyExempt && r.Ext.Get(cef.ExtKeyVATEX).IsEmpty() && !hasExemptNote {
 				return false
 			}
 		}
