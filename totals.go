@@ -119,20 +119,9 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 	t := inv.Totals
 	currency := inv.Currency.String()
 
-	ui.LegalMonetaryTotal = MonetaryTotal{
-		LineExtensionAmount: Amount{Value: t.Sum.String(), CurrencyID: &currency},
-		TaxExclusiveAmount:  Amount{Value: t.Total.String(), CurrencyID: &currency},
-		TaxInclusiveAmount:  Amount{Value: t.TotalWithTax.String(), CurrencyID: &currency},
-		PayableAmount:       &Amount{Value: t.Payable.String(), CurrencyID: &currency},
-	}
-
-	if t.Discount != nil {
-		ui.LegalMonetaryTotal.AllowanceTotalAmount = &Amount{Value: t.Discount.String(), CurrencyID: &currency}
-	}
-	if t.Charge != nil {
-		ui.LegalMonetaryTotal.ChargeTotalAmount = &Amount{Value: t.Charge.String(), CurrencyID: &currency}
-	}
-
+	// LineExtensionAmount/TaxExclusiveAmount/TaxInclusiveAmount/PayableAmount/
+	// ChargeTotalAmount are all unconditionally overwritten below (addMonetaryTotal,
+	// applyTotals), so there's no need to set them from t here first.
 	ui.addMonetaryTotal(inv, currency)
 	ui.addPrepaidPayments(inv, currency)
 
