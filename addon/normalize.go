@@ -5,15 +5,12 @@ import (
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
-	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/tax"
 )
 
-// normalizeInvoice forces GOBL's currency rounding rule, unless the issuer set
-// one explicitly: OIOUBL rounds each line to the currency's precision before
-// summing (F-INV128/F-INV133), which is exactly GOBL's tax.RoundingRuleCurrency
-// mode (the default, tax.RoundingRulePrecise, keeps higher precision through
-// the sum and can differ from OIOUBL's expected totals by a cent).
+// normalizeInvoice defaults to GOBL's currency rounding rule, since OIOUBL's
+// own rounding (F-INV128/F-INV133) matches tax.RoundingRuleCurrency, not
+// GOBL's default tax.RoundingRulePrecise.
 func normalizeInvoice(inv *bill.Invoice) {
 	if inv.Tax == nil {
 		inv.Tax = new(bill.Tax)
@@ -82,21 +79,6 @@ func hasLegalIdentity(p *org.Party) bool {
 		}
 	}
 	return false
-}
-
-// normalizePayInstructions rewrites the EN 16931 credit-transfer means to
-// OIOUBL's bank-transfer code (F-LIB100).
-func normalizePayInstructions(instr *pay.Instructions) {
-	instr.Ext = oioublPaymentMeans(instr.Ext)
-}
-
-// oioublPaymentMeans rewrites EN 16931 credit-transfer means 30 to OIOUBL's
-// bank-transfer code 31 (F-LIB100). Other means pass through unchanged.
-func oioublPaymentMeans(ext tax.Extensions) tax.Extensions {
-	if ext.Get(untdid.ExtKeyPaymentMeans) == "30" {
-		return ext.Set(untdid.ExtKeyPaymentMeans, "31")
-	}
-	return ext
 }
 
 // normalizeTaxCombo strips the EN 16931 UNTDID tax-category ext; the OIOUBL code

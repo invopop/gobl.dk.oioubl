@@ -53,6 +53,8 @@ func billInvoiceRules() *rules.Set {
 				rules.AssertIfPresent("31", "document type must be an OIOUBL-supported code: invoice 325/380/393 or credit note 381 (F-INV011)",
 					tax.ExtensionsHasCodes(untdid.ExtKeyDocumentType, validDocumentTypes...)),
 			),
+			rules.Assert("41", "OIOUBL requires GOBL's currency rounding rule; this only rejects an explicit override away from it, since the default is applied automatically (F-INV128 / F-INV133)",
+				is.Func("uses currency rounding", taxUsesCurrencyRounding)),
 		),
 		rules.Field("supplier",
 			rules.Assert("01", "supplier must have an endpoint (F-INV031 / F-CRN028)",
@@ -106,7 +108,7 @@ func billInvoiceRules() *rules.Set {
 				),
 				rules.Assert("13", "a credit transfer account (IBAN or number) is required for bank-transfer payment means (F-LIB107 / F-LIB377)",
 					is.Func("bank-transfer has a payee account", bankTransferHasAccount)),
-				rules.Assert("18", "a BIC is required on the credit transfer for IBAN bank-transfer payment means 30/31 (F-LIB113)",
+				rules.Assert("18", "a BIC is required on the credit transfer for IBAN bank-transfer payment means 31 (F-LIB113)",
 					is.Func("iban bank-transfer has a BIC", ibanTransferHasBIC)),
 				rules.Assert("21", "Giro (payment-means 50) requires a 7 or 8 digit payee account (F-LIB319 / F-LIB320 / F-LIB321)",
 					is.Func("giro has a 7-8 digit payee account", giroAccountValid)),
@@ -174,10 +176,8 @@ func billTaxComboRules() *rules.Set {
 	)
 }
 
-// Excise duty charges must carry a reason for their OIOUBL tax-scheme name
-// (F-LIB066). A document-level excise duty must also state its own VAT type
-// in its taxes, since it's precisely because it diverges from a line's own VAT
-// category that it can't live as a bill.LineCharge (OIOUBL Skat guideline).
+// Excise duty charges require a reason (F-LIB066); a document-level charge
+// also requires its own VAT type, stated in its taxes.
 func billChargeRules() *rules.Set {
 	return rules.For(new(bill.Charge), exciseReasonAssert(), exciseDutyVATTaxAssert())
 }
@@ -202,10 +202,8 @@ func exciseReasonAssert() rules.Def {
 	)
 }
 
-// exciseDutyVATTaxAssert requires a VAT combo on a document-level excise duty
-// (bill.Charge only): it's document-level precisely because its VAT type
-// diverges from any one line's own category, so — unlike a line-level duty —
-// it cannot be inferred and must be stated in the charge's own taxes.
+// exciseDutyVATTaxAssert requires a document-level excise duty (bill.Charge)
+// to state its own VAT type in its taxes, since it can't be inferred from a line.
 func exciseDutyVATTaxAssert() rules.Def {
 	return rules.When(is.Func("excise duty charge", chargeIsExcise),
 		rules.Field("taxes",
@@ -350,9 +348,8 @@ func deliveryReceiverHasLocationData(val any) bool {
 	return len(del.Receiver.Addresses) > 0
 }
 
-// extractCombo/extractAmount normalize the argument a GOBL rule test receives —
-// which may be the value (tax.Combo) or a pointer (*tax.Combo) — to one pointer
-// (nil if neither), so a predicate handles both forms without its own type switch.
+// extractCombo/extractAmount normalize a rule-test argument (value or pointer)
+// to a single pointer form, so predicates don't need their own type switch.
 func extractCombo(val any) *tax.Combo {
 	switch c := val.(type) {
 	case *tax.Combo:
@@ -414,7 +411,7 @@ func ibanTransferHasBIC(val any) bool {
 	if !ok || instr == nil {
 		return true
 	}
-	if !instr.Ext.Get(untdid.ExtKeyPaymentMeans).In("30", "31") {
+	if instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "31" {
 		return true
 	}
 	ct := firstCreditTransfer(instr)
@@ -508,6 +505,17 @@ func isGiroAccountNumber(s string) bool {
 func roundingInRange(val any) bool {
 	a := extractAmount(val)
 	return a == nil || (a.Compare(roundingMin) >= 0 && a.Compare(roundingMax) <= 0)
+}
+
+// taxUsesCurrencyRounding reports whether a bill.Tax leaves the rounding rule
+// unset (normalizeInvoice will default it) or already set to
+// tax.RoundingRuleCurrency; anything else is an explicit, rejected override.
+func taxUsesCurrencyRounding(val any) bool {
+	t, ok := val.(*bill.Tax)
+	if !ok || t == nil {
+		return true
+	}
+	return t.Rounding == "" || t.Rounding == tax.RoundingRuleCurrency
 }
 
 func totalsNonNegative(val any) bool {

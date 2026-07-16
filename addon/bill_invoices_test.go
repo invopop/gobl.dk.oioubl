@@ -329,6 +329,21 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(inv))
 	})
 
+	t.Run("default currency rounding rule passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		require.NoError(t, inv.Calculate())
+		assert.Equal(t, tax.RoundingRuleCurrency, inv.Tax.Rounding)
+		assert.NoError(t, rules.Validate(inv))
+	})
+
+	t.Run("explicit override away from currency rounding fails (F-INV128)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Tax = &bill.Tax{Rounding: tax.RoundingRulePrecise}
+		require.NoError(t, inv.Calculate())
+		err := rules.Validate(inv)
+		assert.ErrorContains(t, err, "F-INV128")
+	})
+
 	t.Run("zero line discount fails (F-LIB019)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Discounts = []*bill.LineDiscount{
@@ -462,7 +477,7 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(inv))
 	})
 
-	t.Run("generic credit-transfer code 30 passes (converter maps it to 31)", func(t *testing.T) {
+	t.Run("generic credit-transfer code 30 is rejected (F-LIB100)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Payment = &bill.PaymentDetails{
 			Instructions: &pay.Instructions{
@@ -472,7 +487,7 @@ func TestInvoiceValidation(t *testing.T) {
 			},
 		}
 		require.NoError(t, inv.Calculate())
-		assert.NoError(t, rules.Validate(inv))
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB100")
 	})
 
 	t.Run("non-OIOUBL payment-means code fails (F-LIB100)", func(t *testing.T) {
@@ -605,12 +620,12 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(inv), "F-INV051")
 	})
 
-	t.Run("generic credit-transfer code 30 without account fails (F-LIB107)", func(t *testing.T) {
+	t.Run("bank-transfer code 31 without account fails (F-LIB107)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Payment = &bill.PaymentDetails{
 			Instructions: &pay.Instructions{
 				Key: pay.MeansKeyOther,
-				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "30"}),
+				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "31"}),
 			},
 		}
 		require.NoError(t, inv.Calculate())

@@ -43,7 +43,6 @@ func init() {
 		norm.For(normalizeParty),
 		norm.For(normalizeTaxCombo),
 		norm.For(normalizeTaxNote),
-		norm.For(normalizePayInstructions),
 	)
 }
 
@@ -68,7 +67,7 @@ func newAddon() *tax.AddonDef {
 				European profiles it predates and does not extend EN 16931.
 
 				This addon translates the OIOUBL Schematron rules (v1.17.2, the
-				hotfix live since 2026-05-18, superseding 1.17.1) into GOBL
+				hotfix live since 2026-05-18) into GOBL
 				validations. OIOUBL 2.1 is scheduled to be replaced by NemHandel
 				BIS 4 starting in 2028.
 			`),

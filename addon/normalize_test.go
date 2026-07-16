@@ -20,7 +20,9 @@ func bankPayment() *bill.PaymentDetails {
 	return &bill.PaymentDetails{
 		Terms: &pay.Terms{Notes: "Net 30 days"},
 		Instructions: &pay.Instructions{
-			Key:            pay.MeansKeyCreditTransfer,
+			// MeansKeyDebitTransfer maps to UNTDID code 31, the only OIOUBL-valid
+			// bank-transfer code; MeansKeyCreditTransfer (code 30) is rejected.
+			Key:            pay.MeansKeyDebitTransfer,
 			CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK5000400440116243", BIC: "DABADKKK"}},
 		},
 	}
