@@ -26,7 +26,7 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 	excise := num.MakeAmount(0, exp)
 	for _, l := range inv.Lines {
 		if l.Sum != nil {
-			grossSum = grossSum.Add(rescaleToCurrency(*l.Sum, currency))
+			grossSum = grossSum.Add(*l.Sum)
 		}
 		for _, d := range l.Discounts {
 			lineDiscounts = lineDiscounts.Add(d.Amount)
@@ -59,9 +59,8 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 	}
 	for _, ch := range inv.Charges {
 		if chargeExciseScheme(ch.Key) != "" {
-			a := rescaleToCurrency(ch.Amount, currency)
-			excise = excise.Add(a)
-			chg = chg.Subtract(a) // counted in t.Charge above; OIOUBL emits it as tax
+			excise = excise.Add(ch.Amount)
+			chg = chg.Subtract(ch.Amount) // counted in t.Charge above; OIOUBL emits it as tax
 		}
 	}
 	// addTotals pre-sets ChargeTotalAmount from t.Charge, which also includes
@@ -158,7 +157,7 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 	}
 
 	if t.Taxes != nil && len(t.Taxes.Categories) > 0 {
-		exciseBases := exciseVATBases(inv, currency)
+		exciseBases := exciseVATBases(inv)
 		for _, cat := range t.Taxes.Categories {
 			for _, r := range cat.Rates {
 				// A VAT rate row owed entirely to excise charges has no OIOUBL

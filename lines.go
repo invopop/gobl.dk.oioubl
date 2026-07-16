@@ -29,7 +29,7 @@ func (ui *Invoice) addLines(inv *bill.Invoice) {
 		// F-INV348: gross Price×Qty here; line allowances net at the document level.
 		lineExt := l.Total.String()
 		if l.Sum != nil {
-			lineExt = rescaleToCurrency(*l.Sum, ccy).String()
+			lineExt = l.Sum.String()
 		}
 		invLine := InvoiceLine{
 			ID: strconv.Itoa(l.Index),
@@ -267,7 +267,7 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 	switch {
 	case line.Sum != nil:
 		// Line TaxableAmount is gross (Price×Qty); the discount is taken once at document level (F-LIB402).
-		taxable = rescaleToCurrency(*line.Sum, ccy)
+		taxable = *line.Sum
 	case line.Total != nil:
 		taxable = *line.Total
 	default:
@@ -327,12 +327,13 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 // OIOUBL: stamps a TaxCategory on each line allowance/charge (F-LIB226).
 func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount, ccy string, baseSum *num.Amount, taxes tax.Set) []*AllowanceCharge {
 	var allowanceCharges []*AllowanceCharge
-	// BR-DEC-24 / UBL-DT-01: round allowance/charge amounts to the currency's
-	// natural precision, since GOBL keeps higher precision internally.
+	// BR-DEC-24 / UBL-DT-01: GOBL only clamps line charge/discount amounts to
+	// the item price's precision, which can exceed the currency's, so they are
+	// rescaled here; the base (the line sum) is already at currency precision.
 	var base *Amount
 	if baseSum != nil {
 		base = &Amount{
-			Value:      rescaleToCurrency(*baseSum, ccy).String(),
+			Value:      baseSum.String(),
 			CurrencyID: &ccy,
 		}
 	}

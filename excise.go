@@ -66,7 +66,7 @@ func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
 			out = append(out, exciseDuty{
 				scheme:   s,
 				name:     ch.Reason,
-				amount:   rescaleToCurrency(ch.Amount, currency),
+				amount:   ch.Amount,
 				typeCode: chargeVATTypeCode(ch),
 			})
 		}
@@ -130,7 +130,7 @@ func lineVATTypeCode(line *bill.Line) string {
 // exciseVATBases sums, per VAT key, the base the document-level excise charges'
 // own VAT combos contribute to the invoice's tax totals (in the invoice
 // currency), so addTotals can recognize a VAT rate row owed entirely to excise.
-func exciseVATBases(inv *bill.Invoice, currency string) map[cbc.Key]num.Amount {
+func exciseVATBases(inv *bill.Invoice) map[cbc.Key]num.Amount {
 	bases := make(map[cbc.Key]num.Amount)
 	for _, ch := range inv.Charges {
 		if chargeExciseScheme(ch.Key) == "" {
@@ -140,7 +140,7 @@ func exciseVATBases(inv *bill.Invoice, currency string) map[cbc.Key]num.Amount {
 		if combo == nil {
 			continue
 		}
-		amt := rescaleToCurrency(ch.Amount, currency)
+		amt := ch.Amount
 		if b, ok := bases[combo.Key]; ok {
 			amt = b.Add(amt)
 		}
