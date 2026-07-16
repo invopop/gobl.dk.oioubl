@@ -176,8 +176,6 @@ func billTaxComboRules() *rules.Set {
 	)
 }
 
-// Excise duty charges require a reason (F-LIB066); see exciseDutyVATTaxAssert
-// for the document-level-only VAT type requirement.
 func billChargeRules() *rules.Set {
 	return rules.For(new(bill.Charge), exciseReasonAssert(), exciseDutyVATTaxAssert())
 }
