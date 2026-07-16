@@ -1,8 +1,8 @@
 package dkoioubl
 
 import (
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/currency"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/tax"
@@ -156,66 +156,27 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 	return totals
 }
 
-// OIOUBL: stamps a TaxCategory on each line allowance/charge (F-LIB226).
+// makeLineCharges builds on gobl.ubl's own line-allowance builder, adding the
+// TaxCategory OIOUBL requires (F-LIB226) and fixing MultiplierFactorNumeric to
+// OIOUBL's decimal-factor form (F-LIB228), not EN 16931's percentage number.
 func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount, ccy string, baseSum *num.Amount, taxes tax.Set) []*AllowanceCharge {
-	var allowanceCharges []*AllowanceCharge
-	// BR-DEC-24 / UBL-DT-01: GOBL only clamps line charge/discount amounts to
-	// the item price's precision, which can exceed the currency's, so they are
-	// rescaled here; the base (the line sum) is already at currency precision.
-	var base *Amount
-	if baseSum != nil {
-		base = &Amount{
-			Value:      baseSum.String(),
-			CurrencyID: &ccy,
-		}
-	}
+	acs := ubl.MakeLineCharges(charges, discounts, ccy, baseSum)
+	i := 0
 	for _, ch := range charges {
-		ac := &AllowanceCharge{
-			ChargeIndicator: true,
-			Amount: Amount{
-				Value:      rescaleToCurrency(ch.Amount, ccy).String(),
-				CurrencyID: &ccy,
-			},
-		}
-		if e := ch.Ext.Get(untdid.ExtKeyCharge).String(); e != "" {
-			ac.AllowanceChargeReasonCode = &e
-		}
-		if ch.Reason != "" {
-			ac.AllowanceChargeReason = &ch.Reason
-		}
-		if ch.Percent != nil {
-			p := allowanceMultiplier(ch.Percent)
-			ac.MultiplierFactorNumeric = &p
-			if base != nil {
-				ac.BaseAmount = base
-			}
-		}
-		ac.TaxCategory = makeTaxCategory(taxes) // F-LIB226: line allowance needs a TaxCategory
-		allowanceCharges = append(allowanceCharges, ac)
+		decorateLineAllowanceCharge(acs[i], ch.Percent, taxes)
+		i++
 	}
 	for _, d := range discounts {
-		ac := &AllowanceCharge{
-			ChargeIndicator: false,
-			Amount: Amount{
-				Value:      rescaleToCurrency(d.Amount, ccy).String(),
-				CurrencyID: &ccy,
-			},
-		}
-		if e := d.Ext.Get(untdid.ExtKeyAllowance).String(); e != "" {
-			ac.AllowanceChargeReasonCode = &e
-		}
-		if d.Reason != "" {
-			ac.AllowanceChargeReason = &d.Reason
-		}
-		if d.Percent != nil {
-			p := allowanceMultiplier(d.Percent)
-			ac.MultiplierFactorNumeric = &p
-			if base != nil {
-				ac.BaseAmount = base
-			}
-		}
-		ac.TaxCategory = makeTaxCategory(taxes) // F-LIB226: line allowance needs a TaxCategory
-		allowanceCharges = append(allowanceCharges, ac)
+		decorateLineAllowanceCharge(acs[i], d.Percent, taxes)
+		i++
 	}
-	return allowanceCharges
+	return acs
+}
+
+func decorateLineAllowanceCharge(ac *AllowanceCharge, pct *num.Percentage, taxes tax.Set) {
+	if pct != nil {
+		p := allowanceMultiplier(pct)
+		ac.MultiplierFactorNumeric = &p
+	}
+	ac.TaxCategory = makeTaxCategory(taxes)
 }

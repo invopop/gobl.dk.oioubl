@@ -25,12 +25,11 @@ func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 	}
 
 	ui.decorateParties(inv)
+	ui.decorateCharges(inv)
 
-	// Charges/totals have no reusable equivalent in the base (excise-as-tax,
+	// Totals have no reusable equivalent in the base (excise-as-tax,
 	// document-level promotion), so they're rebuilt outright.
-	ui.AllowanceCharge = nil
 	ui.TaxTotal = nil
-	ui.addCharges(inv)
 	ui.addTotals(inv)
 	ui.decorateLines(inv)
 
