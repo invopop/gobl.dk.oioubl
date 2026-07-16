@@ -1,36 +1,15 @@
 package dkoioubl
 
 import (
-	"cloud.google.com/go/civil"
 	"github.com/invopop/gobl"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/currency"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/tax"
 	"github.com/invopop/gobl/uuid"
 )
-
-var invoiceTypeMap = map[string]cbc.Key{
-	"325": bill.InvoiceTypeProforma,
-	"380": bill.InvoiceTypeStandard,
-	"381": bill.InvoiceTypeCreditNote,
-	"383": bill.InvoiceTypeDebitNote,
-	"384": bill.InvoiceTypeCorrective,
-	"388": bill.InvoiceTypeStandard,
-	"389": bill.InvoiceTypeStandard,
-	"326": bill.InvoiceTypeStandard,
-	"261": bill.InvoiceTypeCreditNote,
-}
-
-// InvoiceTagMap maps UBL invoice type codes to GOBL tax tags.
-var InvoiceTagMap = map[string][]cbc.Key{
-	"389": {tax.TagSelfBilled},
-	"326": {tax.TagPartial},
-	"261": {tax.TagSelfBilled},
-}
 
 func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 	inv, err := ui.goblInvoice()
@@ -73,7 +52,7 @@ func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 
 	ui.resolveInvoiceType(out)
 
-	if err := ui.parseInvoiceDates(out); err != nil {
+	if err := (*ubl.Invoice)(ui).ParseInvoiceDates(out); err != nil {
 		return nil, err
 	}
 	ui.applyExchangeRates(out)
@@ -94,7 +73,7 @@ func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 		return nil, err
 	}
 
-	ui.parseInvoiceNotes(out)
+	(*ubl.Invoice)(ui).ParseInvoiceNotes(out)
 
 	if err := ui.parseBillingReferences(out); err != nil {
 		return nil, err
@@ -127,37 +106,10 @@ func (ui *Invoice) resolveInvoiceType(out *bill.Invoice) {
 		out.Type = bill.InvoiceTypeCreditNote
 		return
 	}
-	out.Type = typeCodeParse(typeCode)
-	if tags := tagCodeParse(typeCode); len(tags) != 0 {
+	out.Type = ubl.TypeCodeParse(typeCode)
+	if tags := ubl.TagCodeParse(typeCode, ubl.Context{}); len(tags) != 0 {
 		out.SetTags(tags...)
 	}
-}
-
-func (ui *Invoice) parseInvoiceDates(out *bill.Invoice) error {
-	issueDate, err := ubl.ParseDate(ui.IssueDate)
-	if err != nil {
-		return err
-	}
-	out.IssueDate = issueDate
-
-	if ui.IssueTime != "" {
-		ct, err := civil.ParseTime(ui.IssueTime)
-		if err != nil {
-			return err
-		}
-		out.IssueTime = &cal.Time{Time: ct}
-	}
-
-	// BT-7: VAT point date
-	if ui.TaxPointDate != "" {
-		vd, err := ubl.ParseDate(ui.TaxPointDate)
-		if err != nil {
-			return err
-		}
-		out.ValueDate = &vd
-	}
-
-	return nil
 }
 
 // applyOrderingExtras reads the ordering fields the shared GoblAddOrdering
@@ -188,16 +140,6 @@ func (ui *Invoice) applyExchangeRates(out *bill.Invoice) {
 			currency.Code(ui.TaxCurrencyCode),
 			ui.TaxTotal,
 		)
-	}
-}
-
-func (ui *Invoice) parseInvoiceNotes(out *bill.Invoice) {
-	if len(ui.Note) == 0 {
-		return
-	}
-	out.Notes = make([]*org.Note, 0, len(ui.Note))
-	for _, note := range ui.Note {
-		out.Notes = append(out.Notes, ubl.ParseNote(note))
 	}
 }
 
@@ -248,19 +190,3 @@ func (ui *Invoice) applyTaxRepresentative(out *bill.Invoice) {
 	out.Supplier = goblParty(ui.TaxRepresentativeParty)
 }
 
-func typeCodeParse(typeCode *IDType) cbc.Key {
-	if typeCode == nil {
-		return bill.InvoiceTypeOther
-	}
-	if val, ok := invoiceTypeMap[typeCode.Value]; ok {
-		return val
-	}
-	return bill.InvoiceTypeOther
-}
-
-func tagCodeParse(typeCode *IDType) []cbc.Key {
-	if typeCode == nil {
-		return nil
-	}
-	return InvoiceTagMap[typeCode.Value]
-}

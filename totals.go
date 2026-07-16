@@ -217,30 +217,6 @@ func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTota
 	return subtotal
 }
 
-// taxCategoryInfo carries a subtotal's VATEX exemption reason code, keyed by tax-category.
-type taxCategoryInfo struct {
-	exemptionReasonCode string
-}
-
-func (ui *Invoice) buildTaxCategoryMap() map[string]*taxCategoryInfo {
-	categoryMap := make(map[string]*taxCategoryInfo)
-
-	for _, taxTotal := range ui.TaxTotal {
-		for _, subtotal := range taxTotal.TaxSubtotal {
-			if subtotal.TaxCategory.ID != nil && subtotal.TaxCategory.TaxScheme != nil {
-				key := ubl.BuildTaxCategoryKey(subtotal.TaxCategory.TaxScheme.ID.Value, subtotal.TaxCategory.ID.Value, subtotal.TaxCategory.Percent)
-				info := &taxCategoryInfo{}
-				if subtotal.TaxCategory.TaxExemptionReasonCode != nil {
-					info.exemptionReasonCode = *subtotal.TaxCategory.TaxExemptionReasonCode
-				}
-				categoryMap[key] = info
-			}
-		}
-	}
-
-	return categoryMap
-}
-
 // OIOUBL: maps the 63/Moms scheme and taxcategoryid-1.1 values back via goblTaxSchemeCategory/goblTaxCategoryCode.
 func (ui *Invoice) goblAddTaxNotes(inv *bill.Invoice) {
 	for _, tt := range ui.TaxTotal {

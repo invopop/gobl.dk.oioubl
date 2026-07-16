@@ -1,16 +1,13 @@
 package dkoioubl
 
 import (
-	"math"
 	"strings"
 
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/cef"
-	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
-	"github.com/invopop/gobl/l10n"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/tax"
@@ -24,7 +21,7 @@ func (ui *Invoice) goblAddLines(out *bill.Invoice) error {
 
 	out.Lines = make([]*bill.Line, 0, len(items))
 
-	taxCategoryMap := ui.buildTaxCategoryMap()
+	taxCategoryMap := (*ubl.Invoice)(ui).BuildTaxCategoryMap()
 
 	for _, docLine := range items {
 		line, err := goblConvertLine(&docLine, taxCategoryMap)
@@ -41,7 +38,7 @@ func (ui *Invoice) goblAddLines(out *bill.Invoice) error {
 
 // goblConvertLine also reconstructs line-level cac:TaxTotal/Excise blocks as
 // line charges (see exciseLineChargesFromTaxTotals).
-func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Line, error) {
+func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]string) (*bill.Line, error) {
 	if docLine.Price == nil {
 		return nil, nil
 	}
@@ -55,7 +52,7 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*taxCategor
 		Item:     &org.Item{Price: &price},
 	}
 	if di := docLine.Item; di != nil {
-		goblConvertLineItem(di, line.Item)
+		ubl.GoblConvertLineItem(di, line.Item)
 		goblApplyLineTaxCategory(di.ClassifiedTaxCategory, line, taxCategoryMap)
 	}
 	// cac:ClassifiedTaxCategory is authoritative when present, but most real
@@ -117,7 +114,7 @@ func goblLinePrice(p *Price) (num.Amount, error) {
 	if baseQuantity.IsZero() {
 		return price, nil
 	}
-	precision := calculateRequiredPrecision(price, baseQuantity)
+	precision := ubl.CalculateRequiredPrecision(price, baseQuantity)
 	return price.RescaleUp(precision).Divide(baseQuantity), nil
 }
 
@@ -164,53 +161,9 @@ func goblLineDocumentReference(line *bill.Line, docLine *InvoiceLine) {
 	}
 }
 
-func calculateRequiredPrecision(price, baseQuantity num.Amount) uint32 {
-	priceExp := price.Exp()
-
-	baseQtyNormalized := baseQuantity.Rescale(0)
-	baseQtyFloat := math.Abs(float64(baseQtyNormalized.Value()))
-
-	additionalDecimals := uint32(0)
-	if baseQtyFloat > 1 {
-		// log10(100) = 2, log10(1000) = 3, etc.
-		additionalDecimals = uint32(math.Ceil(math.Log10(baseQtyFloat)))
-	}
-
-	return priceExp + additionalDecimals
-}
-
-func goblConvertLineItem(di *Item, item *org.Item) {
-	if di.Name != "" {
-		item.Name = ubl.CleanString(di.Name)
-	}
-	if di.Description != nil {
-		item.Description = ubl.CleanString(*di.Description)
-	}
-
-	if di.OriginCountry != nil {
-		item.Origin = l10n.ISOCountryCode(di.OriginCountry.IdentificationCode)
-	}
-
-	if di.SellersItemIdentification != nil && di.SellersItemIdentification.ID != nil {
-		item.Ref = cbc.Code(di.SellersItemIdentification.ID.Value)
-	}
-
-	item.Identities = goblItemIdentities(di)
-
-	if di.AdditionalItemProperty != nil {
-		item.Meta = make(cbc.Meta)
-		for _, property := range *di.AdditionalItemProperty {
-			if property.Name != "" && property.Value != "" {
-				key := ubl.FormatKey(property.Name)
-				item.Meta[key] = ubl.CleanString(property.Value)
-			}
-		}
-	}
-}
-
 // goblLineTaxesFromTaxTotals falls back to the line's own cac:TaxTotal for VAT
 // when it carries no cac:ClassifiedTaxCategory (excise subtotals are skipped).
-func goblLineTaxesFromTaxTotals(totals []TaxTotal, line *bill.Line, taxCategoryMap map[string]*taxCategoryInfo) {
+func goblLineTaxesFromTaxTotals(totals []TaxTotal, line *bill.Line, taxCategoryMap map[string]string) {
 	for _, tt := range totals {
 		for i := range tt.TaxSubtotal {
 			tc := &tt.TaxSubtotal[i].TaxCategory
@@ -229,7 +182,7 @@ func goblLineTaxesFromTaxTotals(totals []TaxTotal, line *bill.Line, taxCategoryM
 
 // goblApplyLineTaxCategory maps a tax category onto the line's taxes via
 // goblTaxSchemeCategory/goblTaxCategoryCode.
-func goblApplyLineTaxCategory(ctc *ClassifiedTaxCategory, line *bill.Line, taxCategoryMap map[string]*taxCategoryInfo) {
+func goblApplyLineTaxCategory(ctc *ClassifiedTaxCategory, line *bill.Line, taxCategoryMap map[string]string) {
 	if ctc == nil || ctc.TaxScheme == nil {
 		return
 	}
@@ -245,8 +198,8 @@ func goblApplyLineTaxCategory(ctc *ClassifiedTaxCategory, line *bill.Line, taxCa
 		// The exemption reason (BT-121) is carried at the document level
 		// (TaxTotal subtotal); look it up for this line's category.
 		key := ubl.BuildTaxCategoryKey(ctc.TaxScheme.ID.Value, ctc.ID.Value, ctc.Percent)
-		if info, ok := taxCategoryMap[key]; ok && info.exemptionReasonCode != "" {
-			line.Taxes[0].Ext = line.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.exemptionReasonCode))
+		if code, ok := taxCategoryMap[key]; ok && code != "" {
+			line.Taxes[0].Ext = line.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(code))
 		}
 	}
 	if ctc.Percent != nil {
@@ -268,59 +221,6 @@ func goblApplyLineTaxCategory(ctc *ClassifiedTaxCategory, line *bill.Line, taxCa
 		}
 		line.Taxes[0].Percent = &percent
 	}
-}
-
-func goblItemIdentities(di *Item) []*org.Identity {
-	ids := make([]*org.Identity, 0)
-
-	if di.BuyersItemIdentification != nil && di.BuyersItemIdentification.ID != nil {
-		id := goblIdentity(di.BuyersItemIdentification.ID)
-		if id != nil {
-			ids = append(ids, id)
-		}
-	}
-
-	if di.StandardItemIdentification != nil &&
-		di.StandardItemIdentification.ID != nil &&
-		di.StandardItemIdentification.ID.SchemeID != nil {
-		s := *di.StandardItemIdentification.ID.SchemeID
-		id := &org.Identity{
-			Ext: tax.ExtensionsOf(cbc.CodeMap{
-				iso.ExtKeySchemeID: cbc.Code(s),
-			}),
-			Code: cbc.Code(di.StandardItemIdentification.ID.Value),
-		}
-
-		ids = append(ids, id)
-
-	}
-
-	if di.CommodityClassification != nil && len(*di.CommodityClassification) > 0 {
-		for _, classification := range *di.CommodityClassification {
-			id := goblIdentity(classification.ItemClassificationCode)
-			if id != nil {
-				ids = append(ids, id)
-			}
-		}
-	}
-
-	return ids
-}
-
-func goblIdentity(id *IDType) *org.Identity {
-	if id == nil {
-		return nil
-	}
-	identity := &org.Identity{
-		Code: cbc.Code(id.Value),
-	}
-	for _, field := range []*string{id.SchemeID, id.ListID, id.ListVersionID, id.SchemeName, id.Name} {
-		if field != nil {
-			identity.Label = *field
-			break
-		}
-	}
-	return identity
 }
 
 func goblLineCharges(allowances []*AllowanceCharge, line *bill.Line) (*bill.Line, error) {
