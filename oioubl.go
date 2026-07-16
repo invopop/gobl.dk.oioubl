@@ -89,13 +89,18 @@ func ConvertInvoice(env *gobl.Envelope) (*Invoice, error) {
 // convertViaOverlay builds the OIOUBL document by generating gobl.ubl's base
 // EN 16931 document and applying the OIOUBL flavor on top.
 func convertViaOverlay(env *gobl.Envelope) (*Invoice, error) {
-	base, err := ubl.ConvertInvoice(env, ubl.WithContext(ContextOIOUBL))
-	if err != nil {
-		return nil, err
-	}
 	inv, ok := env.Extract().(*bill.Invoice)
 	if !ok {
 		return nil, ErrUnsupportedDocumentType
+	}
+	// Both the base builder and the flavor dereference the regime definition;
+	// reject a regime-less invoice cleanly instead of panicking downstream.
+	if inv.RegimeDef() == nil {
+		return nil, fmt.Errorf("invoice requires a tax regime (usually derived from the supplier's tax ID)")
+	}
+	base, err := ubl.ConvertInvoice(env, ubl.WithContext(ContextOIOUBL))
+	if err != nil {
+		return nil, err
 	}
 	out := (*Invoice)(base)
 	if err := out.applyOIOUBLFlavor(inv); err != nil {

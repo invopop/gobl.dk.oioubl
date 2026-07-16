@@ -59,6 +59,13 @@ func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 		Customer: goblParty(ui.AccountingCustomerParty.Party),
 	}
 
+	// The regime normally derives from the supplier's tax ID country, but a
+	// CPR-only (non-VAT-registered) supplier has no tax ID; an OIOUBL document
+	// is Danish by definition, and a missing regime breaks the build direction.
+	if out.Supplier == nil || out.Supplier.TaxID == nil || out.Supplier.TaxID.Country == "" {
+		out.SetRegime("DK")
+	}
+
 	ui.resolveInvoiceType(out)
 
 	if err := ui.parseInvoiceDates(out); err != nil {
@@ -171,26 +178,27 @@ func (ui *Invoice) parseBillingReferences(out *bill.Invoice) error {
 	}
 	out.Preceding = make([]*org.DocumentRef, 0, len(ui.BillingReference))
 	for _, ref := range ui.BillingReference {
-		var (
-			docRef *org.DocumentRef
-			err    error
-		)
+		var src *Reference
 		switch {
 		case ref.InvoiceDocumentReference != nil:
-			docRef, err = ubl.GoblReference(ref.InvoiceDocumentReference)
+			src = ref.InvoiceDocumentReference
 		case ref.SelfBilledInvoiceDocumentReference != nil:
-			docRef, err = ubl.GoblReference(ref.SelfBilledInvoiceDocumentReference)
+			src = ref.SelfBilledInvoiceDocumentReference
 		case ref.CreditNoteDocumentReference != nil:
-			docRef, err = ubl.GoblReference(ref.CreditNoteDocumentReference)
+			src = ref.CreditNoteDocumentReference
 		case ref.AdditionalDocumentReference != nil:
-			docRef, err = ubl.GoblReference(ref.AdditionalDocumentReference)
+			src = ref.AdditionalDocumentReference
+		default:
+			continue
 		}
+		docRef, err := ubl.GoblReference(src)
 		if err != nil {
 			return err
 		}
-		if docRef != nil {
-			out.Preceding = append(out.Preceding, docRef)
+		if docRef == nil {
+			continue
 		}
+		out.Preceding = append(out.Preceding, docRef)
 	}
 	return nil
 }
