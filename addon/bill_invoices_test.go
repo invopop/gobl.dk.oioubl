@@ -21,6 +21,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func testDutyCode(code cbc.Code) tax.Extensions {
+	return tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyDutyCode: code})
+}
+
 func testInvoiceStandard(t *testing.T) *bill.Invoice {
 	t.Helper()
 	return &bill.Invoice{
@@ -123,7 +127,7 @@ func TestInvoiceValidation(t *testing.T) {
 	t.Run("excise duty charge without a reason is rejected (F-LIB066)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Charges = []*bill.LineCharge{
-			{Key: "16", Amount: num.MakeAmount(1000, 2)},
+			{Key: oioubl.ChargeKeyExcise, Ext: testDutyCode("16"), Amount: num.MakeAmount(1000, 2)},
 		}
 		require.NoError(t, inv.Calculate())
 		assert.ErrorContains(t, rules.Validate(inv), "F-LIB066")
@@ -132,7 +136,26 @@ func TestInvoiceValidation(t *testing.T) {
 	t.Run("excise duty charge with a reason passes", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Charges = []*bill.LineCharge{
-			{Key: "16", Reason: "Mineralvandsafgift", Amount: num.MakeAmount(1000, 2)},
+			{Key: oioubl.ChargeKeyExcise, Ext: testDutyCode("16"), Reason: "Mineralvandsafgift", Amount: num.MakeAmount(1000, 2)},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+
+	t.Run("excise duty charge without a duty code is rejected", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Charges = []*bill.LineCharge{
+			{Key: oioubl.ChargeKeyExcise, Reason: "Mineralvandsafgift", Amount: num.MakeAmount(1000, 2)},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "duty code")
+	})
+
+	t.Run("excise duty charge with a non-numeric duty code passes", func(t *testing.T) {
+		// The SKAT codelist has non-numeric codes (e.g. "21d").
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Charges = []*bill.LineCharge{
+			{Key: oioubl.ChargeKeyExcise, Ext: testDutyCode("21d"), Reason: "CO2-afgift", Amount: num.MakeAmount(1000, 2)},
 		}
 		require.NoError(t, inv.Calculate())
 		assert.NoError(t, rules.Validate(inv))
@@ -144,7 +167,7 @@ func TestInvoiceValidation(t *testing.T) {
 		// and, since it diverges, its VAT type can't be inferred.
 		inv := testInvoiceStandard(t)
 		inv.Charges = []*bill.Charge{
-			{Key: "66", Reason: "Registreringsafgift", Amount: num.MakeAmount(10000000, 2)},
+			{Key: oioubl.ChargeKeyExcise, Ext: testDutyCode("66"), Reason: "Registreringsafgift", Amount: num.MakeAmount(10000000, 2)},
 		}
 		require.NoError(t, inv.Calculate())
 		assert.ErrorContains(t, rules.Validate(inv), "requires a VAT tax")
@@ -154,7 +177,8 @@ func TestInvoiceValidation(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Charges = []*bill.Charge{
 			{
-				Key:    "66",
+				Key:    oioubl.ChargeKeyExcise,
+				Ext:    testDutyCode("66"),
 				Reason: "Registreringsafgift",
 				Amount: num.MakeAmount(10000000, 2),
 				Taxes:  tax.Set{{Category: "VAT", Key: "zero"}},
@@ -164,10 +188,24 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(inv))
 	})
 
+	t.Run("document-level excise duty without a duty code is rejected", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Charges = []*bill.Charge{
+			{
+				Key:    oioubl.ChargeKeyExcise,
+				Reason: "Registreringsafgift",
+				Amount: num.MakeAmount(10000000, 2),
+				Taxes:  tax.Set{{Category: "VAT", Key: "zero"}},
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "duty code")
+	})
+
 	t.Run("line-level excise duty does not require its own VAT tax", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Charges = []*bill.LineCharge{
-			{Key: "16", Reason: "Mineralvandsafgift", Amount: num.MakeAmount(1000, 2)},
+			{Key: oioubl.ChargeKeyExcise, Ext: testDutyCode("16"), Reason: "Mineralvandsafgift", Amount: num.MakeAmount(1000, 2)},
 		}
 		require.NoError(t, inv.Calculate())
 		require.NoError(t, rules.Validate(inv))

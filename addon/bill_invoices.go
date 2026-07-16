@@ -181,10 +181,12 @@ func billTaxComboRules() *rules.Set {
 }
 
 func billChargeRules() *rules.Set {
-	return rules.For(new(bill.Charge), exciseReasonAssert(), exciseDutyVATTaxAssert())
+	return rules.For(new(bill.Charge), exciseReasonAssert(), exciseDutyVATTaxAssert(), exciseDutyCodeAssert())
 }
 
-func lineChargeRules() *rules.Set { return rules.For(new(bill.LineCharge), exciseReasonAssert()) }
+func lineChargeRules() *rules.Set {
+	return rules.For(new(bill.LineCharge), exciseReasonAssert(), exciseDutyCodeAssert())
+}
 
 // billPayTermsRules relaxes EN 16931 BR-CO-25: OIOUBL allows bare invoice payment
 // terms (ID + amount only), so the due-dates-or-notes requirement doesn't apply.
@@ -215,6 +217,17 @@ func exciseDutyVATTaxAssert() rules.Def {
 	)
 }
 
+// exciseDutyCodeAssert is the shared rule requiring an excise charge to carry
+// the SKAT duty code extension, emitted as the OIOUBL cac:TaxScheme/cbc:ID.
+func exciseDutyCodeAssert() rules.Def {
+	return rules.When(is.Func("excise duty charge", chargeIsExcise),
+		rules.Field("ext",
+			rules.Assert("03", "an OIOUBL excise duty charge requires the SKAT duty code extension for its tax-scheme ID",
+				tax.ExtensionsRequire(ExtKeyDutyCode)),
+		),
+	)
+}
+
 // taxesHaveVAT reports whether a tax set carries a VAT combo.
 func taxesHaveVAT(val any) bool {
 	set, ok := val.(tax.Set)
@@ -224,14 +237,14 @@ func taxesHaveVAT(val any) bool {
 	return set.Get(tax.CategoryVAT) != nil
 }
 
-// chargeIsExcise reports whether a charge is an OIOUBL excise duty, keyed by an
-// all-digit taxschemeid code.
+// chargeIsExcise reports whether a charge is an OIOUBL excise duty, marked by
+// the excise charge key; the SKAT duty code itself rides ExtKeyDutyCode.
 func chargeIsExcise(val any) bool {
 	switch c := val.(type) {
 	case *bill.Charge:
-		return c != nil && isExciseKey(c.Key)
+		return c != nil && c.Key == ChargeKeyExcise
 	case *bill.LineCharge:
-		return c != nil && isExciseKey(c.Key)
+		return c != nil && c.Key == ChargeKeyExcise
 	}
 	return false
 }
@@ -240,20 +253,6 @@ func chargeIsExcise(val any) bool {
 // only to a document's ordinary (non-excise) charges.
 func chargeIsNotExcise(val any) bool {
 	return !chargeIsExcise(val)
-}
-
-// isExciseKey reports whether a charge Key is an OIOUBL excise duty code: all digits.
-func isExciseKey(key cbc.Key) bool {
-	s := key.String()
-	if s == "" {
-		return false
-	}
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
 }
 
 // vatCategoryHasOIOUBLMapping reports whether a VAT combo's key maps to an OIOUBL
