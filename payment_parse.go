@@ -164,11 +164,8 @@ func goblPaymentChannel(instr *pay.Instructions, paymentMeans *PaymentMeans) {
 	}
 }
 
-// goblCreditTransfer adjusts the base's credit transfer for OIOUBL's branch
-// shapes: for DK:BANK the flat branch ID the base read as a BIC is really the
-// Danish bank registration number, moved onto the branch address label; for
-// IBAN accounts the BIC is read from FinancialInstitution/ID, where OIOUBL
-// nests it after stripping the branch ID (F-LIB295).
+// goblCreditTransfer fixes the base's branch: for DK:BANK it's really the
+// bank reg. nr., not a BIC; for IBAN the BIC nests under FinancialInstitution.
 func goblCreditTransfer(paymentMeans *PaymentMeans) []*pay.CreditTransfer {
 	ct := ubl.GoblCreditTransfer(paymentMeans)
 	if len(ct) == 0 {

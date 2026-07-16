@@ -3,15 +3,13 @@ package dkoioubl
 import (
 	"strings"
 
+	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 )
 
-// decoratePartyExtras adds the OIOUBL fields gobl.ubl's generic party/address
-// builders don't produce, and adjusts the ones OIOUBL disagrees with. The
-// base's own NewParty (called as part of ubl.ConvertInvoice, including for
-// the ordering.seller tax-representative swap) already builds everything
-// else, so there's no need to rebuild parties from scratch here.
+// decoratePartyExtras adds the OIOUBL fields the base's NewParty doesn't
+// produce, and adjusts the ones OIOUBL disagrees with.
 func decoratePartyExtras(p *Party, party *org.Party) {
 	if p == nil || party == nil {
 		return
@@ -65,10 +63,8 @@ func decoratePartyAddress(p *Party, party *org.Party) {
 	decorateAddress(p.PostalAddress, a)
 }
 
-// decorateAddress replaces gobl.ubl's combined StreetName (street+number in
-// one string) with OIOUBL's separate StreetName/BuildingNumber, adds the
-// Postbox field the base doesn't map, drops LocationCoordinate (forbidden by
-// F-LIB212), and stamps the mandatory AddressFormatCode (F-LIB025).
+// decorateAddress drops the forbidden LocationCoordinate (F-LIB212) and
+// stamps the mandatory AddressFormatCode (F-LIB025), among other OIOUBL fields.
 func decorateAddress(addr *PostalAddress, a *org.Address) {
 	if addr == nil {
 		return
@@ -107,9 +103,10 @@ const (
 	addressStructuredID  = "StructuredID"
 )
 
-// OIOUBL symbolic schemes for participant and company identifiers (F-LIB179/189/195).
+// OIOUBL symbolic schemes for company identifiers (F-LIB179/189/195); the CVR
+// endpoint scheme is shared with the addon's own endpoint derivation.
 const (
-	schemeDKCVR = "DK:CVR"
+	schemeDKCVR = oioubl.SchemeDKCVR
 	schemeDKSE  = "DK:SE"
 	schemeZZZ   = "ZZZ"
 )

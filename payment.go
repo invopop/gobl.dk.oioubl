@@ -6,13 +6,8 @@ import (
 	"github.com/invopop/gobl/pay"
 )
 
-// decoratePayment adjusts the base's already-built PaymentMeans/PaymentTerms
-// (from gobl.ubl's AddPayment, which ran as part of the base ConvertInvoice
-// call — including the BT-90 creditor identifier and the ordinary bank
-// transfer/direct debit/card case) for OIOUBL: stamps the payment channel
-// code, and replaces the Giro/FIK kortart and account shape outright, since
-// those have no equivalent in the generic base (cac:CreditAccount, instead of
-// cac:PayeeFinancialAccount, plus the "kortart" cbc:PaymentID).
+// decoratePayment adjusts the base's already-built PaymentMeans for OIOUBL:
+// stamps the channel code, and replaces the Giro/FIK shape outright.
 func (ui *Invoice) decoratePayment(inv *bill.Invoice) error {
 	if inv == nil || inv.Payment == nil || inv.Payment.Instructions == nil || len(ui.PaymentMeans) == 0 {
 		applyPaymentTermsAmount(ui)
@@ -64,10 +59,6 @@ const (
 	paymentChannelNemKonto = "DK:NEMKONTO"
 )
 
-// paymentChannel maps a UNTDID 4461 payment means to its OIOUBL
-// paymentchannelcode-1.1 value: Giro (50) → DK:GIRO, FIK (93) → DK:FIK,
-// domestic bank transfers (42) → DK:BANK, NemKonto (97) → DK:NEMKONTO,
-// account transfers (30/31/58) → IBAN. Every other means carries none.
 func paymentChannel(means string) string {
 	switch means {
 	case "50":
@@ -84,10 +75,8 @@ func paymentChannel(means string) string {
 	return ""
 }
 
-// applyRegNr replaces the branch the base built from the BIC: for a domestic
-// bank transfer (42) the flat FinancialInstitutionBranch/ID is the Danish bank
-// registration number — 4 digits, carried on the credit transfer's branch
-// label — and never a BIC (F-LIB124 / F-LIB130).
+// applyRegNr replaces the base's BIC branch with the Danish bank reg. nr.
+// carried on the credit transfer's branch label (F-LIB124/F-LIB130).
 func applyRegNr(pm *PaymentMeans, instr *pay.Instructions) {
 	if pm.PayeeFinancialAccount == nil {
 		return
@@ -104,10 +93,8 @@ func applyRegNr(pm *PaymentMeans, instr *pay.Instructions) {
 	pm.PayeeFinancialAccount.FinancialInstitutionBranch = &Branch{ID: &regNr}
 }
 
-// clearNemKontoDetails strips everything but the means and channel codes: a
-// NemKonto payment (97) is disbursed to the payee's centrally registered
-// account, resolved by the payer out-of-band, so the means allows no account
-// or payment identification at all (F-LIB159 – F-LIB165).
+// clearNemKontoDetails strips everything but the means/channel codes: NemKonto
+// (97) allows no account or payment identification at all (F-LIB159-165).
 func clearNemKontoDetails(pm *PaymentMeans) {
 	pm.InstructionID = nil
 	pm.InstructionNote = nil

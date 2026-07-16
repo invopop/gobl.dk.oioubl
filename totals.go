@@ -160,10 +160,8 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 		exciseBases := exciseVATBases(inv)
 		for _, cat := range t.Taxes.Categories {
 			for _, r := range cat.Rates {
-				// A VAT rate row owed entirely to excise charges has no OIOUBL
-				// subtotal of its own: the duty's VAT type travels as the excise
-				// TaxTotal's TaxTypeCode instead, and a document-level VAT
-				// category with no matching line category fails F-LIB404.
+				// Skip: a VAT rate owed entirely to excise has no subtotal of
+				// its own (F-LIB404) -- its type travels on the excise TaxTotal.
 				if cat.Code == tax.CategoryVAT && r.Amount.IsZero() {
 					if base, ok := exciseBases[r.Key]; ok && r.Base.Compare(base.Rescale(r.Base.Exp())) == 0 {
 						continue

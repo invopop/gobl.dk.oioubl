@@ -99,10 +99,8 @@ func goblParty(party *Party) *org.Party {
 	return p
 }
 
-// parseAddress builds on gobl.ubl's generic address parsing, adding the
-// OIOUBL-specific fields it doesn't produce: Postbox, the StructuredRegion
-// cbc:Region/cbc:District fallbacks (F-LIB040), the StructuredID register
-// identifier (F-LIB037/038), and the unstructured cac:AddressLine fallback.
+// parseAddress builds on gobl.ubl's generic parsing, adding OIOUBL-specific
+// fields it doesn't produce: Postbox, StructuredRegion, StructuredID, AddressLine.
 func parseAddress(address *PostalAddress) *org.Address {
 	if address == nil {
 		return nil
@@ -120,9 +118,8 @@ func parseAddress(address *PostalAddress) *org.Address {
 	if address.District != nil && addr.Locality == "" {
 		addr.Locality = ubl.CleanString(*address.District)
 	}
-	// A StructuredID address is just a register identifier (a GLN) in cbc:ID
-	// (F-LIB037/038). GOBL has no such field, so it rides org.Address.Number
-	// (idle in this format); the emit side re-reads it from there.
+	// A StructuredID address's cbc:ID (a GLN, F-LIB037/038) has no GOBL field,
+	// so it rides org.Address.Number instead; the emit side re-reads it.
 	if address.AddressFormatCode != nil &&
 		address.AddressFormatCode.Value == addressStructuredID &&
 		address.ID != nil {
