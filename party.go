@@ -8,20 +8,20 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// decoratePartyExtras adds the OIOUBL fields the base's NewParty doesn't
+// applyPartyExtras adds the OIOUBL fields the base's NewParty doesn't
 // produce, and adjusts the ones OIOUBL disagrees with.
-func decoratePartyExtras(p *Party, party *org.Party) {
+func applyPartyExtras(p *Party, party *org.Party) {
 	if p == nil || party == nil {
 		return
 	}
-	decoratePartyContact(p, party)
-	decoratePartyEndpoint(p, party)
-	decoratePartyAddress(p, party)
+	applyPartyContact(p, party)
+	applyPartyEndpoint(p, party)
+	applyPartyAddress(p, party)
 }
 
-// decoratePartyContact adds the mandatory cbc:ID (F-INV051), sourced from the
+// applyPartyContact adds the mandatory cbc:ID (F-INV051), sourced from the
 // first person's identity rather than fabricated.
-func decoratePartyContact(p *Party, party *org.Party) {
+func applyPartyContact(p *Party, party *org.Party) {
 	if len(party.People) == 0 {
 		return
 	}
@@ -36,9 +36,9 @@ func decoratePartyContact(p *Party, party *org.Party) {
 	p.Contact.ID = &code
 }
 
-// decoratePartyEndpoint overrides gobl.ubl's inbox-derived EndpointID with the
+// applyPartyEndpoint overrides gobl.ubl's inbox-derived EndpointID with the
 // OIOUBL endpoint URI (scheme+code emitted 1:1), when the party carries one.
-func decoratePartyEndpoint(p *Party, party *org.Party) {
+func applyPartyEndpoint(p *Party, party *org.Party) {
 	for _, ep := range party.Endpoints {
 		if ep == nil {
 			continue
@@ -50,9 +50,9 @@ func decoratePartyEndpoint(p *Party, party *org.Party) {
 	}
 }
 
-// decoratePartyAddress applies decorateAddress to a party's postal address,
+// applyPartyAddress applies applyAddress to a party's postal address,
 // using the party's first GOBL address as the source.
-func decoratePartyAddress(p *Party, party *org.Party) {
+func applyPartyAddress(p *Party, party *org.Party) {
 	if p.PostalAddress == nil {
 		return
 	}
@@ -60,12 +60,12 @@ func decoratePartyAddress(p *Party, party *org.Party) {
 	if len(party.Addresses) > 0 {
 		a = party.Addresses[0]
 	}
-	decorateAddress(p.PostalAddress, a)
+	applyAddress(p.PostalAddress, a)
 }
 
-// decorateAddress drops the forbidden LocationCoordinate (F-LIB212) and
+// applyAddress drops the forbidden LocationCoordinate (F-LIB212) and
 // stamps the mandatory AddressFormatCode (F-LIB025), among other OIOUBL fields.
-func decorateAddress(addr *PostalAddress, a *org.Address) {
+func applyAddress(addr *PostalAddress, a *org.Address) {
 	if addr == nil {
 		return
 	}

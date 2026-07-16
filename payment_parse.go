@@ -156,7 +156,7 @@ func goblPaymentChannel(instr *pay.Instructions, paymentMeans *PaymentMeans) {
 	case paymentChannelGiro, paymentChannelFIK:
 	default:
 		// An unsupported channel (BBAN, SE:BANKGIRO, ZZZ, …) is dropped rather
-		// than round-tripped; decoratePayment can't rederive it either.
+		// than round-tripped; applyPayment can't rederive it either.
 		return
 	}
 

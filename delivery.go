@@ -42,7 +42,7 @@ func newDelivery(del *bill.DeliveryDetails) *Delivery {
 		if len(del.Receiver.Addresses) > 0 {
 			a = del.Receiver.Addresses[0]
 		}
-		decorateAddress(out.DeliveryLocation.Address, a)
+		applyAddress(out.DeliveryLocation.Address, a)
 	}
 
 	return out

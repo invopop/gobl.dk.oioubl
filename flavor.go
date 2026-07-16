@@ -7,7 +7,7 @@ import (
 )
 
 // applyOIOUBLFlavor turns gobl.ubl's EN 16931 base into OIOUBL 2.1: most
-// subtrees are decorated in place, but charges/totals/lines are rebuilt.
+// subtrees are adjusted in place, but charges/totals/lines are rebuilt.
 func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 	ui.UBLVersionID = Version
 	stampProfileID(ui.ProfileID)
@@ -17,25 +17,25 @@ func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 	if inv.Ordering != nil && inv.Ordering.Cost != "" {
 		ui.AccountingCost = inv.Ordering.Cost.String()
 	}
-	ui.decorateOrderingRefs(inv)
+	ui.applyOrderingRefs(inv)
 	// BR-53: the restated tax rides StandardRated subtotals only, so the tax
 	// currency is dropped when none is present (F-LIB373 / F-INV018).
 	if ui.TaxCurrencyCode != "" && !hasStandardRated(inv) {
 		ui.TaxCurrencyCode = ""
 	}
 
-	ui.decorateParties(inv)
-	ui.decorateCharges(inv)
+	ui.applyParties(inv)
+	ui.applyCharges(inv)
 
 	// Totals have no reusable equivalent in the base (excise-as-tax,
 	// document-level promotion), so they're rebuilt outright.
 	ui.TaxTotal = nil
 	ui.addTotals(inv)
-	ui.decorateLines(inv)
+	ui.applyLines(inv)
 
-	// The base already builds the ordinary payment case; decorate it for
+	// The base already builds the ordinary payment case; adjust it for
 	// OIOUBL's channel code/BIC, replacing it outright only for Giro/FIK.
-	if err := ui.decoratePayment(inv); err != nil {
+	if err := ui.applyPayment(inv); err != nil {
 		return err
 	}
 
@@ -52,17 +52,17 @@ func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 	return nil
 }
 
-// decorateParties adjusts the base's already-correct parties (built by
+// applyParties adjusts the base's already-correct parties (built by
 // gobl.ubl's NewParty) with OIOUBL's extras, instead of rebuilding them.
-func (ui *Invoice) decorateParties(inv *bill.Invoice) {
+func (ui *Invoice) applyParties(inv *bill.Invoice) {
 	supplierSrc := inv.Supplier
 	if inv.Ordering != nil && inv.Ordering.Seller != nil {
 		// addOrdering already swapped AccountingSupplierParty/TaxRepresentativeParty.
 		supplierSrc = inv.Ordering.Seller
-		decoratePartyExtras(ui.TaxRepresentativeParty, inv.Supplier)
+		applyPartyExtras(ui.TaxRepresentativeParty, inv.Supplier)
 	}
-	decoratePartyExtras(ui.AccountingSupplierParty.Party, supplierSrc)
-	decoratePartyExtras(ui.AccountingCustomerParty.Party, inv.Customer)
+	applyPartyExtras(ui.AccountingSupplierParty.Party, supplierSrc)
+	applyPartyExtras(ui.AccountingCustomerParty.Party, inv.Customer)
 
 	applyParty(ui.AccountingSupplierParty.Party)
 	applyParty(ui.AccountingCustomerParty.Party)
@@ -70,9 +70,9 @@ func (ui *Invoice) decorateParties(inv *bill.Invoice) {
 	applyTaxRepParty(ui.TaxRepresentativeParty)
 }
 
-// decorateOrderingRefs restores reference fields the base builder drops: the
+// applyOrderingRefs restores reference fields the base builder drops: the
 // order reference's issue date and the preceding documents' UUIDs.
-func (ui *Invoice) decorateOrderingRefs(inv *bill.Invoice) {
+func (ui *Invoice) applyOrderingRefs(inv *bill.Invoice) {
 	if o := inv.Ordering; o != nil && len(o.Purchases) > 0 && ui.OrderReference != nil {
 		if d := o.Purchases[0].IssueDate; d != nil {
 			ui.OrderReference.IssueDate = ubl.FormatDate(*d)

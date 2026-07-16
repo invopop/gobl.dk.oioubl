@@ -7,12 +7,12 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// decorateCharges adjusts the base's already-built document-level
+// applyCharges adjusts the base's already-built document-level
 // AllowanceCharge entries for OIOUBL: drops excise-keyed charges (emitted as
 // their own cac:TaxTotal instead, via addTotals), fixes MultiplierFactorNumeric
 // to the decimal-factor form (F-LIB228), and each TaxCategory's ID (the base
 // reads it from the UNTDID ext our normalizer strips).
-func (ui *Invoice) decorateCharges(inv *bill.Invoice) {
+func (ui *Invoice) applyCharges(inv *bill.Invoice) {
 	if len(ui.AllowanceCharge) == 0 {
 		return
 	}
@@ -22,18 +22,18 @@ func (ui *Invoice) decorateCharges(inv *bill.Invoice) {
 			continue
 		}
 		ac := ui.AllowanceCharge[i]
-		decorateAllowanceCharge(&ac, ch.Percent, ch.Taxes)
+		applyAllowanceCharge(&ac, ch.Percent, ch.Taxes)
 		kept = append(kept, ac)
 	}
 	for i, d := range inv.Discounts {
 		ac := ui.AllowanceCharge[len(inv.Charges)+i]
-		decorateAllowanceCharge(&ac, d.Percent, d.Taxes)
+		applyAllowanceCharge(&ac, d.Percent, d.Taxes)
 		kept = append(kept, ac)
 	}
 	ui.AllowanceCharge = kept
 }
 
-func decorateAllowanceCharge(ac *AllowanceCharge, pct *num.Percentage, taxes tax.Set) {
+func applyAllowanceCharge(ac *AllowanceCharge, pct *num.Percentage, taxes tax.Set) {
 	if pct != nil {
 		p := allowanceMultiplier(pct)
 		ac.MultiplierFactorNumeric = &p

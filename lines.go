@@ -8,28 +8,28 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// decorateLines adjusts the base's already-built InvoiceLines/CreditNoteLines
+// applyLines adjusts the base's already-built InvoiceLines/CreditNoteLines
 // for OIOUBL: gross line amount with no line-level allowances (promoted to
 // the document instead, F-INV126/128/129), no forbidden OriginCountry
 // (F-INV211/F-CRN109), and the OIOUBL ClassifiedTaxCategory ID (the base
 // reads it from the UNTDID tax-category ext, which our normalizer strips).
-func (ui *Invoice) decorateLines(inv *bill.Invoice) {
-	decorateLineSet(ui.InvoiceLines, inv.Lines)
-	decorateLineSet(ui.CreditNoteLines, inv.Lines)
+func (ui *Invoice) applyLines(inv *bill.Invoice) {
+	applyLineSet(ui.InvoiceLines, inv.Lines)
+	applyLineSet(ui.CreditNoteLines, inv.Lines)
 	applyLineTaxCategories(ui.InvoiceLines)
 	applyLineTaxCategories(ui.CreditNoteLines)
 }
 
-func decorateLineSet(lines []InvoiceLine, glines []*bill.Line) {
+func applyLineSet(lines []InvoiceLine, glines []*bill.Line) {
 	for i := range lines {
 		if i >= len(glines) {
 			break
 		}
-		decorateLine(&lines[i], glines[i])
+		applyLine(&lines[i], glines[i])
 	}
 }
 
-func decorateLine(invLine *InvoiceLine, l *bill.Line) {
+func applyLine(invLine *InvoiceLine, l *bill.Line) {
 	invLine.AllowanceCharge = nil
 	ccy := ""
 	if invLine.LineExtensionAmount.CurrencyID != nil {
@@ -163,17 +163,17 @@ func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount,
 	acs := ubl.MakeLineCharges(charges, discounts, ccy, baseSum)
 	i := 0
 	for _, ch := range charges {
-		decorateLineAllowanceCharge(acs[i], ch.Percent, taxes)
+		applyLineAllowanceCharge(acs[i], ch.Percent, taxes)
 		i++
 	}
 	for _, d := range discounts {
-		decorateLineAllowanceCharge(acs[i], d.Percent, taxes)
+		applyLineAllowanceCharge(acs[i], d.Percent, taxes)
 		i++
 	}
 	return acs
 }
 
-func decorateLineAllowanceCharge(ac *AllowanceCharge, pct *num.Percentage, taxes tax.Set) {
+func applyLineAllowanceCharge(ac *AllowanceCharge, pct *num.Percentage, taxes tax.Set) {
 	if pct != nil {
 		p := allowanceMultiplier(pct)
 		ac.MultiplierFactorNumeric = &p

@@ -6,9 +6,9 @@ import (
 	"github.com/invopop/gobl/pay"
 )
 
-// decoratePayment adjusts the base's already-built PaymentMeans for OIOUBL:
+// applyPayment adjusts the base's already-built PaymentMeans for OIOUBL:
 // stamps the channel code, and replaces the Giro/FIK shape outright.
-func (ui *Invoice) decoratePayment(inv *bill.Invoice) error {
+func (ui *Invoice) applyPayment(inv *bill.Invoice) error {
 	if inv == nil || inv.Payment == nil || inv.Payment.Instructions == nil || len(ui.PaymentMeans) == 0 {
 		applyPaymentTermsAmount(ui)
 		return nil
