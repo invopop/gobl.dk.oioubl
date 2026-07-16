@@ -16,7 +16,7 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	var charges []*bill.Charge
 	var discounts []*bill.Discount
 
-	taxCategoryMap := ui.buildTaxCategoryMap()
+	taxCategoryMap := (*ubl.Invoice)(ui).BuildTaxCategoryMap()
 
 	for _, allowanceCharge := range ui.AllowanceCharge {
 		if allowanceCharge.ChargeIndicator {
@@ -77,7 +77,7 @@ type parsedAllowanceCharge struct {
 // percent (F-LIB228) and tax category shared by document-level charges and
 // discounts, tagging the reason code under extKey (untdid.ExtKeyCharge or
 // untdid.ExtKeyAllowance) and mapping the 63/Moms scheme + taxcategoryid codes.
-func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap map[string]*taxCategoryInfo) (parsedAllowanceCharge, error) {
+func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap map[string]string) (parsedAllowanceCharge, error) {
 	var out parsedAllowanceCharge
 	if ac.AllowanceChargeReason != nil {
 		out.Reason = *ac.AllowanceChargeReason
@@ -128,8 +128,8 @@ func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap ma
 
 			// Look up exemption code from TaxTotal
 			key := ubl.BuildTaxCategoryKey(ac.TaxCategory[0].TaxScheme.ID.Value, ac.TaxCategory[0].ID.Value, ac.TaxCategory[0].Percent)
-			if info, ok := taxCategoryMap[key]; ok && info.exemptionReasonCode != "" {
-				out.Taxes[0].Ext = out.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.exemptionReasonCode))
+			if code, ok := taxCategoryMap[key]; ok && code != "" {
+				out.Taxes[0].Ext = out.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(code))
 			}
 		}
 
@@ -143,8 +143,9 @@ func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap ma
 				return out, err
 			}
 
-			// Skip 0% unless zero-rated ("Z"), so GOBL doesn't normalize exempt/reverse-charge to "zero".
-			if !p.IsZero() || (ac.TaxCategory[0].ID != nil && ac.TaxCategory[0].ID.Value == "Z") {
+			// Skip 0% unless zero-rated, so GOBL doesn't normalize exempt/reverse-charge
+			// to "zero"; compare via goblTaxCategoryCode to catch the "ZeroRated" wire value.
+			if !p.IsZero() || (ac.TaxCategory[0].ID != nil && goblTaxCategoryCode(ac.TaxCategory[0].ID.Value) == "Z") {
 				out.Taxes[0].Percent = &p
 			}
 		}
@@ -152,7 +153,7 @@ func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap ma
 	return out, nil
 }
 
-func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Charge, error) {
+func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]string) (*bill.Charge, error) {
 	p, err := parseAllowanceCharge(ac, untdid.ExtKeyCharge, taxCategoryMap)
 	if err != nil {
 		return nil, err
@@ -167,7 +168,7 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo)
 	}, nil
 }
 
-func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*taxCategoryInfo) (*bill.Discount, error) {
+func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]string) (*bill.Discount, error) {
 	p, err := parseAllowanceCharge(ac, untdid.ExtKeyAllowance, taxCategoryMap)
 	if err != nil {
 		return nil, err
