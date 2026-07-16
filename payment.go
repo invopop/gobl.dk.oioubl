@@ -36,7 +36,7 @@ func (ui *Invoice) decoratePayment(inv *bill.Invoice) error {
 	case "97":
 		clearNemKontoDetails(pm)
 	}
-	if channel, ok := instr.Meta[cbc.Key("payment-channel")]; ok && channel != "" {
+	if channel, ok := instr.Meta[metaKeyPaymentChannel]; ok && channel != "" {
 		pm.PaymentChannelCode = &IDType{Value: channel}
 	} else if ch := paymentChannel(paymentMeansCode); ch != "" {
 		pm.PaymentChannelCode = &IDType{Value: ch}
@@ -57,7 +57,10 @@ func applyPaymentTermsAmount(ui *Invoice) {
 	}
 }
 
-// OIOUBL paymentchannelcode-1.1 wire values, derived from the payment means (see paymentChannel).
+// OIOUBL paymentchannelcode-1.1 wire values, derived from the payment means
+// (see paymentChannel). The codelist's remaining values (BBAN, the FI/GB/IS/
+// NO/SE domestic schemes, SWIFTUS, ZZZ) have no payment-means equivalent to
+// derive them from; they are supplied verbatim via metaKeyPaymentChannel.
 const (
 	paymentChannelIBAN     = "IBAN"
 	paymentChannelGiro     = "DK:GIRO"
@@ -65,6 +68,10 @@ const (
 	paymentChannelDKBank   = "DK:BANK"
 	paymentChannelNemKonto = "DK:NEMKONTO"
 )
+
+// metaKeyPaymentChannel carries an explicit paymentchannelcode-1.1 value on
+// the payment instructions, overriding the means-derived channel.
+const metaKeyPaymentChannel cbc.Key = "payment-channel"
 
 // paymentChannel maps a UNTDID 4461 payment means to its OIOUBL
 // paymentchannelcode-1.1 value: Giro (50) → DK:GIRO, FIK (93) → DK:FIK,

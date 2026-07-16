@@ -72,11 +72,15 @@ func goblParty(party *Party) *org.Party {
 	}
 
 	if party.Contact != nil {
+		// Real documents carry empty <cbc:Telephone/> elements; a telephone
+		// without a number is invalid in GOBL.
 		if party.Contact.Telephone != nil {
-			p.Telephones = []*org.Telephone{
-				{
-					Number: ubl.CleanString(*party.Contact.Telephone),
-				},
+			if number := ubl.CleanString(*party.Contact.Telephone); number != "" {
+				p.Telephones = []*org.Telephone{
+					{
+						Number: number,
+					},
+				}
 			}
 		}
 		if party.Contact.ElectronicMail != nil {
