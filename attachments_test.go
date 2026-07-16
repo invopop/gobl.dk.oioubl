@@ -15,7 +15,7 @@ import (
 // external reference (a link, not the bytes), stamped with the OIOUBL
 // DocumentType every reference requires (F-LIB092).
 func TestConvertAttachmentEmitsExternalReference(t *testing.T) {
-	env := loadTestEnvelope(t, filepath.Join(getConvertPath(), "happy-path.json"))
+	env := loadTestEnvelope(t, filepath.Join(getConvertPath(), "happy-path_real.json"))
 	inv, ok := env.Extract().(*bill.Invoice)
 	require.True(t, ok)
 	inv.Attachments = []*org.Attachment{{
