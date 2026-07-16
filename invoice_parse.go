@@ -10,6 +10,7 @@ import (
 	"github.com/invopop/gobl/currency"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/tax"
+	"github.com/invopop/gobl/uuid"
 )
 
 var invoiceTypeMap = map[string]cbc.Key{
@@ -66,6 +67,10 @@ func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 		out.SetRegime("DK")
 	}
 
+	if u, err := uuid.Parse(ui.UUID); err == nil {
+		out.UUID = u
+	}
+
 	ui.resolveInvoiceType(out)
 
 	if err := ui.parseInvoiceDates(out); err != nil {
@@ -80,6 +85,9 @@ func (ui *Invoice) goblInvoice() (*bill.Invoice, error) {
 		return nil, err
 	}
 	if err := (*ubl.Invoice)(ui).GoblAddOrdering(out); err != nil {
+		return nil, err
+	}
+	if err := ui.applyOrderingExtras(out); err != nil {
 		return nil, err
 	}
 	if err := ui.goblAddDelivery(out); err != nil {
@@ -152,6 +160,27 @@ func (ui *Invoice) parseInvoiceDates(out *bill.Invoice) error {
 	return nil
 }
 
+// applyOrderingExtras reads the ordering fields the shared GoblAddOrdering
+// doesn't: the document-level cbc:AccountingCost (mirroring the outbound side,
+// which emits it from Ordering.Cost) and the OrderReference issue date.
+func (ui *Invoice) applyOrderingExtras(out *bill.Invoice) error {
+	if ui.AccountingCost != "" {
+		if out.Ordering == nil {
+			out.Ordering = new(bill.Ordering)
+		}
+		out.Ordering.Cost = cbc.Code(ui.AccountingCost)
+	}
+	if ui.OrderReference != nil && ui.OrderReference.IssueDate != "" &&
+		out.Ordering != nil && len(out.Ordering.Purchases) > 0 {
+		d, err := ubl.ParseDate(ui.OrderReference.IssueDate)
+		if err != nil {
+			return err
+		}
+		out.Ordering.Purchases[0].IssueDate = &d
+	}
+	return nil
+}
+
 func (ui *Invoice) applyExchangeRates(out *bill.Invoice) {
 	if ui.TaxCurrencyCode != "" && ui.DocumentCurrencyCode != ui.TaxCurrencyCode {
 		out.ExchangeRates = goblExchangeRates(
@@ -197,6 +226,10 @@ func (ui *Invoice) parseBillingReferences(out *bill.Invoice) error {
 		}
 		if docRef == nil {
 			continue
+		}
+		// The shared GoblReference drops the referenced document's UUID.
+		if u, err := uuid.Parse(src.UUID); err == nil {
+			docRef.UUID = u
 		}
 		out.Preceding = append(out.Preceding, docRef)
 	}

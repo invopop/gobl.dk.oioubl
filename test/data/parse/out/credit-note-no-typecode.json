@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
 		"dig": {
 			"alg": "sha256",
-			"val": "3256d3712aef3ea51bb5fa50c79ab8fdda41776158ae1f9954fe862f41fc79d4"
+			"val": "c3d3a6d66e976015823bc207e0861f38d6e91fc5bedada37536421a527cbedba"
 		},
 		"from": "GLN:5790000436101",
 		"to": "GLN:5790000436057"
@@ -143,6 +143,7 @@
 			}
 		],
 		"ordering": {
+			"cost": "5050",
 			"purchases": [
 				{
 					"code": "NA"
