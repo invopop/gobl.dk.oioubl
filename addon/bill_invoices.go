@@ -139,8 +139,14 @@ func billInvoiceRules() *rules.Set {
 		rules.Field("charges",
 			rules.Each(
 				rules.Field("amount", rules.Assert("34", "document-level charge amount must be greater than zero (F-LIB019)", num.Positive)),
-				rules.Field("taxes",
-					rules.Assert("28", "document-level charge taxes are required for the OIOUBL TaxCategory (F-LIB226)", is.Present),
+				// F-LIB226 is about the TaxCategory an ordinary charge needs once
+				// promoted to a cac:AllowanceCharge; an excise duty is never
+				// promoted (it's emitted as its own cac:TaxTotal instead), so it's
+				// exempt here.
+				rules.When(is.Func("non-excise charge", chargeIsNotExcise),
+					rules.Field("taxes",
+						rules.Assert("28", "document-level charge taxes are required for the OIOUBL TaxCategory (F-LIB226)", is.Present),
+					),
 				),
 			),
 		),
@@ -168,8 +174,13 @@ func billTaxComboRules() *rules.Set {
 	)
 }
 
-// Excise duty charges must carry a reason for their OIOUBL tax-scheme name (F-LIB066).
-func billChargeRules() *rules.Set { return rules.For(new(bill.Charge), exciseReasonAssert()) }
+// Excise duty charges must carry a reason for their OIOUBL tax-scheme name
+// (F-LIB066). A document-level excise duty must also state its own VAT type
+// in its taxes, since it's precisely because it diverges from a line's own VAT
+// category that it can't live as a bill.LineCharge (OIOUBL Skat guideline).
+func billChargeRules() *rules.Set {
+	return rules.For(new(bill.Charge), exciseReasonAssert(), exciseDutyVATTaxAssert())
+}
 
 func lineChargeRules() *rules.Set { return rules.For(new(bill.LineCharge), exciseReasonAssert()) }
 
@@ -191,6 +202,28 @@ func exciseReasonAssert() rules.Def {
 	)
 }
 
+// exciseDutyVATTaxAssert requires a VAT combo on a document-level excise duty
+// (bill.Charge only): it's document-level precisely because its VAT type
+// diverges from any one line's own category, so — unlike a line-level duty —
+// it cannot be inferred and must be stated in the charge's own taxes.
+func exciseDutyVATTaxAssert() rules.Def {
+	return rules.When(is.Func("excise duty charge", chargeIsExcise),
+		rules.Field("taxes",
+			rules.Assert("02", "a document-level OIOUBL excise duty requires a VAT tax stating its own VAT type, since it cannot be inferred from any line (OIOUBL Skat guideline)",
+				is.Func("has a VAT combo", taxesHaveVAT)),
+		),
+	)
+}
+
+// taxesHaveVAT reports whether a tax set carries a VAT combo.
+func taxesHaveVAT(val any) bool {
+	set, ok := val.(tax.Set)
+	if !ok {
+		return true
+	}
+	return set.Get(tax.CategoryVAT) != nil
+}
+
 // chargeIsExcise reports whether a charge is an OIOUBL excise duty, keyed by an
 // all-digit taxschemeid code.
 func chargeIsExcise(val any) bool {
@@ -201,6 +234,12 @@ func chargeIsExcise(val any) bool {
 		return c != nil && isExciseKey(c.Key)
 	}
 	return false
+}
+
+// chargeIsNotExcise is the negation of chargeIsExcise, for rules that apply
+// only to a document's ordinary (non-excise) charges.
+func chargeIsNotExcise(val any) bool {
+	return !chargeIsExcise(val)
 }
 
 // isExciseKey reports whether a charge Key is an OIOUBL excise duty code: all digits.

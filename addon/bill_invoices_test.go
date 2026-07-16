@@ -138,6 +138,41 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(inv))
 	})
 
+	t.Run("document-level excise duty without a VAT tax is rejected", func(t *testing.T) {
+		// Danish car registration tax: zero-rated, diverging from the
+		// standard-rated line it applies to, so it must be document-level —
+		// and, since it diverges, its VAT type can't be inferred.
+		inv := testInvoiceStandard(t)
+		inv.Charges = []*bill.Charge{
+			{Key: "66", Reason: "Registreringsafgift", Amount: num.MakeAmount(10000000, 2)},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "requires a VAT tax")
+	})
+
+	t.Run("document-level excise duty with a VAT tax passes", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Charges = []*bill.Charge{
+			{
+				Key:    "66",
+				Reason: "Registreringsafgift",
+				Amount: num.MakeAmount(10000000, 2),
+				Taxes:  tax.Set{{Category: "VAT", Key: "zero"}},
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.NoError(t, rules.Validate(inv))
+	})
+
+	t.Run("line-level excise duty does not require its own VAT tax", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Lines[0].Charges = []*bill.LineCharge{
+			{Key: "16", Reason: "Mineralvandsafgift", Amount: num.MakeAmount(1000, 2)},
+		}
+		require.NoError(t, inv.Calculate())
+		require.NoError(t, rules.Validate(inv))
+	})
+
 	t.Run("foreign-currency document without an exchange rate is rejected (F-INV018)", func(t *testing.T) {
 		// A non-DKK document must restate VAT in the regime currency (F-INV018),
 		// which requires an exchange rate.
