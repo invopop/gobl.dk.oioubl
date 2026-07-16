@@ -35,6 +35,7 @@ func init() {
 		billTaxComboRules(),
 		billChargeRules(),
 		lineChargeRules(),
+		payInstructionsRules(),
 		billPayTermsRules(),
 	)
 	norm.RegisterWithGuard(

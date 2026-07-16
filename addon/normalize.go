@@ -4,8 +4,6 @@ import (
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
-	"github.com/invopop/gobl/org"
-	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/tax"
 )
 
@@ -18,81 +16,6 @@ func normalizeInvoice(inv *bill.Invoice) {
 	if inv.Tax.Rounding == "" {
 		inv.Tax.Rounding = tax.RoundingRuleCurrency
 	}
-}
-
-// OIOUBLEndpointURI joins a scheme and code with a colon (e.g. "DK:CVR:12345674").
-func OIOUBLEndpointURI(scheme, code string) string {
-	return scheme + ":" + code
-}
-
-// normalizeParty migrates a scheme/code inbox to an org.Endpoint and derives a
-// DK:CVR endpoint from a Danish tax ID when none is present.
-func normalizeParty(p *org.Party) {
-	if len(p.Endpoints) == 0 {
-		migrateInboxesToEndpoints(p)
-	}
-	if p.TaxID == nil || p.TaxID.Country != "DK" || p.TaxID.Code == cbc.CodeEmpty {
-		return
-	}
-	if len(p.Endpoints) == 0 {
-		p.Endpoints = append(p.Endpoints, &org.Endpoint{
-			URI: cbc.URI(OIOUBLEndpointURI(SchemeDKCVR, p.TaxID.Code.String())),
-		})
-	}
-	// OIOUBL's PartyLegalEntity/CompanyID is the CVR; set it explicitly as a
-	// legal identity. Untouched if one already exists.
-	if !hasLegalIdentity(p) {
-		p.Identities = append(p.Identities, &org.Identity{
-			Scope: org.IdentityScopeLegal,
-			Code:  p.TaxID.Code,
-		})
-	}
-}
-
-// migrateInboxesToEndpoints converts each scheme/code org.Inbox into the
-// equivalent org.Endpoint and drops it (org.Inbox is deprecated). Email/URL
-// inboxes carry no scheme/code participant and are left untouched.
-func migrateInboxesToEndpoints(p *org.Party) {
-	kept := p.Inboxes[:0]
-	for _, in := range p.Inboxes {
-		if in == nil {
-			continue
-		}
-		if in.Scheme == cbc.CodeEmpty || in.Code == cbc.CodeEmpty {
-			kept = append(kept, in)
-			continue
-		}
-		scheme := in.Scheme.String()
-		p.Endpoints = append(p.Endpoints, &org.Endpoint{
-			Label: in.Label,
-			URI:   cbc.URI(OIOUBLEndpointURI(scheme, in.Code.String())),
-		})
-	}
-	p.Inboxes = kept
-}
-
-// hasLegalIdentity reports whether the party already carries a legal-scope identity.
-func hasLegalIdentity(p *org.Party) bool {
-	for _, id := range p.Identities {
-		if id != nil && id.Scope == org.IdentityScopeLegal {
-			return true
-		}
-	}
-	return false
-}
-
-// normalizePayInstructions stamps DK on a domestic bank transfer's (means 42)
-// credit-transfer branch, since only the reg. nr. is set there and EN 16931
-// requires a country on every address (BR-9 et al.).
-func normalizePayInstructions(instr *pay.Instructions) {
-	if instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "42" {
-		return
-	}
-	ct := firstCreditTransfer(instr)
-	if ct == nil || ct.Branch == nil || ct.Branch.Country != "" {
-		return
-	}
-	ct.Branch.Country = "DK"
 }
 
 // normalizeTaxCombo strips the EN 16931 UNTDID tax-category ext; the OIOUBL code

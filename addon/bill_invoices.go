@@ -7,8 +7,6 @@ import (
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/currency"
 	"github.com/invopop/gobl/num"
-	"github.com/invopop/gobl/org"
-	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/rules/is"
 	"github.com/invopop/gobl/tax"
@@ -17,11 +15,6 @@ import (
 // validDocumentTypes are the UNTDID 1001 codes OIOUBL accepts: 325/380/393
 // (invoice) and 381 (credit note), per F-INV011 / F-CRN011.
 var validDocumentTypes = []cbc.Code{"325", "380", "381", "393"}
-
-// validPaymentMeansCodes are the UNTDID 4461 means accepted for OIOUBL (F-LIB100).
-var validPaymentMeansCodes = []cbc.Code{
-	"1", "10", "20", "31", "42", "48", "49", "50", "58", "59", "93", "97",
-}
 
 // Rule citations reference the OIOUBL Invoice schematron (F-INV) first and the
 // CreditNote equivalent (F-CRN) second. F-INV142 is invoice-only (OIOUBL CreditNote
@@ -57,26 +50,21 @@ func billInvoiceRules() *rules.Set {
 				is.Func("uses currency rounding", taxUsesCurrencyRounding)),
 		),
 		rules.Field("supplier",
-			rules.Assert("01", "supplier must have an endpoint (F-INV031 / F-CRN028)",
-				is.Func("has endpoint", partyHasEndpoint)),
-			rules.Assert("29", "supplier requires a legal identity or a Danish tax ID for the OIOUBL PartyLegalEntity/CompanyID (F-LIB187)",
-				is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
+			partyRoleRules("supplier", "01", "29", "F-INV031 / F-CRN028")...,
 		),
 		rules.Field("totals",
 			rules.Assert("26", "payable and due totals must not be negative (F-LIB016 / F-LIB020)",
 				is.Func("non-negative totals", totalsNonNegative)),
 		),
 		rules.Field("customer",
-			rules.Assert("02", "customer must have an endpoint (F-INV044 / F-CRN040)",
-				is.Func("has endpoint", partyHasEndpoint)),
-			rules.Assert("30", "customer requires a legal identity or a Danish tax ID for the OIOUBL PartyLegalEntity/CompanyID (F-LIB187)",
-				is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
-			// F-INV046 requires a customer Contact (F-CRN042); assert presence.
-			rules.Field("people",
-				rules.Assert("03", "customer people are required (F-INV046 / F-CRN042)", is.Present),
-				rules.Assert("20", "the customer contact person requires an identity code for the OIOUBL Contact/ID (F-INV051)",
-					is.Func("first person has an identity code", firstPersonHasIdentityCode)),
-			),
+			append(partyRoleRules("customer", "02", "30", "F-INV044 / F-CRN040"),
+				// F-INV046 requires a customer Contact (F-CRN042); assert presence.
+				rules.Field("people",
+					rules.Assert("03", "customer people are required (F-INV046 / F-CRN042)", is.Present),
+					rules.Assert("20", "the customer contact person requires an identity code for the OIOUBL Contact/ID (F-INV051)",
+						is.Func("first person has an identity code", firstPersonHasIdentityCode)),
+				),
+			)...,
 		),
 		rules.When(is.Func("non-credit-note invoice with line order ref", invoiceWithLineOrderRef),
 			rules.Field("ordering",
@@ -99,28 +87,6 @@ func billInvoiceRules() *rules.Set {
 		rules.Field("delivery",
 			rules.Assert("11", "delivery requires either identities or receiver.addresses (F-INV239 / F-CRN158)",
 				is.Func("receiver has identities or addresses", deliveryReceiverHasLocationData)),
-		),
-		rules.Field("payment",
-			rules.Field("instructions",
-				rules.Field("ext",
-					rules.AssertIfPresent("12", "payment-means code must be one of the OIOUBL allowed values (F-LIB100)",
-						tax.ExtensionsHasCodes(untdid.ExtKeyPaymentMeans, validPaymentMeansCodes...)),
-				),
-				rules.Assert("13", "a credit transfer account (IBAN or number) is required for bank-transfer payment means (F-LIB107 / F-LIB377)",
-					is.Func("bank-transfer has a payee account", bankTransferHasAccount)),
-				rules.Assert("18", "a BIC is required on the credit transfer for IBAN bank-transfer payment means 31 (F-LIB113)",
-					is.Func("iban bank-transfer has a BIC", ibanTransferHasBIC)),
-				rules.Assert("21", "Giro (payment-means 50) requires a 7 or 8 digit payee account (F-LIB319 / F-LIB320 / F-LIB321)",
-					is.Func("giro has a 7-8 digit payee account", giroAccountValid)),
-				rules.Assert("22", "FIK (payment-means 93) requires an 8-character creditor account (F-LIB305)",
-					is.Func("fik has an 8-character creditor account", fikAccountValid)),
-				rules.Assert("23", "a domestic bank transfer (payment-means 42) requires a payee account number of at most 10 characters (F-LIB126 / F-LIB131)",
-					is.Func("dk bank transfer has a valid account number", dkBankAccountValid)),
-				rules.Assert("24", "a domestic bank transfer (payment-means 42) requires the bank registration number (up to 4 digits) as the credit-transfer branch label (F-LIB124 / F-LIB130)",
-					is.Func("dk bank transfer has a bank registration number", dkBankRegNrValid)),
-				rules.Assert("40", "NemKonto (payment-means 97) must not carry a credit transfer: the payer resolves the payee's registered account via NemKonto (F-LIB164)",
-					is.Func("nemkonto has no credit transfer", nemKontoHasNoCreditTransfer)),
-			),
 		),
 		rules.Field("lines",
 			rules.Each(
@@ -184,14 +150,6 @@ func billChargeRules() *rules.Set {
 
 func lineChargeRules() *rules.Set {
 	return rules.For(new(bill.LineCharge), exciseReasonAssert(), exciseDutyCodeAssert())
-}
-
-// billPayTermsRules relaxes EN 16931 BR-CO-25: OIOUBL allows bare invoice payment
-// terms (ID + amount only), so the due-dates-or-notes requirement doesn't apply.
-func billPayTermsRules() *rules.Set {
-	return rules.For(new(pay.Terms),
-		rules.Ignore("GOBL-EU-EN16931-PAY-TERMS-01"),
-	)
 }
 
 // exciseReasonAssert is the shared F-LIB066 rule for document- and line-level
@@ -374,158 +332,12 @@ func extractAmount(val any) *num.Amount {
 	return nil
 }
 
-// firstPersonHasIdentityCode reports whether the first contact person carries an
-// identity code, mapped to the OIOUBL cac:Contact/cbc:ID
-func firstPersonHasIdentityCode(val any) bool {
-	people, ok := val.([]*org.Person)
-	if !ok || len(people) == 0 {
-		return true
-	}
-	p := people[0]
-	return p != nil && len(p.Identities) > 0 && p.Identities[0] != nil && !p.Identities[0].Code.IsEmpty()
-}
-
-func partyHasEndpoint(val any) bool {
-	p, ok := val.(*org.Party)
-	if !ok || p == nil {
-		return true
-	}
-	return len(p.Endpoints) > 0
-}
-
-func partyHasOIOUBLLegalID(val any) bool {
-	p, ok := val.(*org.Party)
-	if !ok || p == nil {
-		return true
-	}
-	// A party with no name has no PartyLegalEntity, so F-LIB187 (its CompanyID) can't apply.
-	if p.Name == "" {
-		return true
-	}
-	for _, id := range p.Identities {
-		if id != nil && id.Scope == org.IdentityScopeLegal && !id.Code.IsEmpty() {
-			return true
-		}
-	}
-	return false
-}
-
-func ibanTransferHasBIC(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil {
-		return true
-	}
-	if instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "31" {
-		return true
-	}
-	ct := firstCreditTransfer(instr)
-	// A missing account is rule 13's concern (F-LIB113 covers only the BIC).
-	return ct == nil || ct.BIC != ""
-}
-
-// firstCreditTransfer returns the first credit transfer; OIOUBL carries only
-// one, so the payment rules validate that one.
-func firstCreditTransfer(instr *pay.Instructions) *pay.CreditTransfer {
-	if len(instr.CreditTransfer) == 0 {
-		return nil
-	}
-	return instr.CreditTransfer[0]
-}
-
 func standardRatedHasPositivePercent(val any) bool {
 	combo := extractCombo(val)
 	if combo == nil || combo.Key != tax.KeyStandard {
 		return true
 	}
 	return combo.Percent != nil && !combo.Percent.Base().IsZero() && !combo.Percent.Base().IsNegative()
-}
-
-// bankTransferCodes are the OIOUBL PaymentMeansCode values requiring a payee
-// account (F-LIB107 for 31, F-LIB377 for 58); 30 isn't a supported means at
-// all (F-LIB100, rule 12), so it's not listed here.
-var bankTransferCodes = []cbc.Code{"31", "58"}
-
-func bankTransferHasAccount(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil {
-		return true
-	}
-	code := instr.Ext.Get(untdid.ExtKeyPaymentMeans)
-	if !code.In(bankTransferCodes...) {
-		return true
-	}
-	ct := firstCreditTransfer(instr)
-	return ct != nil && (ct.IBAN != "" || ct.Number != "")
-}
-
-// giroAccountValid checks F-LIB319/320/321: a Giro payment (means 50) must
-// carry a payee account number of 7 or 8 digits.
-func giroAccountValid(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "50" {
-		return true
-	}
-	ct := firstCreditTransfer(instr)
-	return ct != nil && isGiroAccountNumber(ct.Number)
-}
-
-// fikAccountValid checks F-LIB305: a FIK payment (means 93) must carry an
-// 8-character creditor account number.
-func fikAccountValid(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "93" {
-		return true
-	}
-	ct := firstCreditTransfer(instr)
-	return ct != nil && len(ct.Number) == 8
-}
-
-// dkBankAccountValid checks F-LIB126/F-LIB131: a domestic bank transfer
-// (means 42) must carry a payee account number of at most 10 characters.
-func dkBankAccountValid(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "42" {
-		return true
-	}
-	ct := firstCreditTransfer(instr)
-	return ct != nil && ct.Number != "" && len(ct.Number) <= 10
-}
-
-// dkBankRegNrValid checks the bank registration number (1-4 digits) on the
-// credit-transfer branch label (F-LIB124/F-LIB130).
-func dkBankRegNrValid(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "42" {
-		return true
-	}
-	ct := firstCreditTransfer(instr)
-	return ct != nil && ct.Branch != nil && isNumericOfLen(ct.Branch.Label, 1, 4)
-}
-
-// nemKontoHasNoCreditTransfer checks that a NemKonto payment carries no
-// credit transfer, since the payer looks up the account itself (F-LIB164).
-func nemKontoHasNoCreditTransfer(val any) bool {
-	instr, ok := val.(*pay.Instructions)
-	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "97" {
-		return true
-	}
-	return len(instr.CreditTransfer) == 0
-}
-
-func isNumericOfLen(s string, minLen, maxLen int) bool {
-	if len(s) < minLen || len(s) > maxLen {
-		return false
-	}
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
-}
-
-func isGiroAccountNumber(s string) bool {
-	return isNumericOfLen(s, 7, 8)
 }
 
 func roundingInRange(val any) bool {
