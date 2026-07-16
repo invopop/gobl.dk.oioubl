@@ -137,7 +137,7 @@
 				]
 			},
 			"instructions": {
-				"key": "credit-transfer",
+				"key": "debit-transfer",
 				"ref": "SAMPLE-001",
 				"credit_transfer": [
 					{
@@ -147,7 +147,7 @@
 					}
 				],
 				"ext": {
-					"untdid-payment-means": "30"
+					"untdid-payment-means": "31"
 				}
 			}
 		},

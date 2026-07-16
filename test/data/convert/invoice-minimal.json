@@ -132,7 +132,7 @@
 				"notes": "on receipt within 30 days"
 			},
 			"instructions": {
-				"key": "credit-transfer",
+				"key": "debit-transfer",
 				"ref": "0003434323213231",
 				"credit_transfer": [
 					{
@@ -141,7 +141,7 @@
 					}
 				],
 				"ext": {
-					"untdid-payment-means": "30"
+					"untdid-payment-means": "31"
 				}
 			}
 		},
