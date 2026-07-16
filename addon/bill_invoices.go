@@ -441,8 +441,9 @@ func standardRatedHasPositivePercent(val any) bool {
 }
 
 // bankTransferCodes are the OIOUBL PaymentMeansCode values requiring a payee
-// account (F-LIB107 for 30/31, F-LIB377 for 58); 30 is normalized to 31.
-var bankTransferCodes = []cbc.Code{"30", "31", "58"}
+// account (F-LIB107 for 31, F-LIB377 for 58); 30 isn't a supported means at
+// all (F-LIB100, rule 12), so it's not listed here.
+var bankTransferCodes = []cbc.Code{"31", "58"}
 
 func bankTransferHasAccount(val any) bool {
 	instr, ok := val.(*pay.Instructions)
@@ -490,9 +491,8 @@ func dkBankAccountValid(val any) bool {
 	return ct != nil && ct.Number != "" && len(ct.Number) <= 10
 }
 
-// dkBankRegNrValid checks F-LIB124/F-LIB130: a domestic bank transfer (means
-// 42) must carry the Danish bank registration number — at most 4 digits, on
-// the credit-transfer branch label — for FinancialInstitutionBranch/ID.
+// dkBankRegNrValid checks the bank registration number (1-4 digits) on the
+// credit-transfer branch label (F-LIB124/F-LIB130).
 func dkBankRegNrValid(val any) bool {
 	instr, ok := val.(*pay.Instructions)
 	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "42" {
@@ -502,9 +502,8 @@ func dkBankRegNrValid(val any) bool {
 	return ct != nil && ct.Branch != nil && isNumericOfLen(ct.Branch.Label, 1, 4)
 }
 
-// nemKontoHasNoCreditTransfer checks F-LIB164: a NemKonto payment (means 97)
-// gives no account — the payer looks up the payee's registered account — so a
-// credit transfer would emit a forbidden PayeeFinancialAccount.
+// nemKontoHasNoCreditTransfer checks that a NemKonto payment carries no
+// credit transfer, since the payer looks up the account itself (F-LIB164).
 func nemKontoHasNoCreditTransfer(val any) bool {
 	instr, ok := val.(*pay.Instructions)
 	if !ok || instr == nil || instr.Ext.Get(untdid.ExtKeyPaymentMeans) != "97" {
