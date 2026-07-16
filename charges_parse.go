@@ -48,7 +48,10 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	return nil
 }
 
-// goblAllowancePercent reads the decimal MultiplierFactorNumeric (0.05 = 5%) into a GOBL percentage.
+// goblAllowancePercent reads MultiplierFactorNumeric as the decimal factor
+// OIOUBL requires (0.05 = 5%, F-LIB228). gobl.ubl's shared charge parsing
+// can't be reused here: it reads the EN 16931 percentage form (5 = 5%), which
+// would misread OIOUBL values by a factor of 100.
 func goblAllowancePercent(ac *AllowanceCharge) (*num.Percentage, error) {
 	if ac.MultiplierFactorNumeric == nil {
 		return nil, nil

@@ -326,7 +326,9 @@ func taxCurrencyTaxAmount(taxTotals []TaxTotal) (num.Amount, bool) {
 }
 
 // OIOUBL taxcategoryid-1.1 category codes and the serialization-only
-// taxschemeid-1.5 VAT (Moms) code.
+// taxschemeid-1.5 VAT (Moms) code. The codelist's only other values are
+// "Excise" (excise.go) and a block of legacy numeric tax codes (3010–3671)
+// with no GOBL equivalent; GOBL VAT keys map onto these four alone.
 const (
 	taxCategoryStandardRated = "StandardRated"
 	taxCategoryZeroRated     = "ZeroRated"
