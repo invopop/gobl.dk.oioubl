@@ -231,15 +231,36 @@ func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, erro
 	return charges, nil
 }
 
-// lineExciseMirrors returns the (duty code, amount) pairs already parsed as
-// line-level excise charges, identifying which document-level TaxTotal/Excise
-// entries are just their mirror rather than a genuine document-only duty.
+// baseKeyPart renders an optional base amount for use in a dedup map key,
+// so two mirror keys differing only in a nil vs. zero base don't collide.
+func baseKeyPart(base *num.Amount) string {
+	if base == nil {
+		return ""
+	}
+	return base.String()
+}
+
+// exciseMirrorKey builds the (duty code, amount, base) key used to match a
+// document-level TaxTotal/Excise entry against a line-level duty it might
+// just be mirroring. base must be included: two unrelated duties can share
+// the same code and amount while being computed against different bases
+// (e.g. a line-level "16" duty on a 40.00 base and an unrelated
+// document-level "16" duty on a 50.00 base), and omitting it would let one
+// wrongly swallow the other.
+func exciseMirrorKey(dutyCode string, amount num.Amount, base *num.Amount) string {
+	return dutyCode + "|" + amount.String() + "|" + baseKeyPart(base)
+}
+
+// lineExciseMirrors returns the (duty code, amount, base) keys already parsed
+// as line-level excise charges, identifying which document-level
+// TaxTotal/Excise entries are just their mirror rather than a genuine
+// document-only duty.
 func lineExciseMirrors(lines []*bill.Line) map[string]bool {
 	mirrors := make(map[string]bool)
 	for _, l := range lines {
 		for _, ch := range l.Charges {
 			if chargeIsExcise(ch.Key) {
-				mirrors[chargeDutyCode(ch.Ext)+"|"+ch.Amount.String()] = true
+				mirrors[exciseMirrorKey(chargeDutyCode(ch.Ext), ch.Amount, ch.Base)] = true
 			}
 		}
 	}
@@ -264,23 +285,25 @@ func exciseChargesFromTaxTotals(totals []TaxTotal, mirrors map[string]bool) ([]*
 			if err != nil {
 				return nil, err
 			}
-			if mirrors[st.TaxCategory.TaxScheme.ID.Value+"|"+amount.String()] {
+			var base *num.Amount
+			if st.TaxableAmount.Value != "" {
+				b, err := num.AmountFromString(ubl.NormalizeNumericString(st.TaxableAmount.Value))
+				if err != nil {
+					return nil, err
+				}
+				base = &b
+			}
+			if mirrors[exciseMirrorKey(st.TaxCategory.TaxScheme.ID.Value, amount, base)] {
 				continue
 			}
 			ch := &bill.Charge{
 				Key:    oioubl.ChargeKeyExcise,
 				Ext:    dutyCodeExt(st.TaxCategory.TaxScheme.ID.Value),
 				Amount: amount,
+				Base:   base,
 			}
 			if st.TaxCategory.TaxScheme.Name != nil {
 				ch.Reason = *st.TaxCategory.TaxScheme.Name
-			}
-			if st.TaxableAmount.Value != "" {
-				base, err := num.AmountFromString(ubl.NormalizeNumericString(st.TaxableAmount.Value))
-				if err != nil {
-					return nil, err
-				}
-				ch.Base = &base
 			}
 			if tc := st.TaxCategory.TaxScheme.TaxTypeCode; tc != nil && tc.Value != "" {
 				if key := goblVATKey(tc.Value); key != "" {

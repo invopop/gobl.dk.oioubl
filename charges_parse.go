@@ -30,7 +30,7 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 			if err != nil {
 				return err
 			}
-			if key := charge.Reason + "|" + charge.Amount.String(); chargeMirrors[key] > 0 {
+			if key := chargeMirrorKey(charge.Reason, charge.Amount, charge.Base); chargeMirrors[key] > 0 {
 				chargeMirrors[key]--
 				continue
 			}
@@ -43,7 +43,7 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 			if err != nil {
 				return err
 			}
-			if key := discount.Reason + "|" + discount.Amount.String(); discountMirrors[key] > 0 {
+			if key := chargeMirrorKey(discount.Reason, discount.Amount, discount.Base); discountMirrors[key] > 0 {
 				discountMirrors[key]--
 				continue
 			}
@@ -62,15 +62,26 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	return nil
 }
 
-// lineChargeMirrors/lineDiscountMirrors return a multiset of (reason, amount)
-// pairs already parsed as line-level charges/discounts, so goblAddCharges can
-// tell a document-level entry that's just the OIOUBL-mandated rollup of one
-// already captured at the line level (F-INV128/F-INV130 require the document
-// totals to be struck from the document's own cac:AllowanceCharge entries,
-// even when the value originates at the line) from a genuine document-only
-// one. A count, not a set, so N identical line-level entries only absorb N
-// document-level mirrors, not more. Keyed on reason+amount, since ordinary
-// charges have no duty-code equivalent to key on (contrast lineExciseMirrors).
+// chargeMirrorKey builds the (reason, amount, base) key used to match a
+// document-level charge/discount against a line-level one it might just be
+// mirroring. base must be included: two unrelated charges can share the same
+// reason and amount while being computed against different bases (the same
+// class of collision lineExciseMirrors guards against with its own duty-code
+// key), and omitting it would let one wrongly swallow the other.
+func chargeMirrorKey(reason string, amount num.Amount, base *num.Amount) string {
+	return reason + "|" + amount.String() + "|" + baseKeyPart(base)
+}
+
+// lineChargeMirrors/lineDiscountMirrors return a multiset of (reason, amount,
+// base) keys already parsed as line-level charges/discounts, so goblAddCharges
+// can tell a document-level entry that's just the OIOUBL-mandated rollup of
+// one already captured at the line level (F-INV128/F-INV130 require the
+// document totals to be struck from the document's own cac:AllowanceCharge
+// entries, even when the value originates at the line) from a genuine
+// document-only one. A count, not a set, so N identical line-level entries
+// only absorb N document-level mirrors, not more. Keyed on reason+amount+base
+// rather than lineExciseMirrors' duty code, since ordinary charges have no
+// duty-code equivalent to key on.
 func lineChargeMirrors(lines []*bill.Line) map[string]int {
 	mirrors := make(map[string]int)
 	for _, l := range lines {
@@ -78,7 +89,7 @@ func lineChargeMirrors(lines []*bill.Line) map[string]int {
 			if chargeIsExcise(ch.Key) {
 				continue
 			}
-			mirrors[ch.Reason+"|"+ch.Amount.String()]++
+			mirrors[chargeMirrorKey(ch.Reason, ch.Amount, ch.Base)]++
 		}
 	}
 	return mirrors
@@ -88,7 +99,7 @@ func lineDiscountMirrors(lines []*bill.Line) map[string]int {
 	mirrors := make(map[string]int)
 	for _, l := range lines {
 		for _, d := range l.Discounts {
-			mirrors[d.Reason+"|"+d.Amount.String()]++
+			mirrors[chargeMirrorKey(d.Reason, d.Amount, d.Base)]++
 		}
 	}
 	return mirrors
