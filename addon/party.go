@@ -8,8 +8,8 @@ import (
 )
 
 // OIOUBLEndpointURI joins a scheme and code with a colon (e.g. "DK:CVR:12345674").
-func OIOUBLEndpointURI(scheme, code string) string {
-	return scheme + ":" + code
+func OIOUBLEndpointURI(scheme, code cbc.Code) cbc.URI {
+	return cbc.URI(scheme.String() + ":" + code.String())
 }
 
 // normalizeParty migrates a scheme/code inbox to an org.Endpoint and derives a
@@ -23,7 +23,7 @@ func normalizeParty(p *org.Party) {
 	}
 	if len(p.Endpoints) == 0 {
 		p.Endpoints = append(p.Endpoints, &org.Endpoint{
-			URI: cbc.URI(OIOUBLEndpointURI(SchemeDKCVR, p.TaxID.Code.String())),
+			URI: OIOUBLEndpointURI(SchemeDKCVR, p.TaxID.Code),
 		})
 	}
 	// OIOUBL's PartyLegalEntity/CompanyID is the CVR; set it explicitly as a
@@ -49,10 +49,9 @@ func migrateInboxesToEndpoints(p *org.Party) {
 			kept = append(kept, in)
 			continue
 		}
-		scheme := in.Scheme.String()
 		p.Endpoints = append(p.Endpoints, &org.Endpoint{
 			Label: in.Label,
-			URI:   cbc.URI(OIOUBLEndpointURI(scheme, in.Code.String())),
+			URI:   OIOUBLEndpointURI(in.Scheme, in.Code),
 		})
 	}
 	p.Inboxes = kept

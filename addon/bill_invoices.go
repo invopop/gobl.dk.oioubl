@@ -112,7 +112,7 @@ func billInvoiceRules() *rules.Set {
 			rules.Each(
 				rules.Field("amount", rules.Assert("34", "document-level charge amount must be greater than zero (F-LIB019)", num.Positive)),
 				// Same taxesHaveVAT check as rule 02, just for non-excise charges (mutually exclusive with it) with a distinct citation.
-				rules.When(is.Func("non-excise charge", func(val any) bool { return !chargeIsExcise(val) }),
+				rules.When(is.Func("non-excise charge", chargeIsNotExcise),
 					rules.Field("taxes",
 						rules.Assert("28", "document-level charge requires a VAT tax for the OIOUBL TaxCategory (F-LIB226)",
 							is.Func("has a VAT combo", taxesHaveVAT)),
@@ -203,6 +203,10 @@ func chargeIsExcise(val any) bool {
 		return c != nil && c.Key == ChargeKeyExcise
 	}
 	return false
+}
+
+func chargeIsNotExcise(val any) bool {
+	return !chargeIsExcise(val)
 }
 
 // vatCategoryHasOIOUBLMapping reports whether a VAT combo's key maps to an OIOUBL

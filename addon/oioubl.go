@@ -22,7 +22,7 @@ const (
 
 	// SchemeDKCVR is the OIOUBL EndpointID scheme for a Danish CVR number, used
 	// when deriving a participant endpoint from a Danish tax ID.
-	SchemeDKCVR = "DK:CVR"
+	SchemeDKCVR cbc.Code = "DK:CVR"
 )
 
 func init() {

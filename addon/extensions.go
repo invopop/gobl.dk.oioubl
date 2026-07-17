@@ -7,9 +7,8 @@ import (
 )
 
 const (
-	// ChargeKeyExcise marks a bill charge as a Danish excise duty, which OIOUBL
-	// carries as its own cac:TaxTotal rather than a cac:AllowanceCharge. The
-	// duty's SKAT code travels in the ExtKeyDutyCode extension.
+	// ChargeKeyExcise marks a bill charge as a Danish excise duty; its SKAT
+	// code travels in the ExtKeyDutyCode extension.
 	ChargeKeyExcise cbc.Key = "excise"
 
 	// ExtKeyDutyCode identifies the SKAT excise duty code carried by a charge
