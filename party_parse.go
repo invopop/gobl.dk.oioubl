@@ -65,7 +65,7 @@ func goblPartyEndpoint(party *Party, p *org.Party) {
 	}
 	code := dkUnprefixed(eID.SchemeID, eID.Value)
 	p.Endpoints = append(p.Endpoints, &org.Endpoint{
-		URI: cbc.URI(oioubl.OIOUBLEndpointURI(eID.SchemeID, code)),
+		URI: oioubl.OIOUBLEndpointURI(cbc.Code(eID.SchemeID), cbc.Code(code)),
 	})
 }
 

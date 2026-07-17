@@ -106,7 +106,7 @@ const (
 // OIOUBL symbolic schemes for company identifiers (F-LIB179/189/195); the CVR
 // endpoint scheme is shared with the addon's own endpoint derivation.
 const (
-	schemeDKCVR = oioubl.SchemeDKCVR
+	schemeDKCVR = string(oioubl.SchemeDKCVR)
 	schemeDKSE  = "DK:SE"
 	schemeZZZ   = "ZZZ"
 )
