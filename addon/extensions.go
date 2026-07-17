@@ -15,6 +15,16 @@ const (
 	// ExtKeyDutyCode identifies the SKAT excise duty code carried by a charge
 	// keyed with ChargeKeyExcise.
 	ExtKeyDutyCode cbc.Key = "dk-oioubl-duty-code"
+
+	// ExtKeyTaxCategory carries a VAT combo's OIOUBL taxcategoryid-1.1 value.
+	ExtKeyTaxCategory cbc.Key = "dk-oioubl-tax-category"
+)
+
+// OIOUBL taxcategoryid-1.1 category codes this addon derives.
+const (
+	TaxCategoryStandardRated cbc.Code = "StandardRated"
+	TaxCategoryZeroRated     cbc.Code = "ZeroRated"
+	TaxCategoryReverseCharge cbc.Code = "ReverseCharge"
 )
 
 var extensions = []*cbc.Definition{
@@ -39,6 +49,25 @@ var extensions = []*cbc.Definition{
 				The value set is deliberately left open: the codelist has both
 				gained and lost codes across taxschemeid versions, and includes
 				non-numeric codes (e.g. ~21d~).
+			`),
+		},
+	},
+	{
+		Key: ExtKeyTaxCategory,
+		Name: i18n.String{
+			i18n.EN: "OIOUBL Tax Category",
+			i18n.DA: "OIOUBL Afgiftskategori",
+		},
+		Values: []*cbc.Definition{
+			{Code: TaxCategoryStandardRated, Name: i18n.String{i18n.EN: "Standard rated"}},
+			{Code: TaxCategoryZeroRated, Name: i18n.String{i18n.EN: "Zero rated"}},
+			{Code: TaxCategoryReverseCharge, Name: i18n.String{i18n.EN: "Reverse charge"}},
+		},
+		Desc: i18n.String{
+			i18n.EN: here.Doc(`
+				Set automatically during normalization from the combo's ~key~:
+				~standard~ (or none) → ~StandardRated~, ~zero~/~exempt~ →
+				~ZeroRated~, ~reverse-charge~ → ~ReverseCharge~.
 			`),
 		},
 	},
