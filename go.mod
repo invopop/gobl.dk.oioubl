@@ -3,13 +3,13 @@ module github.com/invopop/gobl.dk.oioubl
 go 1.25.0
 
 require (
-	cloud.google.com/go v0.118.0
 	github.com/invopop/gobl v0.502.2
-	github.com/invopop/gobl.ubl v0.55.1-0.20260717074545-57b448e7b072
+	github.com/invopop/gobl.ubl v0.55.1-0.20260717162637-f02c8d9d7298
 	github.com/stretchr/testify v1.11.1
 )
 
 require (
+	cloud.google.com/go v0.118.0 // indirect
 	github.com/Masterminds/semver/v3 v3.3.1 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
