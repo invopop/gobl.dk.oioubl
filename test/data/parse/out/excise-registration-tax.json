@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
 		"dig": {
 			"alg": "sha256",
-			"val": "fe8528deb01c293e4cca946994f96117e80ba932a5450a5b5d07cd48dc555a35"
+			"val": "52d9afdd160c8dff2f740aee9ab84820ff1569e62354f1a98f70895d2f1faeb5"
 		},
 		"from": "DK:CVR:12345674",
 		"to": "DK:CVR:76543216"
@@ -131,6 +131,7 @@
 				"i": 1,
 				"key": "excise",
 				"reason": "Registreringsafgift",
+				"base": "100000.00",
 				"amount": "100000.00",
 				"taxes": [
 					{

@@ -40,6 +40,8 @@ type exciseDuty struct {
 	scheme string
 	name   string
 	amount num.Amount
+	// base is the amount the duty rate was applied to (cac:TaxSubtotal/TaxableAmount).
+	base *num.Amount
 	// typeCode is the duty's taxtypecode value: a document-level duty states its
 	// own, a line-level duty inherits the line's VAT category.
 	typeCode string
@@ -70,6 +72,7 @@ func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
 				scheme:   chargeDutyCode(ch.Ext),
 				name:     ch.Reason,
 				amount:   ch.Amount,
+				base:     ch.Base,
 				typeCode: chargeVATTypeCode(ch),
 			})
 		}
@@ -87,10 +90,16 @@ func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
 	typeCode := lineVATTypeCode(line)
 	for _, ch := range line.Charges {
 		if chargeIsExcise(ch.Key) {
+			var base *num.Amount
+			if ch.Base != nil {
+				b := rescaleToCurrency(*ch.Base, currency)
+				base = &b
+			}
 			out = append(out, exciseDuty{
 				scheme:   chargeDutyCode(ch.Ext),
 				name:     ch.Reason,
 				amount:   rescaleToCurrency(ch.Amount, currency),
+				base:     base,
 				typeCode: typeCode,
 			})
 		}
@@ -151,6 +160,10 @@ func makeExciseTaxTotals(excises []exciseDuty, currency string) []TaxTotal {
 	var totals []TaxTotal
 	for _, e := range excises {
 		amt := Amount{Value: e.amount.String(), CurrencyID: &currency}
+		taxable := amt
+		if e.base != nil {
+			taxable = Amount{Value: e.base.String(), CurrencyID: &currency}
+		}
 		schemeID := schemeTaxScheme
 		schemeAgencyID := agencyID
 		typeAgencyID := agencyID
@@ -168,7 +181,7 @@ func makeExciseTaxTotals(excises []exciseDuty, currency string) []TaxTotal {
 		totals = append(totals, TaxTotal{
 			TaxAmount: amt,
 			TaxSubtotal: []TaxSubtotal{{
-				TaxableAmount: amt,
+				TaxableAmount: taxable,
 				TaxAmount:     amt,
 				TaxCategory: TaxCategory{
 					ID:        stampTaxCategoryID(&IDType{Value: taxCategoryExcise}),
@@ -204,6 +217,13 @@ func exciseLineChargesFromTaxTotals(totals []TaxTotal) ([]*bill.LineCharge, erro
 			}
 			if st.TaxCategory.TaxScheme.Name != nil {
 				ch.Reason = *st.TaxCategory.TaxScheme.Name
+			}
+			if st.TaxableAmount.Value != "" {
+				base, err := num.AmountFromString(ubl.NormalizeNumericString(st.TaxableAmount.Value))
+				if err != nil {
+					return nil, err
+				}
+				ch.Base = &base
 			}
 			charges = append(charges, ch)
 		}
@@ -254,6 +274,13 @@ func exciseChargesFromTaxTotals(totals []TaxTotal, mirrors map[string]bool) ([]*
 			}
 			if st.TaxCategory.TaxScheme.Name != nil {
 				ch.Reason = *st.TaxCategory.TaxScheme.Name
+			}
+			if st.TaxableAmount.Value != "" {
+				base, err := num.AmountFromString(ubl.NormalizeNumericString(st.TaxableAmount.Value))
+				if err != nil {
+					return nil, err
+				}
+				ch.Base = &base
 			}
 			if tc := st.TaxCategory.TaxScheme.TaxTypeCode; tc != nil && tc.Value != "" {
 				if key := goblVATKey(tc.Value); key != "" {
