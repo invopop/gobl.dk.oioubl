@@ -3,7 +3,9 @@ package dkoioubl
 import (
 	"testing"
 
+	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
+	"github.com/invopop/gobl/num"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,3 +33,63 @@ func TestParseAllowanceChargeZeroRated(t *testing.T) {
 	require.NotNil(t, p.Taxes[0].Percent)
 	assert.True(t, p.Taxes[0].Percent.IsZero())
 }
+
+func TestLineChargeMirrors(t *testing.T) {
+	lines := []*bill.Line{
+		{Charges: []*bill.LineCharge{
+			{Reason: "Fragt", Amount: num.MakeAmount(1500, 2)},
+			// An excise-keyed line charge is a different mirroring mechanism
+			// (lineExciseMirrors) and must not pollute the ordinary-charge count.
+			{Key: "excise", Reason: "Fragt", Amount: num.MakeAmount(1500, 2)},
+		}},
+		{Discounts: []*bill.LineDiscount{
+			{Reason: "Rabat", Amount: num.MakeAmount(500, 2)},
+		}},
+	}
+
+	chargeMirrors := lineChargeMirrors(lines)
+	assert.Equal(t, 1, chargeMirrors["Fragt|15.00"])
+	assert.Equal(t, 0, chargeMirrors["Rabat|5.00"])
+
+	discountMirrors := lineDiscountMirrors(lines)
+	assert.Equal(t, 1, discountMirrors["Rabat|5.00"])
+	assert.Equal(t, 0, discountMirrors["Fragt|15.00"])
+}
+
+func TestGoblAddChargesSkipsLineMirrorButKeepsGenuineDocumentCharge(t *testing.T) {
+	// "Fragt" mirrors the line's own charge below (the OIOUBL-mandated
+	// document-level rollup of that one line charge, F-INV128/F-INV130) and
+	// must not become a second, separate bill.Charge. "Håndteringsgebyr" has
+	// no line-level counterpart and must survive the dedup (the bug the
+	// excise-side test guards against: dropping ALL document charges the
+	// moment ANY line has its own, per TestExciseChargesFromTaxTotals).
+	ui := &Invoice{
+		AllowanceCharge: []AllowanceCharge{
+			{
+				ChargeIndicator:         true,
+				AllowanceChargeReason:   strPtr("Fragt"),
+				Amount:                  Amount{Value: "15.00"},
+				MultiplierFactorNumeric: strPtr("0.1"),
+				BaseAmount:              &Amount{Value: "150.00"},
+			},
+			{
+				ChargeIndicator:       true,
+				AllowanceChargeReason: strPtr("Håndteringsgebyr"),
+				Amount:                Amount{Value: "20.00"},
+			},
+		},
+	}
+	out := &bill.Invoice{
+		Lines: []*bill.Line{
+			{Charges: []*bill.LineCharge{
+				{Reason: "Fragt", Amount: num.MakeAmount(1500, 2)},
+			}},
+		},
+	}
+
+	require.NoError(t, ui.goblAddCharges(out))
+	require.Len(t, out.Charges, 1)
+	assert.Equal(t, "Håndteringsgebyr", out.Charges[0].Reason)
+}
+
+func strPtr(s string) *string { return &s }
