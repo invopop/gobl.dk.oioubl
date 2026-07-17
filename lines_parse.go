@@ -81,8 +81,15 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]string) (*b
 		line.Order = cbc.Code(docLine.OrderLineReference.LineID)
 	}
 
-	if docLine.AllowanceCharge != nil {
-		line, err = goblLineCharges(docLine.AllowanceCharge, line)
+	// cac:AllowanceCharge can sit directly under the line, and/or nested under
+	// cac:Price (a price-level adjustment baked into the unit price, e.g. a
+	// packaging fee); both map onto the line the same way.
+	allowances := docLine.AllowanceCharge
+	if docLine.Price.AllowanceCharge != nil {
+		allowances = append(allowances[:len(allowances):len(allowances)], docLine.Price.AllowanceCharge)
+	}
+	if len(allowances) > 0 {
+		line, err = goblLineCharges(allowances, line)
 		if err != nil {
 			return nil, err
 		}
