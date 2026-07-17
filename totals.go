@@ -245,62 +245,6 @@ func findTaxNote(notes []*tax.Note, catCode cbc.Code, rate *tax.RateTotal) *tax.
 	return nil
 }
 
-// OIOUBL: also derives the rate from per-subtotal TransactionCurrencyTaxAmount when only one TaxTotal block is present.
-func goblExchangeRates(docCurrency, taxCurrency cur.Code, taxTotals []TaxTotal) []*cur.ExchangeRate {
-	if len(taxTotals) == 0 {
-		return nil
-	}
-
-	docAmount, err := num.AmountFromString(ubl.NormalizeNumericString(taxTotals[0].TaxAmount.Value))
-	if err != nil || docAmount.IsZero() {
-		return nil
-	}
-
-	taxAmount, ok := taxCurrencyTaxAmount(taxTotals)
-	if !ok {
-		return nil
-	}
-
-	rate := taxAmount.Divide(docAmount)
-
-	return []*cur.ExchangeRate{
-		{
-			From:   docCurrency,
-			To:     taxCurrency,
-			Amount: rate,
-		},
-	}
-}
-
-// taxCurrencyTaxAmount returns the total tax in the tax currency: a second
-// TaxTotal block if present, else the summed per-subtotal amounts of the first.
-func taxCurrencyTaxAmount(taxTotals []TaxTotal) (num.Amount, bool) {
-	if len(taxTotals) >= 2 {
-		a, err := num.AmountFromString(ubl.NormalizeNumericString(taxTotals[1].TaxAmount.Value))
-		if err != nil {
-			return num.Amount{}, false
-		}
-		return a, true
-	}
-
-	var total num.Amount
-	found := false
-	for _, st := range taxTotals[0].TaxSubtotal {
-		if st.TransactionCurrencyTaxAmount == nil {
-			continue
-		}
-		a, err := num.AmountFromString(ubl.NormalizeNumericString(st.TransactionCurrencyTaxAmount.Value))
-		if err != nil {
-			return num.Amount{}, false
-		}
-		if found {
-			total = total.Add(a)
-		} else {
-			total, found = a, true
-		}
-	}
-	return total, found
-}
 
 // OIOUBL taxcategoryid-1.1 category codes; "Excise" and the legacy numeric
 // block (inbound-only, see excise.go) are the codelist's only other values.

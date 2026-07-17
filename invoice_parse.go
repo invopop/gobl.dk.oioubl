@@ -135,7 +135,7 @@ func (ui *Invoice) applyOrderingExtras(out *bill.Invoice) error {
 
 func (ui *Invoice) applyExchangeRates(out *bill.Invoice) {
 	if ui.TaxCurrencyCode != "" && ui.DocumentCurrencyCode != ui.TaxCurrencyCode {
-		out.ExchangeRates = goblExchangeRates(
+		out.ExchangeRates = ubl.GoblExchangeRates(
 			currency.Code(ui.DocumentCurrencyCode),
 			currency.Code(ui.TaxCurrencyCode),
 			ui.TaxTotal,
