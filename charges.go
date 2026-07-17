@@ -22,21 +22,30 @@ func (ui *Invoice) applyCharges(inv *bill.Invoice) {
 			continue
 		}
 		ac := ui.AllowanceCharge[i]
-		applyAllowanceCharge(&ac, ch.Percent, ch.Taxes)
+		applyAllowanceCharge(&ac, ch.Percent, ch.Base, ch.Taxes)
 		kept = append(kept, ac)
 	}
 	for i, d := range inv.Discounts {
 		ac := ui.AllowanceCharge[len(inv.Charges)+i]
-		applyAllowanceCharge(&ac, d.Percent, d.Taxes)
+		applyAllowanceCharge(&ac, d.Percent, d.Base, d.Taxes)
 		kept = append(kept, ac)
 	}
 	ui.AllowanceCharge = kept
 }
 
-func applyAllowanceCharge(ac *AllowanceCharge, pct *num.Percentage, taxes tax.Set) {
+// applyAllowanceCharge stamps MultiplierFactorNumeric and taxcategoryid, and
+// (like applyLineAllowanceCharge) prefers the charge/discount's own base over
+// the base builder's invoice-sum default, since it may have been computed
+// against a different amount (gobl.ubl's AddCharges always uses the invoice
+// sum, ignoring an already-parsed Base).
+func applyAllowanceCharge(ac *AllowanceCharge, pct *num.Percentage, base *num.Amount, taxes tax.Set) {
 	if pct != nil {
 		p := allowanceMultiplier(pct)
 		ac.MultiplierFactorNumeric = &p
+		if base != nil && ac.Amount.CurrencyID != nil {
+			b := rescaleToCurrency(*base, *ac.Amount.CurrencyID)
+			ac.BaseAmount = &Amount{Value: b.String(), CurrencyID: ac.Amount.CurrencyID}
+		}
 	}
 	for i, t := range taxes {
 		if i >= len(ac.TaxCategory) {
