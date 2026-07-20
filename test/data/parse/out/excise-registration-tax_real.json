@@ -1,0 +1,265 @@
+{
+	"$schema": "https://gobl.org/draft-0/envelope",
+	"head": {
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+		"dig": {
+			"alg": "sha256",
+			"val": "f83c00776469c2f27814c00d2e14ba818faa35a6ac9a595d4500fcd8e8b16e90"
+		},
+		"from": "DK:CVR:12345678",
+		"to": "GLN:5798000416604"
+	},
+	"doc": {
+		"$schema": "https://gobl.org/draft-0/bill/invoice",
+		"$regime": "DK",
+		"$addons": [
+			"eu-en16931-v2017",
+			"dk-oioubl-v2"
+		],
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+		"type": "standard",
+		"code": "5555",
+		"issue_date": "2009-06-02",
+		"currency": "DKK",
+		"tax": {
+			"rounding": "currency",
+			"ext": {
+				"untdid-document-type": "380"
+			}
+		},
+		"supplier": {
+			"name": "Super Biler",
+			"tax_id": {
+				"country": "DK",
+				"code": "12345678"
+			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "DK12345678",
+					"ext": {
+						"iso-scheme-id": "DK:CVR"
+					}
+				},
+				{
+					"code": "12345678",
+					"ext": {
+						"iso-scheme-id": "DK:CVR"
+					}
+				}
+			],
+			"people": [
+				{
+					"name": null,
+					"identities": [
+						{
+							"code": "xyz@superbiler.dk"
+						}
+					]
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "DK:CVR:12345678"
+				}
+			],
+			"addresses": [
+				{
+					"num": "11",
+					"street": "Bilvej",
+					"locality": "Dyssegård",
+					"code": "2870",
+					"country": "DK"
+				}
+			]
+		},
+		"customer": {
+			"name": "Den Lille Skole",
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "DK16356709",
+					"ext": {
+						"iso-scheme-id": "DK:CVR"
+					}
+				},
+				{
+					"code": "5798000416604",
+					"ext": {
+						"iso-scheme-id": "GLN"
+					}
+				}
+			],
+			"people": [
+				{
+					"name": {
+						"given": "Hans Hansen"
+					},
+					"identities": [
+						{
+							"code": "7778"
+						}
+					]
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "GLN:5798000416604"
+				}
+			],
+			"addresses": [
+				{
+					"num": "10",
+					"street": "Fredericiavej",
+					"locality": "Helsingør",
+					"code": "3000",
+					"country": "DK"
+				}
+			],
+			"emails": [
+				{
+					"addr": "Hans@dls.dk"
+				}
+			],
+			"telephones": [
+				{
+					"num": "26532147"
+				}
+			]
+		},
+		"lines": [
+			{
+				"i": 1,
+				"quantity": "1.00",
+				"item": {
+					"name": "Honda Jazz 1,4 Comfort I-shift",
+					"description": "Honda Jazz 1,4 Comfort I-shift",
+					"price": "102842.00",
+					"unit": "item"
+				},
+				"sum": "102842.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"percent": "25.00%"
+					}
+				],
+				"total": "102842.00"
+			},
+			{
+				"i": 2,
+				"quantity": "-1.00",
+				"item": {
+					"name": "Byttebil",
+					"description": "Byttebil",
+					"price": "26721.00",
+					"unit": "item"
+				},
+				"sum": "-26721.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "zero",
+						"percent": "0.00%"
+					}
+				],
+				"total": "-26721.00"
+			}
+		],
+		"discounts": [
+			{
+				"i": 1,
+				"reason": "Rabat",
+				"amount": "0.40",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"percent": "25.00%"
+					}
+				]
+			}
+		],
+		"charges": [
+			{
+				"i": 1,
+				"key": "excise",
+				"reason": "Registreringsafgift",
+				"base": "154290.00",
+				"amount": "78169.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "zero",
+						"percent": "0%"
+					}
+				],
+				"ext": {
+					"dk-oioubl-duty-code": "0"
+				}
+			}
+		],
+		"payment": {
+			"terms": {
+				"due_dates": [
+					{
+						"date": "2009-06-05",
+						"amount": "180000.00",
+						"percent": "100%"
+					}
+				]
+			},
+			"instructions": {
+				"key": "other",
+				"credit_transfer": [
+					{
+						"number": "1234123456",
+						"branch": {
+							"label": "1234",
+							"country": "DK"
+						}
+					}
+				],
+				"ext": {
+					"untdid-payment-means": "42"
+				}
+			}
+		},
+		"delivery": {
+			"date": "2009-06-02"
+		},
+		"totals": {
+			"sum": "76121.00",
+			"discount": "0.40",
+			"charge": "78169.00",
+			"total": "154289.60",
+			"taxes": {
+				"categories": [
+					{
+						"code": "VAT",
+						"rates": [
+							{
+								"key": "standard",
+								"base": "102841.60",
+								"percent": "25.00%",
+								"amount": "25710.40"
+							},
+							{
+								"key": "zero",
+								"base": "51448.00",
+								"percent": "0.00%",
+								"amount": "0.00"
+							}
+						],
+						"amount": "25710.40"
+					}
+				],
+				"sum": "25710.40"
+			},
+			"tax": "25710.40",
+			"total_with_tax": "180000.00",
+			"payable": "180000.00"
+		}
+	}
+}
