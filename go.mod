@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/invopop/gobl v0.502.2
-	github.com/invopop/gobl.ubl v0.55.1-0.20260720153702-36d1e1ceb0e8
+	github.com/invopop/gobl.ubl v0.55.1-0.20260720155755-17f1c15dd370
 	github.com/stretchr/testify v1.11.1
 )
 
@@ -37,3 +37,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.7.0 // indirect
 )
+
+replace github.com/invopop/gobl.ubl => /home/CarlosMari/workspace/invopop/gobl.ubl
