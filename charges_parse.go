@@ -134,7 +134,7 @@ type parsedAllowanceCharge struct {
 // percent (F-LIB228) and tax category shared by document-level charges and
 // discounts, tagging the reason code under extKey (untdid.ExtKeyCharge or
 // untdid.ExtKeyAllowance) and mapping the 63/Moms scheme + taxcategoryid codes.
-func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap map[string]string) (parsedAllowanceCharge, error) {
+func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap map[string]*ubl.TaxCategoryInfo) (parsedAllowanceCharge, error) {
 	var out parsedAllowanceCharge
 	if ac.AllowanceChargeReason != nil {
 		out.Reason = *ac.AllowanceChargeReason
@@ -185,8 +185,8 @@ func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap ma
 
 			// Look up exemption code from TaxTotal
 			key := ubl.BuildTaxCategoryKey(ac.TaxCategory[0].TaxScheme.ID.Value, ac.TaxCategory[0].ID.Value, ac.TaxCategory[0].Percent)
-			if code, ok := taxCategoryMap[key]; ok && code != "" {
-				out.Taxes[0].Ext = out.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(code))
+			if info, ok := taxCategoryMap[key]; ok && info.ExemptionReasonCode != "" {
+				out.Taxes[0].Ext = out.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.ExemptionReasonCode))
 			}
 		}
 
@@ -210,7 +210,7 @@ func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap ma
 	return out, nil
 }
 
-func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]string) (*bill.Charge, error) {
+func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]*ubl.TaxCategoryInfo) (*bill.Charge, error) {
 	p, err := parseAllowanceCharge(ac, untdid.ExtKeyCharge, taxCategoryMap)
 	if err != nil {
 		return nil, err
@@ -225,7 +225,7 @@ func goblCharge(ac *AllowanceCharge, taxCategoryMap map[string]string) (*bill.Ch
 	}, nil
 }
 
-func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]string) (*bill.Discount, error) {
+func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*ubl.TaxCategoryInfo) (*bill.Discount, error) {
 	p, err := parseAllowanceCharge(ac, untdid.ExtKeyAllowance, taxCategoryMap)
 	if err != nil {
 		return nil, err

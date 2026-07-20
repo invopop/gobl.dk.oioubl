@@ -38,7 +38,7 @@ func (ui *Invoice) goblAddLines(out *bill.Invoice) error {
 
 // goblConvertLine also reconstructs line-level cac:TaxTotal/Excise blocks as
 // line charges (see exciseLineChargesFromTaxTotals).
-func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]string) (*bill.Line, error) {
+func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*ubl.TaxCategoryInfo) (*bill.Line, error) {
 	if docLine.Price == nil {
 		return nil, nil
 	}
@@ -170,7 +170,7 @@ func goblLineDocumentReference(line *bill.Line, docLine *InvoiceLine) {
 
 // goblLineTaxesFromTaxTotals falls back to the line's own cac:TaxTotal for VAT
 // when it carries no cac:ClassifiedTaxCategory (excise subtotals are skipped).
-func goblLineTaxesFromTaxTotals(totals []TaxTotal, line *bill.Line, taxCategoryMap map[string]string) {
+func goblLineTaxesFromTaxTotals(totals []TaxTotal, line *bill.Line, taxCategoryMap map[string]*ubl.TaxCategoryInfo) {
 	for _, tt := range totals {
 		for i := range tt.TaxSubtotal {
 			tc := &tt.TaxSubtotal[i].TaxCategory
@@ -189,7 +189,7 @@ func goblLineTaxesFromTaxTotals(totals []TaxTotal, line *bill.Line, taxCategoryM
 
 // goblApplyLineTaxCategory maps a tax category onto the line's taxes via
 // goblTaxSchemeCategory/goblTaxCategoryCode.
-func goblApplyLineTaxCategory(ctc *ClassifiedTaxCategory, line *bill.Line, taxCategoryMap map[string]string) {
+func goblApplyLineTaxCategory(ctc *ClassifiedTaxCategory, line *bill.Line, taxCategoryMap map[string]*ubl.TaxCategoryInfo) {
 	if ctc == nil || ctc.TaxScheme == nil {
 		return
 	}
@@ -205,8 +205,8 @@ func goblApplyLineTaxCategory(ctc *ClassifiedTaxCategory, line *bill.Line, taxCa
 		// The exemption reason (BT-121) is carried at the document level
 		// (TaxTotal subtotal); look it up for this line's category.
 		key := ubl.BuildTaxCategoryKey(ctc.TaxScheme.ID.Value, ctc.ID.Value, ctc.Percent)
-		if code, ok := taxCategoryMap[key]; ok && code != "" {
-			line.Taxes[0].Ext = line.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(code))
+		if info, ok := taxCategoryMap[key]; ok && info.ExemptionReasonCode != "" {
+			line.Taxes[0].Ext = line.Taxes[0].Ext.Set(cef.ExtKeyVATEX, cbc.Code(info.ExemptionReasonCode))
 		}
 	}
 	if ctc.Percent != nil {
