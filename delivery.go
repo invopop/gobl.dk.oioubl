@@ -16,9 +16,7 @@ func newDelivery(del *bill.DeliveryDetails) *Delivery {
 	out := ubl.NewDelivery(del, ubl.Context{})
 
 	if del.Period != nil {
-		// RequestedDeliveryPeriod is the only delivery period OIOUBL permits
-		// (F-INV087/089/090 forbid LatestDeliveryDate and Promised/Estimated);
-		// the base sets LatestDeliveryDate/ActualDeliveryDate for a period instead.
+		// OIOUBL only permits RequestedDeliveryPeriod for a period (F-INV087/089/090).
 		out.LatestDeliveryDate = nil
 		out.ActualDeliveryDate = nil
 		if del.Date != nil {
@@ -32,8 +30,8 @@ func newDelivery(del *bill.DeliveryDetails) *Delivery {
 	}
 
 	if out.DeliveryParty != nil {
-		// Drop PartyLegalEntity: a delivery party has no company id, and OIOUBL
-		// requires a non-empty CompanyID wherever PartyLegalEntity is present (F-LIB187).
+		// OIOUBL requires a non-empty CompanyID on PartyLegalEntity (F-LIB187);
+		// the delivery party never has one, so drop the element entirely.
 		out.DeliveryParty.PartyLegalEntity = nil
 	}
 

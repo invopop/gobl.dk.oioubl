@@ -35,7 +35,6 @@ func isExciseCategoryID(id string) bool {
 	return n >= legacyExciseCategoryMin && n <= legacyExciseCategoryMax
 }
 
-// exciseDuty is a duty resolved into the values OIOUBL needs.
 type exciseDuty struct {
 	scheme string
 	name   string
@@ -47,7 +46,6 @@ type exciseDuty struct {
 	typeCode string
 }
 
-// chargeIsExcise reports whether a charge Key marks an OIOUBL excise duty.
 func chargeIsExcise(key cbc.Key) bool {
 	return key == oioubl.ChargeKeyExcise
 }
@@ -58,12 +56,10 @@ func chargeDutyCode(ext tax.Extensions) string {
 	return ext.Get(oioubl.ExtKeyDutyCode).String()
 }
 
-// dutyCodeExt builds the extension carrying a parsed duty code.
 func dutyCodeExt(code string) tax.Extensions {
 	return tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyDutyCode: cbc.Code(code)})
 }
 
-// collectExcise gathers every excise duty across document- and line-level charges.
 func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
 	var out []exciseDuty
 	for _, ch := range inv.Charges {
@@ -107,8 +103,6 @@ func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
 	return out
 }
 
-// chargeVATTypeCode resolves a document-level duty's own VAT combo into its
-// OIOUBL taxtypecode value.
 func chargeVATTypeCode(ch *bill.Charge) string {
 	if ch == nil {
 		return ""
@@ -120,8 +114,7 @@ func chargeVATTypeCode(ch *bill.Charge) string {
 	return taxCategoryID(combo.Key)
 }
 
-// lineVATTypeCode resolves the taxtypecode a line's duties inherit from the
-// line's own VAT category (OIOUBL Skat guideline).
+// lineVATTypeCode: a line's duties inherit their taxtypecode from the line's own VAT category (OIOUBL Skat guideline).
 func lineVATTypeCode(line *bill.Line) string {
 	if line == nil {
 		return ""

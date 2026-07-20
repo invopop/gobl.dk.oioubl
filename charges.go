@@ -52,9 +52,7 @@ func allowanceMultiplier(pct *num.Percentage) string {
 	return pct.Base().String()
 }
 
-// makeTaxCategory builds on gobl.ubl's own tax-category builder, overriding
-// the ID: the base reads it from the UNTDID ext our normalizer strips, we
-// derive it from the GOBL key instead (taxCategoryID).
+// makeTaxCategory builds on gobl.ubl's tax-category builder, deriving the ID from the GOBL key instead.
 func makeTaxCategory(taxes tax.Set) []*TaxCategory {
 	cats := ubl.MakeTaxCategory(taxes)
 	for i, t := range taxes {

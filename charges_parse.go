@@ -66,9 +66,8 @@ func chargeMirrorKey(reason string, amount num.Amount, base *num.Amount) string 
 	return reason + "|" + amount.String() + "|" + baseKeyPart(base)
 }
 
-// lineChargeMirrors/lineDiscountMirrors count line-level charges/discounts by
-// key, so goblAddCharges can drop document-level entries that just mirror
-// them (OIOUBL's F-INV128/F-INV130 rollup) without swallowing genuine ones.
+// lineChargeMirrors counts line-level charges, so goblAddCharges can drop
+// document-level entries that just mirror one already captured at the line.
 func lineChargeMirrors(lines []*bill.Line) map[string]int {
 	mirrors := make(map[string]int)
 	for _, l := range lines {
@@ -82,6 +81,7 @@ func lineChargeMirrors(lines []*bill.Line) map[string]int {
 	return mirrors
 }
 
+// lineDiscountMirrors is lineChargeMirrors' discount equivalent.
 func lineDiscountMirrors(lines []*bill.Line) map[string]int {
 	mirrors := make(map[string]int)
 	for _, l := range lines {

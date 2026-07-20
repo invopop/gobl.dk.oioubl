@@ -18,8 +18,7 @@ func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 		ui.AccountingCost = inv.Ordering.Cost.String()
 	}
 	ui.applyOrderingRefs(inv)
-	// BR-53: the restated tax rides StandardRated subtotals only, so the tax
-	// currency is dropped when none is present (F-LIB373 / F-INV018).
+	// Drop the tax currency if there's no StandardRated subtotal for it to ride (F-LIB373/F-INV018).
 	if ui.TaxCurrencyCode != "" && !hasStandardRated(inv) {
 		ui.TaxCurrencyCode = ""
 	}
