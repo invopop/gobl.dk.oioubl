@@ -163,28 +163,22 @@ func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount,
 	acs := ubl.MakeLineCharges(charges, discounts, ccy, baseSum)
 	i := 0
 	for _, ch := range charges {
-		applyLineAllowanceCharge(acs[i], ch.Percent, ch.Base, ccy, taxes)
+		applyLineAllowanceCharge(acs[i], ch.Percent, taxes)
 		i++
 	}
 	for _, d := range discounts {
-		applyLineAllowanceCharge(acs[i], d.Percent, d.Base, ccy, taxes)
+		applyLineAllowanceCharge(acs[i], d.Percent, taxes)
 		i++
 	}
 	return acs
 }
 
-// applyLineAllowanceCharge stamps MultiplierFactorNumeric/TaxCategory, and
-// prefers the charge/discount's own base over the line's sum, since it may
-// have been computed against a different amount (gobl.ubl's MakeLineCharges
-// always uses the line sum, ignoring an already-parsed Base).
-func applyLineAllowanceCharge(ac *AllowanceCharge, pct *num.Percentage, base *num.Amount, ccy string, taxes tax.Set) {
+// applyLineAllowanceCharge stamps MultiplierFactorNumeric/TaxCategory;
+// gobl.ubl's own MakeLineCharges already handles the base amount.
+func applyLineAllowanceCharge(ac *AllowanceCharge, pct *num.Percentage, taxes tax.Set) {
 	if pct != nil {
 		p := allowanceMultiplier(pct)
 		ac.MultiplierFactorNumeric = &p
-		if base != nil {
-			b := rescaleToCurrency(*base, ccy)
-			ac.BaseAmount = &Amount{Value: b.String(), CurrencyID: &ccy}
-		}
 	}
 	ac.TaxCategory = makeTaxCategory(taxes)
 }
