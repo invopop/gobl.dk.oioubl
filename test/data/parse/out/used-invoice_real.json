@@ -1,0 +1,404 @@
+{
+	"$schema": "https://gobl.org/draft-0/envelope",
+	"head": {
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+		"dig": {
+			"alg": "sha256",
+			"val": "3fbae0808d462dc2a2653e7c997c6aa0d6d89d03e2561b409efe9985acf6075c"
+		},
+		"from": "DK:CVR:16356706",
+		"to": "GLN:5798000416604"
+	},
+	"doc": {
+		"$schema": "https://gobl.org/draft-0/bill/invoice",
+		"$regime": "DK",
+		"$addons": [
+			"eu-en16931-v2017",
+			"dk-oioubl-v2"
+		],
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+		"type": "standard",
+		"code": "A00095678",
+		"issue_date": "2007-02-20",
+		"currency": "DKK",
+		"tax": {
+			"rounding": "currency",
+			"ext": {
+				"untdid-document-type": "380"
+			}
+		},
+		"supplier": {
+			"name": "Tavleleverandøren",
+			"alias": "Tavleverandøren",
+			"tax_id": {
+				"country": "DK",
+				"code": "16356706"
+			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "DK16356707",
+					"ext": {
+						"iso-scheme-id": "DK:CVR"
+					}
+				},
+				{
+					"code": "12457845",
+					"ext": {
+						"iso-scheme-id": "DK:CVR"
+					}
+				}
+			],
+			"people": [
+				{
+					"name": {
+						"given": "Hugo Jensen"
+					},
+					"identities": [
+						{
+							"code": "23456"
+						}
+					]
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "DK:CVR:16356706"
+				}
+			],
+			"addresses": [
+				{
+					"po_box": "1523",
+					"num": "11",
+					"street": "Leverandørvej",
+					"locality": "Dyssegård",
+					"code": "2870",
+					"country": "DK"
+				}
+			],
+			"emails": [
+				{
+					"addr": "Hugo@tavl.dk"
+				}
+			],
+			"telephones": [
+				{
+					"num": "15812337"
+				}
+			]
+		},
+		"customer": {
+			"name": "Den Lille Skole",
+			"tax_id": {
+				"country": "DK",
+				"code": "16356709"
+			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "DK16356709",
+					"ext": {
+						"iso-scheme-id": "DK:CVR"
+					}
+				},
+				{
+					"code": "5798000416604",
+					"ext": {
+						"iso-scheme-id": "GLN"
+					}
+				}
+			],
+			"people": [
+				{
+					"name": {
+						"given": "Hans Hansen"
+					},
+					"identities": [
+						{
+							"code": "9000000005"
+						}
+					]
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "GLN:5798000416604"
+				}
+			],
+			"addresses": [
+				{
+					"num": "10",
+					"street": "Fredericiavej",
+					"locality": "Helsingør",
+					"code": "3000",
+					"country": "DK"
+				}
+			],
+			"emails": [
+				{
+					"addr": "Hans@dls.dk"
+				}
+			],
+			"telephones": [
+				{
+					"num": "26532147"
+				}
+			]
+		},
+		"lines": [
+			{
+				"i": 1,
+				"quantity": "1.00",
+				"identifier": {
+					"code": "123"
+				},
+				"order": "1",
+				"cost": "1234567890",
+				"item": {
+					"ref": "5712345780121",
+					"name": "Hejsetavle",
+					"identities": [
+						{
+							"code": "4444"
+						},
+						{
+							"label": "UNSPSC",
+							"code": "12121212"
+						}
+					],
+					"description": "Hejsetavle",
+					"price": "5000.00",
+					"unit": "item"
+				},
+				"sum": "5000.00",
+				"charges": [
+					{
+						"reason": "Fragt",
+						"base": "150.00",
+						"percent": "10%",
+						"amount": "15.00"
+					},
+					{
+						"reason": "Emballageafgift",
+						"base": "5000.00",
+						"percent": "5%",
+						"amount": "250.00"
+					}
+				],
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"percent": "25%"
+					}
+				],
+				"total": "5265.00",
+				"notes": [
+					{
+						"text": "Note på linjen"
+					}
+				]
+			}
+		],
+		"charges": [
+			{
+				"i": 1,
+				"key": "excise",
+				"reason": "Bæreposer",
+				"base": "5000.00",
+				"amount": "600.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard"
+					}
+				],
+				"ext": {
+					"dk-oioubl-duty-code": "31"
+				}
+			}
+		],
+		"ordering": {
+			"cost": "5250124502",
+			"period": {
+				"start": "2007-02-20",
+				"end": "2007-02-20"
+			},
+			"contracts": [
+				{
+					"type": "Contract",
+					"issue_date": "2007-02-20",
+					"code": "234"
+				}
+			],
+			"purchases": [
+				{
+					"code": "5002701"
+				}
+			]
+		},
+		"payment": {
+			"payee": {
+				"name": "Den Lille Skole, adm",
+				"tax_id": {
+					"country": "DK",
+					"code": "16356709"
+				},
+				"identities": [
+					{
+						"scope": "legal",
+						"code": "DK16356709",
+						"ext": {
+							"iso-scheme-id": "DK:CVR"
+						}
+					},
+					{
+						"code": "5798000416605",
+						"ext": {
+							"iso-scheme-id": "GLN"
+						}
+					}
+				],
+				"people": [
+					{
+						"name": {
+							"given": "Hans Hansen"
+						},
+						"identities": [
+							{
+								"code": "9000000005"
+							}
+						]
+					}
+				],
+				"endpoints": [
+					{
+						"uri": "GLN:5798000416605"
+					}
+				],
+				"addresses": [
+					{
+						"po_box": "1344",
+						"num": "10",
+						"street": "Fredericiavej",
+						"street_extra": "ekstra",
+						"locality": "Helsingør",
+						"region": "Syd",
+						"code": "3000",
+						"country": "DK"
+					}
+				],
+				"emails": [
+					{
+						"addr": "Hans@dls.dk"
+					}
+				],
+				"telephones": [
+					{
+						"num": "26532147"
+					}
+				]
+			},
+			"terms": {
+				"due_dates": [
+					{
+						"date": "2007-03-01",
+						"amount": "7181.25",
+						"percent": "100%"
+					}
+				],
+				"notes": "Løbende måned + 30 dage"
+			},
+			"advances": [
+				{
+					"date": "2006-12-14",
+					"ref": "165456",
+					"amount": "100.00"
+				}
+			],
+			"instructions": {
+				"key": "other",
+				"credit_transfer": [
+					{
+						"number": "1234567891",
+						"name": "Bankkonto",
+						"branch": {
+							"label": "1234",
+							"country": "DK"
+						}
+					}
+				],
+				"ext": {
+					"untdid-payment-means": "42"
+				}
+			}
+		},
+		"delivery": {
+			"receiver": {
+				"name": "Den lille skole",
+				"addresses": [
+					{
+						"num": "10",
+						"street": "Fredericiavej",
+						"locality": "Helsingør",
+						"code": "3100",
+						"country": "DK"
+					}
+				]
+			},
+			"identities": [
+				{
+					"code": "INCOTERMS"
+				}
+			],
+			"date": "2005-11-15",
+			"period": {
+				"start": "2007-02-21",
+				"end": "2007-02-25"
+			}
+		},
+		"totals": {
+			"sum": "5265.00",
+			"charge": "600.00",
+			"total": "5865.00",
+			"taxes": {
+				"categories": [
+					{
+						"code": "VAT",
+						"rates": [
+							{
+								"key": "standard",
+								"base": "5265.00",
+								"percent": "25%",
+								"amount": "1316.25"
+							},
+							{
+								"key": "standard",
+								"base": "600.00",
+								"amount": "0.00"
+							}
+						],
+						"amount": "1316.25"
+					}
+				],
+				"sum": "1316.25"
+			},
+			"tax": "1316.25",
+			"total_with_tax": "7181.25",
+			"payable": "7181.25",
+			"advance": "100.00",
+			"due": "7081.25"
+		},
+		"notes": [
+			{
+				"text": "Note til dokumentet"
+			}
+		],
+		"attachments": [
+			{
+				"code": "345",
+				"url": "http://www.leverandør.dk/yderligere.pdf"
+			}
+		]
+	}
+}
