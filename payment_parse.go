@@ -3,12 +3,10 @@ package dkoioubl
 import (
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
-	"github.com/invopop/gobl/tax"
 )
 
 func (ui *Invoice) goblAddPayment(out *bill.Invoice) error {
@@ -73,72 +71,17 @@ func (ui *Invoice) goblPaymentTerms(payment *bill.PaymentDetails) error {
 // goblPaymentAdvances reconstructs each cac:PrepaidPayment (F-INV131), or
 // recovers a single advance from a total-only PrepaidAmount.
 func (ui *Invoice) goblPaymentAdvances(payment *bill.PaymentDetails) error {
-	switch {
-	case len(ui.PrepaidPayment) > 0:
-		payment.Advances = make([]*pay.Record, 0, len(ui.PrepaidPayment))
-		for _, p := range ui.PrepaidPayment {
-			if p.PaidAmount == nil {
-				continue
-			}
-			amount, err := num.AmountFromString(ubl.NormalizeNumericString(p.PaidAmount.Value))
-			if err != nil {
-				return err
-			}
-			advance := &pay.Record{Amount: amount}
-			if p.ReceivedDate != nil {
-				d, err := ubl.ParseDate(*p.ReceivedDate)
-				if err != nil {
-					return err
-				}
-				advance.Date = &d
-			}
-			if p.InstructionID != nil {
-				advance.Ref = *p.InstructionID
-			}
-			payment.Advances = append(payment.Advances, advance)
-		}
-	case ui.LegalMonetaryTotal.PrepaidAmount != nil:
-		totalPrepaid, err := num.AmountFromString(ubl.NormalizeNumericString(ui.LegalMonetaryTotal.PrepaidAmount.Value))
-		if err != nil {
-			return err
-		}
-		payment.Advances = append(payment.Advances, &pay.Record{
-			Amount:      totalPrepaid,
-			Description: "Prepaid Amount",
-		})
-	}
-	return nil
+	return ubl.GoblPaymentAdvances(payment, ui.PrepaidPayment, ui.LegalMonetaryTotal.PrepaidAmount)
 }
 
-// OIOUBL: also runs goblPaymentChannel to reverse the Giro/FIK/IBAN payment-channel handling.
+// OIOUBL: fixes up CreditTransfer via goblCreditTransfer and reverses the
+// Giro/FIK/IBAN payment-channel handling via goblPaymentChannel.
 func goblInvoiceInstructions(out *bill.Invoice, paymentMeans *PaymentMeans) *pay.Instructions {
-	instructions := &pay.Instructions{
-		Key: ubl.GoblPaymentMeansCode(paymentMeans.PaymentMeansCode.Value),
-		Ext: tax.ExtensionsOf(cbc.CodeMap{
-			untdid.ExtKeyPaymentMeans: cbc.Code(paymentMeans.PaymentMeansCode.Value),
-		}),
-	}
-
-	if paymentMeans.PaymentMeansCode.Name != nil {
-		instructions.Detail = ubl.CleanString(*paymentMeans.PaymentMeansCode.Name)
-	}
-
-	if paymentMeans.PaymentID != nil {
-		instructions.Ref = cbc.Code(*paymentMeans.PaymentID)
-	}
-
+	instructions := ubl.GoblInvoiceInstructions(out, paymentMeans)
 	if paymentMeans.PayeeFinancialAccount != nil {
 		instructions.CreditTransfer = goblCreditTransfer(paymentMeans)
 	}
-	if paymentMeans.PaymentMandate != nil {
-		instructions.DirectDebit = ubl.GoblInvoiceDirectDebit(out, paymentMeans)
-	}
-	if paymentMeans.CardAccount != nil {
-		instructions.Card = ubl.GoblCard(paymentMeans)
-	}
-
 	goblPaymentChannel(instructions, paymentMeans)
-
 	return instructions
 }
 
