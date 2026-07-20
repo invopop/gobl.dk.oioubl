@@ -13,9 +13,7 @@ import (
 )
 
 // goblAddCharges parses the document's own cac:AllowanceCharge entries,
-// skipping any that just mirror a charge/discount already parsed from a line
-// (see lineChargeMirrors/lineDiscountMirrors: the same OIOUBL rollup pattern
-// exciseChargesFromTaxTotals already handles for excise duties).
+// skipping any that just mirror a charge/discount already parsed from a line.
 func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	var charges []*bill.Charge
 	var discounts []*bill.Discount
@@ -62,26 +60,15 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	return nil
 }
 
-// chargeMirrorKey builds the (reason, amount, base) key used to match a
-// document-level charge/discount against a line-level one it might just be
-// mirroring. base must be included: two unrelated charges can share the same
-// reason and amount while being computed against different bases (the same
-// class of collision lineExciseMirrors guards against with its own duty-code
-// key), and omitting it would let one wrongly swallow the other.
+// chargeMirrorKey keys a charge/discount by reason+amount+base, so a
+// document-level entry can be matched against a line-level one it mirrors.
 func chargeMirrorKey(reason string, amount num.Amount, base *num.Amount) string {
 	return reason + "|" + amount.String() + "|" + baseKeyPart(base)
 }
 
-// lineChargeMirrors/lineDiscountMirrors return a multiset of (reason, amount,
-// base) keys already parsed as line-level charges/discounts, so goblAddCharges
-// can tell a document-level entry that's just the OIOUBL-mandated rollup of
-// one already captured at the line level (F-INV128/F-INV130 require the
-// document totals to be struck from the document's own cac:AllowanceCharge
-// entries, even when the value originates at the line) from a genuine
-// document-only one. A count, not a set, so N identical line-level entries
-// only absorb N document-level mirrors, not more. Keyed on reason+amount+base
-// rather than lineExciseMirrors' duty code, since ordinary charges have no
-// duty-code equivalent to key on.
+// lineChargeMirrors/lineDiscountMirrors count line-level charges/discounts by
+// key, so goblAddCharges can drop document-level entries that just mirror
+// them (OIOUBL's F-INV128/F-INV130 rollup) without swallowing genuine ones.
 func lineChargeMirrors(lines []*bill.Line) map[string]int {
 	mirrors := make(map[string]int)
 	for _, l := range lines {
@@ -118,9 +105,7 @@ func goblAllowancePercent(ac *AllowanceCharge) (*num.Percentage, error) {
 	return &p, nil
 }
 
-// parsedAllowanceCharge holds the fields shared by a document-level
-// bill.Charge and bill.Discount, parsed once from the wire's common
-// AllowanceCharge shape.
+// parsedAllowanceCharge holds fields shared by a parsed document-level charge/discount.
 type parsedAllowanceCharge struct {
 	Reason  string
 	Amount  num.Amount
@@ -130,10 +115,8 @@ type parsedAllowanceCharge struct {
 	Taxes   tax.Set
 }
 
-// parseAllowanceCharge reads the reason, amount, base, OIOUBL decimal-factor
-// percent (F-LIB228) and tax category shared by document-level charges and
-// discounts, tagging the reason code under extKey (untdid.ExtKeyCharge or
-// untdid.ExtKeyAllowance) and mapping the 63/Moms scheme + taxcategoryid codes.
+// parseAllowanceCharge reads a document-level charge/discount's shared fields
+// (OIOUBL decimal-factor percent, F-LIB228) and its tax category.
 func parseAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key, taxCategoryMap map[string]*ubl.TaxCategoryInfo) (parsedAllowanceCharge, error) {
 	var out parsedAllowanceCharge
 	if ac.AllowanceChargeReason != nil {
@@ -240,10 +223,8 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*ubl.TaxCategor
 	}, nil
 }
 
-// parseLineAllowanceCharge reads the reason, amount, base and OIOUBL
-// decimal-factor percent (F-LIB228) shared by line-level charges and
-// discounts, tagging the reason code under extKey (untdid.ExtKeyCharge or
-// untdid.ExtKeyAllowance).
+// parseLineAllowanceCharge reads a line-level charge/discount's shared fields
+// (OIOUBL decimal-factor percent, F-LIB228).
 func parseLineAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key) (parsedAllowanceCharge, error) {
 	var out parsedAllowanceCharge
 	amount, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))

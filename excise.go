@@ -240,21 +240,14 @@ func baseKeyPart(base *num.Amount) string {
 	return base.String()
 }
 
-// exciseMirrorKey builds the (duty code, amount, base) key used to match a
-// document-level TaxTotal/Excise entry against a line-level duty it might
-// just be mirroring. base must be included: two unrelated duties can share
-// the same code and amount while being computed against different bases
-// (e.g. a line-level "16" duty on a 40.00 base and an unrelated
-// document-level "16" duty on a 50.00 base), and omitting it would let one
-// wrongly swallow the other.
+// exciseMirrorKey keys a duty by code+amount+base, so a document-level
+// TaxTotal/Excise entry can be matched against a line-level one it mirrors.
 func exciseMirrorKey(dutyCode string, amount num.Amount, base *num.Amount) string {
 	return dutyCode + "|" + amount.String() + "|" + baseKeyPart(base)
 }
 
-// lineExciseMirrors returns the (duty code, amount, base) keys already parsed
-// as line-level excise charges, identifying which document-level
-// TaxTotal/Excise entries are just their mirror rather than a genuine
-// document-only duty.
+// lineExciseMirrors keys every line-level excise charge, so document-level
+// TaxTotal/Excise entries that just mirror one can be told from genuine ones.
 func lineExciseMirrors(lines []*bill.Line) map[string]bool {
 	mirrors := make(map[string]bool)
 	for _, l := range lines {
