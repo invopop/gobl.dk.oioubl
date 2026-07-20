@@ -32,6 +32,8 @@ github.com/invopop/gobl.ubl v0.55.1-0.20260717162637-f02c8d9d7298 h1:08NC/YOXzsD
 github.com/invopop/gobl.ubl v0.55.1-0.20260717162637-f02c8d9d7298/go.mod h1:R6+ENuOExqbwayTHblx+xwZg2gnjHpLiIytX5BIvW2o=
 github.com/invopop/gobl.ubl v0.55.1-0.20260720102319-0186a32718c2 h1:8atCTVWpxwLY6K4YCtiGNCu2EdznVPAj4SXhc3Eim6c=
 github.com/invopop/gobl.ubl v0.55.1-0.20260720102319-0186a32718c2/go.mod h1:R6+ENuOExqbwayTHblx+xwZg2gnjHpLiIytX5BIvW2o=
+github.com/invopop/gobl.ubl v0.55.1-0.20260720111624-feb1748fb0a2 h1:DA0ibxSt7ilfV/1dfciV9nkjNDAkNNYlukAQgpkqSwA=
+github.com/invopop/gobl.ubl v0.55.1-0.20260720111624-feb1748fb0a2/go.mod h1:R6+ENuOExqbwayTHblx+xwZg2gnjHpLiIytX5BIvW2o=
 github.com/invopop/jsonschema v0.14.0 h1:MHQqLhvpNUZfw+hM3AZDYK7jxO8FZoQeQM77g8iyZjg=
 github.com/invopop/jsonschema v0.14.0/go.mod h1:ygm6C2EaVNMBDPpaPlnOA2pFAxBnxGjFlMZABxm9n2I=
 github.com/invopop/phive v0.6.0 h1:wtk5+ieD/muViF6SJXGGVA/vYPzed9NoaCl63TjmWU4=

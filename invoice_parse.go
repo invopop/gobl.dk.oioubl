@@ -6,6 +6,7 @@ import (
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/currency"
+	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/tax"
 	"github.com/invopop/gobl/uuid"
@@ -134,12 +135,58 @@ func (ui *Invoice) applyOrderingExtras(out *bill.Invoice) error {
 }
 
 func (ui *Invoice) applyExchangeRates(out *bill.Invoice) {
-	if ui.TaxCurrencyCode != "" && ui.DocumentCurrencyCode != ui.TaxCurrencyCode {
-		out.ExchangeRates = ubl.GoblExchangeRates(
-			currency.Code(ui.DocumentCurrencyCode),
-			currency.Code(ui.TaxCurrencyCode),
-			ui.TaxTotal,
-		)
+	if ui.TaxCurrencyCode == "" || ui.DocumentCurrencyCode == ui.TaxCurrencyCode {
+		return
+	}
+	docCurrency := currency.Code(ui.DocumentCurrencyCode)
+	taxCurrency := currency.Code(ui.TaxCurrencyCode)
+
+	out.ExchangeRates = ubl.GoblExchangeRates(docCurrency, taxCurrency, ui.TaxTotal)
+	if out.ExchangeRates == nil {
+		// OIOUBL: the tax-currency amount is always carried inside the single
+		// TaxTotal block via each subtotal's TransactionCurrencyTaxAmount
+		// (F-INV018/F-CRN013), never as a second TaxTotal block.
+		out.ExchangeRates = exchangeRatesFromTransactionCurrency(docCurrency, taxCurrency, ui.TaxTotal)
+	}
+}
+
+func exchangeRatesFromTransactionCurrency(docCurrency, taxCurrency currency.Code, taxTotals []ubl.TaxTotal) []*currency.ExchangeRate {
+	if len(taxTotals) != 1 {
+		return nil
+	}
+
+	docAmount, err := num.AmountFromString(ubl.NormalizeNumericString(taxTotals[0].TaxAmount.Value))
+	if err != nil || docAmount.IsZero() {
+		return nil
+	}
+
+	var total num.Amount
+	found := false
+	for _, st := range taxTotals[0].TaxSubtotal {
+		if st.TransactionCurrencyTaxAmount == nil {
+			continue
+		}
+		a, err := num.AmountFromString(ubl.NormalizeNumericString(st.TransactionCurrencyTaxAmount.Value))
+		if err != nil {
+			return nil
+		}
+		if found {
+			total = total.Add(a)
+		} else {
+			total, found = a, true
+		}
+	}
+	if !found {
+		return nil
+	}
+
+	rate := total.Divide(docAmount)
+	return []*currency.ExchangeRate{
+		{
+			From:   docCurrency,
+			To:     taxCurrency,
+			Amount: rate,
+		},
 	}
 }
 
