@@ -4,7 +4,6 @@
 package dkoioubl
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/invopop/gobl"
@@ -110,85 +109,9 @@ func convertViaOverlay(env *gobl.Envelope) (*Invoice, error) {
 }
 
 func Bytes(in any) ([]byte, error) {
-	b, err := ubl.Bytes(in)
-	if err != nil {
-		return nil, err
-	}
-	if creditNoteNeedsTaxPointDateReorder(in) {
-		b = reorderCreditNoteTaxPointDate(b)
-	}
-	return b, nil
+	return ubl.Bytes(in)
 }
 
 func BytesCompact(in any) ([]byte, error) {
-	b, err := ubl.BytesCompact(in)
-	if err != nil {
-		return nil, err
-	}
-	if creditNoteNeedsTaxPointDateReorder(in) {
-		b = reorderCreditNoteTaxPointDate(b)
-	}
-	return b, nil
-}
-
-func creditNoteNeedsTaxPointDateReorder(in any) bool {
-	var inv *Invoice
-	switch v := in.(type) {
-	case *Invoice:
-		inv = v
-	case Invoice:
-		inv = &v
-	default:
-		return false
-	}
-	return inv != nil && inv.XMLName.Local == rootNameCreditNote && inv.TaxPointDate != ""
-}
-
-// reorderCreditNoteTaxPointDate moves cbc:TaxPointDate ahead of cbc:CreditNoteTypeCode for the CreditNote XSD sequence (one shared struct, so it edits the marshaled bytes).
-func reorderCreditNoteTaxPointDate(b []byte) []byte {
-	const (
-		open     = "<cbc:TaxPointDate>"
-		closeTag = "</cbc:TaxPointDate>"
-		typeCode = "<cbc:CreditNoteTypeCode"
-	)
-
-	tpd := bytes.Index(b, []byte(open))
-	tc := bytes.Index(b, []byte(typeCode))
-	if tpd < 0 || tc < 0 || tpd < tc {
-		return b // type code absent, or already correctly ordered
-	}
-	rel := bytes.Index(b[tpd:], []byte(closeTag))
-	if rel < 0 {
-		return b
-	}
-	elemEnd := tpd + rel + len(closeTag)
-	elem := append([]byte(nil), b[tpd:elemEnd]...)
-
-	// Drop the element together with the newline + indent that preceded it.
-	cut := tpd
-	for cut > 0 && (b[cut-1] == ' ' || b[cut-1] == '\t') {
-		cut--
-	}
-	if cut > 0 && b[cut-1] == '\n' {
-		cut--
-	}
-	rest := append(append([]byte(nil), b[:cut]...), b[elemEnd:]...)
-
-	// Re-insert it before the type code, reusing that line's leading whitespace.
-	tc = bytes.Index(rest, []byte(typeCode))
-	indentStart := tc
-	for indentStart > 0 && (rest[indentStart-1] == ' ' || rest[indentStart-1] == '\t') {
-		indentStart--
-	}
-	if indentStart > 0 && rest[indentStart-1] == '\n' {
-		indentStart--
-	}
-	sep := rest[indentStart:tc]
-
-	out := make([]byte, 0, len(rest)+len(elem)+len(sep))
-	out = append(out, rest[:tc]...)
-	out = append(out, elem...)
-	out = append(out, sep...)
-	out = append(out, rest[tc:]...)
-	return out
+	return ubl.BytesCompact(in)
 }
