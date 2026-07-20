@@ -4,6 +4,7 @@ import (
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
 )
@@ -44,7 +45,27 @@ func (ui *Invoice) goblPaymentTerms(payment *bill.PaymentDetails) error {
 	if dueDate == "" && len(ui.PaymentMeans) > 0 && ui.PaymentMeans[0].PaymentDueDate != nil {
 		dueDate = *ui.PaymentMeans[0].PaymentDueDate
 	}
-	return ubl.GoblTermsDueDate(payment, dueDate)
+	if dueDate == "" {
+		return nil
+	}
+
+	d, err := ubl.ParseDate(dueDate)
+	if err != nil {
+		return err
+	}
+	if payment.Terms == nil {
+		payment.Terms = &pay.Terms{}
+	}
+	payment.Terms.DueDates = append(payment.Terms.DueDates, &pay.DueDate{Date: &d})
+
+	if len(payment.Terms.DueDates) == 1 {
+		percent, err := num.PercentageFromString("100%")
+		if err != nil {
+			return err
+		}
+		payment.Terms.DueDates[0].Percent = &percent
+	}
+	return nil
 }
 
 // goblPaymentAdvances reconstructs each cac:PrepaidPayment (F-INV131), or
