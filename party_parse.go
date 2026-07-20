@@ -7,7 +7,6 @@ import (
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
-	"github.com/invopop/gobl/l10n"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/tax"
 )
@@ -149,18 +148,7 @@ func parseAddress(address *PostalAddress) *org.Address {
 
 // OIOUBL: resolves the country via resolveCountry, falling back to the Danish company-ID scheme when the address has none (F-LIB038).
 func handlePartyTaxSchemes(party *Party, p *org.Party) {
-	if len(party.PartyTaxScheme) == 0 {
-		return
-	}
-
-	cc := resolveCountry(party)
-	validSchemes := extractValidTaxSchemes(party.PartyTaxScheme)
-
-	if len(validSchemes) == 1 {
-		setTaxIDFromScheme(validSchemes[0], p, cc)
-	} else if len(validSchemes) > 1 {
-		handleMultipleTaxSchemes(validSchemes, p, cc)
-	}
+	ubl.HandlePartyTaxSchemes(party, p, resolveCountry(party), goblTaxSchemeCategory)
 }
 
 // resolveCountry falls back to the DK company-ID scheme when a StructuredID address carries no country (F-LIB038).
@@ -187,78 +175,6 @@ func hasDanishCompanyScheme(p *Party) bool {
 		return true
 	}
 	return false
-}
-
-func extractValidTaxSchemes(schemes []PartyTaxScheme) []PartyTaxScheme {
-	validSchemes := make([]PartyTaxScheme, 0)
-	for _, pts := range schemes {
-		if pts.CompanyID != nil && pts.CompanyID.Value != "" && pts.TaxScheme != nil {
-			validSchemes = append(validSchemes, pts)
-		}
-	}
-	return validSchemes
-}
-
-// OIOUBL: maps the 63/Moms tax scheme back via goblTaxSchemeCategory.
-func setTaxIDFromScheme(pts PartyTaxScheme, p *org.Party, countryCode string) {
-	p.TaxID = &tax.Identity{
-		Country: l10n.TaxCountryCode(countryCode),
-		Code:    cbc.Code(pts.CompanyID.Value),
-	}
-	sc := goblTaxSchemeCategory(pts.TaxScheme.ID.Value)
-	if p.TaxID.GetScheme() != sc {
-		var scheme cbc.Code
-		if pts.TaxScheme.TaxTypeCode != nil && pts.TaxScheme.TaxTypeCode.Value != "" {
-			scheme = cbc.Code(pts.TaxScheme.TaxTypeCode.Value)
-		} else {
-			scheme = sc
-		}
-		p.TaxID.Scheme = scheme
-	}
-}
-
-func handleMultipleTaxSchemes(validSchemes []PartyTaxScheme, p *org.Party, countryCode string) {
-	// Multiple tax schemes: look for VAT, otherwise use first
-	vatIdx := findVATSchemeIndex(validSchemes)
-
-	taxIDIdx := 0
-	if vatIdx != -1 {
-		taxIDIdx = vatIdx
-	}
-
-	setTaxIDFromScheme(validSchemes[taxIDIdx], p, countryCode)
-	addRemainingTaxSchemesAsIdentities(validSchemes, taxIDIdx, p, countryCode)
-}
-
-// OIOUBL: matches VAT via goblTaxSchemeCategory, which maps the 63/Moms scheme.
-func findVATSchemeIndex(schemes []PartyTaxScheme) int {
-	for i, pts := range schemes {
-		if goblTaxSchemeCategory(pts.TaxScheme.ID.Value) == cbc.Code(ubl.TaxSchemeVAT) {
-			return i
-		}
-	}
-	return -1
-}
-
-// OIOUBL: maps each identity's tax scheme back via goblTaxSchemeCategory.
-func addRemainingTaxSchemesAsIdentities(validSchemes []PartyTaxScheme, taxIDIdx int, p *org.Party, countryCode string) {
-	for i, pts := range validSchemes {
-		if i == taxIDIdx {
-			continue
-		}
-
-		identity := &org.Identity{
-			Country: l10n.ISOCountryCode(countryCode),
-			Code:    cbc.Code(pts.CompanyID.Value),
-			Scope:   org.IdentityScopeTax,
-			Type:    goblTaxSchemeCategory(pts.TaxScheme.ID.Value),
-		}
-
-		if p.Identities == nil {
-			p.Identities = make([]*org.Identity, 0)
-		}
-		p.Identities = append(p.Identities, identity)
-	}
 }
 
 // OIOUBL: reverses the wire-only DK prefix on DK:CVR/DK:SE identities (F-LIB180).
