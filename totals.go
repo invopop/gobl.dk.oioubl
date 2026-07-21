@@ -179,7 +179,12 @@ func isExciseOnlyRate(cat *tax.CategoryTotal, r *tax.RateTotal, exciseBases map[
 }
 
 // buildVATSubtotal builds one cac:TaxSubtotal for a VAT rate row; percent is
-// required unless the category is "O" (outside scope).
+// required unless the category is "O" (outside scope). Copied from gobl.ubl's
+// addTotals subtotal loop (totals.go) since that TaxTotal is discarded
+// wholesale (see applyOIOUBLFlavor) -- deltas: category ID from the GOBL VAT
+// key (taxCategoryID) instead of the UNTDID ext our normalizer strips,
+// TransactionCurrencyTaxAmount (F-LIB373), and excise-only-rate skipping.
+// Re-diff against gobl.ubl on every version bump.
 func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTotal, accRate *cur.ExchangeRate, rCurrency, currency string) TaxSubtotal {
 	subtotal := TaxSubtotal{
 		TaxAmount: Amount{Value: r.Amount.String(), CurrencyID: &currency},
@@ -235,7 +240,9 @@ func (ui *Invoice) goblAddTaxNotes(inv *bill.Invoice) {
 	}
 }
 
-// OIOUBL: matches by the tax.Note category + VAT key rather than the UNTDID category extension.
+// findTaxNote copies gobl.ubl's own findTaxNote (totals.go); the only delta is
+// matching by the tax.Note category + VAT key instead of the UNTDID category
+// extension. Re-diff against gobl.ubl on every version bump.
 func findTaxNote(notes []*tax.Note, catCode cbc.Code, rate *tax.RateTotal) *tax.Note {
 	for _, n := range notes {
 		if n.Category == catCode && n.Key == rate.Key {
