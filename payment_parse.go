@@ -71,7 +71,41 @@ func (ui *Invoice) goblPaymentTerms(payment *bill.PaymentDetails) error {
 // goblPaymentAdvances reconstructs each cac:PrepaidPayment (F-INV131), or
 // recovers a single advance from a total-only PrepaidAmount.
 func (ui *Invoice) goblPaymentAdvances(payment *bill.PaymentDetails) error {
-	return ubl.GoblPaymentAdvances(payment, ui.PrepaidPayment, ui.LegalMonetaryTotal.PrepaidAmount)
+	switch {
+	case len(ui.PrepaidPayment) > 0:
+		payment.Advances = make([]*pay.Record, 0, len(ui.PrepaidPayment))
+		for _, p := range ui.PrepaidPayment {
+			if p.PaidAmount == nil {
+				continue
+			}
+			amount, err := num.AmountFromString(ubl.NormalizeNumericString(p.PaidAmount.Value))
+			if err != nil {
+				return err
+			}
+			advance := &pay.Record{Amount: amount}
+			if p.ReceivedDate != nil {
+				d, err := ubl.ParseDate(*p.ReceivedDate)
+				if err != nil {
+					return err
+				}
+				advance.Date = &d
+			}
+			if p.InstructionID != nil {
+				advance.Ref = *p.InstructionID
+			}
+			payment.Advances = append(payment.Advances, advance)
+		}
+	case ui.LegalMonetaryTotal.PrepaidAmount != nil:
+		totalPrepaid, err := num.AmountFromString(ubl.NormalizeNumericString(ui.LegalMonetaryTotal.PrepaidAmount.Value))
+		if err != nil {
+			return err
+		}
+		payment.Advances = append(payment.Advances, &pay.Record{
+			Amount:      totalPrepaid,
+			Description: "Prepaid Amount",
+		})
+	}
+	return nil
 }
 
 // OIOUBL: fixes up CreditTransfer via goblCreditTransfer and reverses the
