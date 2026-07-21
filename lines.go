@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/currency"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/tax"
 )
@@ -100,7 +101,7 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []TaxTotal {
 	// it into the VAT taxable base here: VAT lands on the duty-inclusive amount (F-LIB402).
 	for _, ch := range line.Charges {
 		if chargeIsExcise(ch.Key) {
-			taxable = taxable.Add(ubl.RescaleAmountToCurrency(ch.Amount, ccy))
+			taxable = taxable.Add(rescaleToCurrency(ch.Amount, ccy))
 		}
 	}
 
@@ -171,4 +172,13 @@ func applyLineAllowanceCharge(ac *AllowanceCharge, pct *num.Percentage, taxes ta
 		ac.MultiplierFactorNumeric = &p
 	}
 	ac.TaxCategory = makeTaxCategory(taxes)
+}
+
+// rescaleToCurrency rounds the amount to the natural precision of the given
+// currency code, falling back to the amount's own precision if unknown.
+func rescaleToCurrency(a num.Amount, ccy string) num.Amount {
+	if def := currency.Code(ccy).Def(); def != nil {
+		return def.Rescale(a)
+	}
+	return a
 }

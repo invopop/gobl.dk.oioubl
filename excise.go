@@ -88,13 +88,13 @@ func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
 		if chargeIsExcise(ch.Key) {
 			var base *num.Amount
 			if ch.Base != nil {
-				b := ubl.RescaleAmountToCurrency(*ch.Base, currency)
+				b := rescaleToCurrency(*ch.Base, currency)
 				base = &b
 			}
 			out = append(out, exciseDuty{
 				scheme:   chargeDutyCode(ch.Ext),
 				name:     ch.Reason,
-				amount:   ubl.RescaleAmountToCurrency(ch.Amount, currency),
+				amount:   rescaleToCurrency(ch.Amount, currency),
 				base:     base,
 				typeCode: typeCode,
 			})

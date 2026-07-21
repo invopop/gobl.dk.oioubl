@@ -34,7 +34,7 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 		ordinary := make([]*bill.LineCharge, 0, len(l.Charges))
 		for _, c := range l.Charges {
 			if chargeIsExcise(c.Key) {
-				excise = excise.Add(ubl.RescaleAmountToCurrency(c.Amount, currency))
+				excise = excise.Add(rescaleToCurrency(c.Amount, currency))
 				continue
 			}
 			lineCharges = lineCharges.Add(c.Amount)
