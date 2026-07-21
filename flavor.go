@@ -17,7 +17,6 @@ func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
 	if inv.Ordering != nil && inv.Ordering.Cost != "" {
 		ui.AccountingCost = inv.Ordering.Cost.String()
 	}
-	ui.applyOrderingRefs(inv)
 	// Drop the tax currency if there's no StandardRated subtotal for it to ride (F-LIB373/F-INV018).
 	if ui.TaxCurrencyCode != "" && !hasStandardRated(inv) {
 		ui.TaxCurrencyCode = ""
@@ -67,26 +66,6 @@ func (ui *Invoice) applyParties(inv *bill.Invoice) {
 	applyParty(ui.AccountingCustomerParty.Party)
 	applyParty(ui.PayeeParty)
 	applyTaxRepParty(ui.TaxRepresentativeParty)
-}
-
-// applyOrderingRefs restores reference fields the base builder drops: the
-// order reference's issue date and the preceding documents' UUIDs.
-func (ui *Invoice) applyOrderingRefs(inv *bill.Invoice) {
-	if o := inv.Ordering; o != nil && len(o.Purchases) > 0 && ui.OrderReference != nil {
-		if d := o.Purchases[0].IssueDate; d != nil {
-			ui.OrderReference.IssueDate = ubl.FormatDate(*d)
-		}
-	}
-	for i, ref := range inv.Preceding {
-		if i >= len(ui.BillingReference) {
-			break
-		}
-		br := ui.BillingReference[i]
-		if ref.UUID.IsZero() || br == nil || br.InvoiceDocumentReference == nil {
-			continue
-		}
-		br.InvoiceDocumentReference.UUID = ref.UUID.String()
-	}
 }
 
 // stampProfileID adds the OIOUBL profileid-1.2 scheme attributes to the base's
