@@ -13,6 +13,11 @@ import (
 	"github.com/invopop/gobl/cbc"
 )
 
+// Invoice is the OIOUBL view of a UBL invoice: a defined type over ubl.Invoice
+// (not an alias) so the OIOUBL build/parse methods hang off it and gobl.ubl's
+// generic Convert is not inherited. It shares the wire layout, so it marshals identically.
+type Invoice ubl.Invoice
+
 var (
 	ErrUnknownDocumentType     = fmt.Errorf("unknown document type")
 	ErrUnsupportedDocumentType = fmt.Errorf("unsupported document type")
@@ -98,6 +103,11 @@ func convertViaOverlay(env *gobl.Envelope) (*Invoice, error) {
 	if inv.RegimeDef() == nil {
 		return nil, fmt.Errorf("invoice requires a tax regime (usually derived from the supplier's tax ID)")
 	}
+	// The EN16931 base only ensures its own addon; the flavor reads data the
+	// OIOUBL addon normalizes in (legal identities, endpoints), so apply it here.
+	if err := ensureOIOUBLAddon(env, inv); err != nil {
+		return nil, err
+	}
 	base, err := ubl.ConvertInvoice(env, ubl.WithContext(ubl.ContextEN16931))
 	if err != nil {
 		return nil, err
@@ -107,6 +117,19 @@ func convertViaOverlay(env *gobl.Envelope) (*Invoice, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+// ensureOIOUBLAddon declares the OIOUBL addon on the invoice if absent and
+// recalculates the envelope so its normalizations and validations apply.
+func ensureOIOUBLAddon(env *gobl.Envelope, inv *bill.Invoice) error {
+	if oioubl.V2.In(inv.GetAddons()...) {
+		return nil
+	}
+	inv.SetAddons(append(inv.GetAddons(), oioubl.V2)...)
+	if err := env.Calculate(); err != nil {
+		return err
+	}
+	return env.Validate()
 }
 
 func Bytes(in any) ([]byte, error) {

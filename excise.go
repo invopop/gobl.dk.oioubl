@@ -1,0 +1,174 @@
+package dkoioubl
+
+import (
+	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
+	ubl "github.com/invopop/gobl.ubl"
+	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/num"
+	"github.com/invopop/gobl/tax"
+)
+
+// taxCategoryExcise is the taxcategoryid-1.1 category OIOUBL emits for a non-VAT
+// excise duty (as a cac:TaxTotal, not a cac:AllowanceCharge).
+const taxCategoryExcise = "Excise"
+
+type exciseDuty struct {
+	scheme string
+	name   string
+	amount num.Amount
+	base   *num.Amount
+	// typeCode is the duty's taxtypecode value (own for document-level, inherited from the line's VAT category for line-level).
+	typeCode string
+}
+
+func chargeIsExcise(key cbc.Key) bool {
+	return key == oioubl.ChargeKeyExcise
+}
+
+// chargeDutyCode returns an excise charge's SKAT duty code (OIOUBL taxschemeid, e.g. "16").
+func chargeDutyCode(ext tax.Extensions) string {
+	return ext.Get(oioubl.ExtKeyDutyCode).String()
+}
+
+func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
+	var out []exciseDuty
+	for _, ch := range inv.Charges {
+		if chargeIsExcise(ch.Key) {
+			out = append(out, exciseDuty{
+				scheme:   chargeDutyCode(ch.Ext),
+				name:     ch.Reason,
+				amount:   ch.Amount,
+				base:     ch.Base,
+				typeCode: chargeVATTypeCode(ch),
+			})
+		}
+	}
+	for _, l := range inv.Lines {
+		out = append(out, collectLineExcise(l, currency)...)
+	}
+	return out
+}
+
+// collectLineExcise gathers a line's excise duties, mirrored as line-level
+// cac:TaxTotal blocks so the wire records which line each duty belongs to.
+func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
+	var out []exciseDuty
+	typeCode := lineVATTypeCode(line)
+	for _, ch := range line.Charges {
+		if chargeIsExcise(ch.Key) {
+			var base *num.Amount
+			if ch.Base != nil {
+				b := rescaleToCurrency(*ch.Base, currency)
+				base = &b
+			}
+			out = append(out, exciseDuty{
+				scheme:   chargeDutyCode(ch.Ext),
+				name:     ch.Reason,
+				amount:   rescaleToCurrency(ch.Amount, currency),
+				base:     base,
+				typeCode: typeCode,
+			})
+		}
+	}
+	return out
+}
+
+func chargeVATTypeCode(ch *bill.Charge) string {
+	if ch == nil {
+		return ""
+	}
+	combo := ch.Taxes.Get(tax.CategoryVAT)
+	if combo == nil {
+		return ""
+	}
+	return taxCategoryID(combo.Key)
+}
+
+// lineVATTypeCode: a line's duties inherit their taxtypecode from the line's own VAT category (OIOUBL Skat guideline).
+func lineVATTypeCode(line *bill.Line) string {
+	if line == nil {
+		return ""
+	}
+	combo := line.Taxes.Get(tax.CategoryVAT)
+	if combo == nil {
+		return ""
+	}
+	return taxCategoryID(combo.Key)
+}
+
+// exciseVATBases sums, per VAT key, the base document-level excise charges
+// contribute to the invoice's tax totals, so addTotals can spot excise-only rows.
+func exciseVATBases(inv *bill.Invoice) map[cbc.Key]num.Amount {
+	bases := make(map[cbc.Key]num.Amount)
+	for _, ch := range inv.Charges {
+		if !chargeIsExcise(ch.Key) {
+			continue
+		}
+		combo := ch.Taxes.Get(tax.CategoryVAT)
+		if combo == nil {
+			continue
+		}
+		amt := ch.Amount
+		if b, ok := bases[combo.Key]; ok {
+			amt = b.Add(amt)
+		}
+		bases[combo.Key] = amt
+	}
+	return bases
+}
+
+// makeExciseTaxTotals builds one cac:TaxTotal per duty scheme (code), grouping
+// same-code duties into shared TaxSubtotal entries: OIOUBL forbids the same
+// duty code from appearing in more than one TaxTotal class (G27 3.5).
+func makeExciseTaxTotals(excises []exciseDuty, currency string) []ubl.TaxTotal {
+	var order []string
+	subtotals := make(map[string][]ubl.TaxSubtotal)
+	sums := make(map[string]num.Amount)
+
+	for _, e := range excises {
+		amt := ubl.Amount{Value: e.amount.String(), CurrencyID: &currency}
+		taxable := amt
+		if e.base != nil {
+			taxable = ubl.Amount{Value: e.base.String(), CurrencyID: &currency}
+		}
+		schemeID := schemeTaxScheme
+		schemeAgencyID := agencyID
+		typeAgencyID := agencyID
+		listID := listTaxType
+		scheme := &ubl.TaxScheme{
+			ID: ubl.IDType{SchemeID: &schemeID, SchemeAgencyID: &schemeAgencyID, Value: e.scheme},
+		}
+		if e.typeCode != "" {
+			scheme.TaxTypeCode = &ubl.IDType{ListAgencyID: &typeAgencyID, ListID: &listID, Value: e.typeCode}
+		}
+		if e.name != "" {
+			name := e.name
+			scheme.Name = &name
+		}
+
+		if _, ok := subtotals[e.scheme]; !ok {
+			order = append(order, e.scheme)
+			sums[e.scheme] = e.amount
+		} else {
+			sums[e.scheme] = sums[e.scheme].Add(e.amount.Rescale(sums[e.scheme].Exp()))
+		}
+		subtotals[e.scheme] = append(subtotals[e.scheme], ubl.TaxSubtotal{
+			TaxableAmount: taxable,
+			TaxAmount:     amt,
+			TaxCategory: ubl.TaxCategory{
+				ID:        stampTaxCategoryID(&ubl.IDType{Value: taxCategoryExcise}),
+				TaxScheme: scheme,
+			},
+		})
+	}
+
+	var totals []ubl.TaxTotal
+	for _, scheme := range order {
+		totals = append(totals, ubl.TaxTotal{
+			TaxAmount:   ubl.Amount{Value: sums[scheme].String(), CurrencyID: &currency},
+			TaxSubtotal: subtotals[scheme],
+		})
+	}
+	return totals
+}
