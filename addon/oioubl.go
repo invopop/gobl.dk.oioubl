@@ -93,6 +93,12 @@ func newAddon() *tax.AddonDef {
 				},
 				URL: "https://git.erst.dk/openebusiness/common/-/tree/master/released/oioubl",
 			},
+			{
+				Title: i18n.String{
+					i18n.EN: "OIOUBL Schematron rules (browsable source, referenced by rule citations)",
+				},
+				URL: "https://git.erst.dk/openebusiness/common/-/tree/master/resources/Schematrons/OIOUBL?ref_type=heads",
+			},
 		},
 	}
 }

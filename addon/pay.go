@@ -15,8 +15,7 @@ var validPaymentMeansCodes = []cbc.Code{
 }
 
 // bankTransferCodes are the OIOUBL PaymentMeansCode values requiring a payee
-// account (F-LIB107 for 31, F-LIB377 for 58); 30 isn't a supported means at
-// all (F-LIB100), so it's not listed here.
+// account (F-LIB107 for 31, F-LIB377 for 58).
 var bankTransferCodes = []cbc.Code{"31", "58"}
 
 // normalizePayInstructions stamps DK on a domestic bank transfer's (means 42)

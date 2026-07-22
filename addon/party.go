@@ -68,9 +68,7 @@ func hasLegalIdentity(p *org.Party) bool {
 }
 
 // partyRoleRules returns the endpoint and legal-ID assertions shared by the
-// supplier and customer fields: the checks are identical (F-LIB187 is a
-// single library rule for both), only the endpoint's schematron citation
-// differs by OIOUBL role (F-INV031/F-CRN028 vs F-INV044/F-CRN040).
+// supplier and customer fields; only the endpoint's schematron citation differs by role.
 func partyRoleRules(role string, endpointNum, legalIDNum rules.Code, endpointCitation string) []rules.Def {
 	return []rules.Def{
 		rules.Assert(endpointNum, role+" must have an endpoint ("+endpointCitation+")",

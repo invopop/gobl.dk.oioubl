@@ -19,7 +19,6 @@ var validDocumentTypes = []cbc.Code{"325", "380", "381", "393"}
 // Rule citations reference the OIOUBL Invoice schematron (F-INV) first and the
 // CreditNote equivalent (F-CRN) second. F-INV142 is invoice-only (OIOUBL CreditNote
 // uses BillingReference, not OrderLineReference).
-// Reference: https://git.erst.dk/openebusiness/common/-/tree/master/resources/Schematrons/OIOUBL?ref_type=heads
 
 // Deliberately NOT enforced: F-LIB318 (unit code must be in OIOUBL's UN/ECE Rec 20
 // subset) ~1100-code list.
@@ -130,8 +129,7 @@ func billInvoiceRules() *rules.Set {
 	)
 }
 
-// billTaxComboRules validates every VAT tax.Combo in the document — GOBL applies
-// type-scoped rules to all of them (invoice lines, charges, discounts).
+// billTaxComboRules validates every VAT tax.Combo in the document.
 func billTaxComboRules() *rules.Set {
 	return rules.For(new(tax.Combo),
 		// OIOUBL uses its own taxcategoryid, so the normalizer drops the UNTDID
@@ -152,8 +150,6 @@ func lineChargeRules() *rules.Set {
 	return rules.For(new(bill.LineCharge), exciseReasonAssert(), exciseDutyCodeAssert())
 }
 
-// exciseReasonAssert is the shared F-LIB066 rule for document- and line-level
-// charges (which bind to different types and so need separate sets).
 func exciseReasonAssert() rules.Def {
 	return rules.When(is.Func("excise duty charge", chargeIsExcise),
 		rules.Field("reason",
@@ -162,8 +158,6 @@ func exciseReasonAssert() rules.Def {
 	)
 }
 
-// exciseDutyVATTaxAssert requires a document-level excise duty (bill.Charge)
-// to state its own VAT type in its taxes, since it can't be inferred from a line.
 func exciseDutyVATTaxAssert() rules.Def {
 	return rules.When(is.Func("excise duty charge", chargeIsExcise),
 		rules.Field("taxes",
@@ -173,8 +167,6 @@ func exciseDutyVATTaxAssert() rules.Def {
 	)
 }
 
-// exciseDutyCodeAssert is the shared rule requiring an excise charge to carry
-// the SKAT duty code extension, emitted as the OIOUBL cac:TaxScheme/cbc:ID.
 func exciseDutyCodeAssert() rules.Def {
 	return rules.When(is.Func("excise duty charge", chargeIsExcise),
 		rules.Field("ext",
@@ -184,7 +176,6 @@ func exciseDutyCodeAssert() rules.Def {
 	)
 }
 
-// taxesHaveVAT reports whether a tax set carries a VAT combo.
 func taxesHaveVAT(val any) bool {
 	set, ok := val.(tax.Set)
 	if !ok {
@@ -193,8 +184,7 @@ func taxesHaveVAT(val any) bool {
 	return set.Get(tax.CategoryVAT) != nil
 }
 
-// chargeIsExcise reports whether a charge is an OIOUBL excise duty, marked by
-// the excise charge key; the SKAT duty code itself rides ExtKeyDutyCode.
+// chargeIsExcise reports whether a charge is an OIOUBL excise duty.
 func chargeIsExcise(val any) bool {
 	switch c := val.(type) {
 	case *bill.Charge:
@@ -210,7 +200,7 @@ func chargeIsNotExcise(val any) bool {
 }
 
 // vatCategoryHasOIOUBLMapping reports whether a VAT combo's key maps to an OIOUBL
-// taxcategoryid-1.1 value (standard/zero/exempt/reverse-charge); others fail F-LIB309.
+// taxcategoryid-1.1 value (standard/zero/reverse-charge, exempt folds into zero).
 func vatCategoryHasOIOUBLMapping(val any) bool {
 	combo := extractCombo(val)
 	if combo == nil || combo.Category != tax.CategoryVAT {
@@ -314,8 +304,8 @@ func deliveryReceiverHasLocationData(val any) bool {
 	return len(del.Receiver.Addresses) > 0
 }
 
-// extractCombo/extractAmount normalize a rule-test argument (value or pointer)
-// to a single pointer form, so predicates don't need their own type switch.
+// extractCombo/extractAmount take a value that may arrive as a copy or a
+// pointer, and always hand back a pointer.
 func extractCombo(val any) *tax.Combo {
 	switch c := val.(type) {
 	case *tax.Combo:

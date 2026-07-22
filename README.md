@@ -10,9 +10,10 @@ This module implements the OIOUBL 2.1 profile (schematron v1.17.2) as a GOBL tax
 addon (`dk-oioubl-v2`). It `Requires` the EN 16931 addon and layers the
 OIOUBL-specific rules and extensions on top:
 
-- **Tax categories** — the gobl.ubl converter maps the GOBL VAT key to the OIOUBL
-  `taxcategoryid` code directly. Excise and other non-VAT duties are modelled as
-  charges (as in EN 16931 / Peppol BIS), not tax categories.
+- **Tax categories** — VAT rates are restricted to what OIOUBL's `taxcategoryid`
+  codelist supports (standard/zero/reverse-charge; exempt folds into zero-rated).
+  Excise and other non-VAT duties are modelled as charges (as in EN 16931 /
+  Peppol BIS), not tax categories.
 - **Payment** — the OIOUBL payment channel (IBAN / Giro / FIK) is derived from the
   payment means; the Giro/FIK kortart travels in `dk-oioubl-payment-id`.
 - **Participants** — parties are routed by OIOUBL endpoints

@@ -31,7 +31,7 @@ func normalizeTaxNote(n *tax.Note) {
 }
 
 // taxCategoryMapsToOIOUBL reports whether a GOBL VAT key has an OIOUBL
-// taxcategoryid-1.1 equivalent (standard/zero/exempt/reverse-charge).
+// taxcategoryid-1.1 equivalent (standard/zero/reverse-charge, exempt folds into zero).
 func taxCategoryMapsToOIOUBL(key cbc.Key) bool {
 	switch key {
 	case tax.KeyStandard, tax.KeyZero, tax.KeyExempt, tax.KeyReverseCharge, "":
