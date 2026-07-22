@@ -82,18 +82,15 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*ubl.TaxCat
 	}
 
 	// cac:AllowanceCharge can sit directly under the line, and/or nested under
-	// cac:Price (a price-level adjustment baked into the unit price, e.g. a
-	// packaging fee); both map onto the line the same way.
+	// cac:Price. Per OIOUBL's own guideline (G17 3.2/3.3), both forms are
+	// purely advisory -- already priced into PriceAmount, excluded from
+	// LineExtensionAmount/LegalMonetaryTotal -- so fold the reason into a note
+	// instead of a real charge/discount; only a header-level entry is real money.
 	allowances := docLine.AllowanceCharge
 	if docLine.Price.AllowanceCharge != nil {
 		allowances = append(allowances[:len(allowances):len(allowances)], docLine.Price.AllowanceCharge)
 	}
-	if len(allowances) > 0 {
-		line, err = goblLineCharges(allowances, line)
-		if err != nil {
-			return nil, err
-		}
-	}
+	applyLineAllowanceNotes(allowances, line)
 
 	excise, err := exciseLineChargesFromTaxTotals(docLine.TaxTotal)
 	if err != nil {
@@ -104,25 +101,38 @@ func goblConvertLine(docLine *InvoiceLine, taxCategoryMap map[string]*ubl.TaxCat
 	return line, nil
 }
 
-// goblLinePrice reads the line's unit price, rescaling for a BaseQuantity
-// other than 1 to avoid rounding loss (see calculateRequiredPrecision).
+// applyLineAllowanceNotes folds each advisory line/price-level
+// AllowanceCharge's reason into a line note (G17 3.2/3.3: never a real
+// charge/discount, since it's already priced in).
+func applyLineAllowanceNotes(allowances []*AllowanceCharge, line *bill.Line) {
+	for _, ac := range allowances {
+		if ac.AllowanceChargeReason == nil || *ac.AllowanceChargeReason == "" {
+			continue
+		}
+		line.Notes = append(line.Notes, &org.Note{Text: *ac.AllowanceChargeReason})
+	}
+}
+
+// goblLinePrice reads the line's unit price. OrderableUnitFactorRate converts
+// it from the price's own BaseQuantity unit to the invoiced ordering unit;
+// BaseQuantity itself cancels out algebraically (G25 3.6) and never divides
+// into the amount.
 func goblLinePrice(p *Price) (num.Amount, error) {
 	price, err := num.AmountFromString(ubl.NormalizeNumericString(p.PriceAmount.Value))
 	if err != nil {
 		return num.Amount{}, err
 	}
-	if p.BaseQuantity == nil {
+	if p.OrderableUnitFactorRate == nil {
 		return price, nil
 	}
-	baseQuantity, err := num.AmountFromString(ubl.NormalizeNumericString(p.BaseQuantity.Value))
+	oufr, err := num.AmountFromString(ubl.NormalizeNumericString(*p.OrderableUnitFactorRate))
 	if err != nil {
 		return num.Amount{}, err
 	}
-	if baseQuantity.IsZero() {
+	if oufr.Compare(num.MakeAmount(1, 0)) == 0 {
 		return price, nil
 	}
-	precision := ubl.CalculateRequiredPrecision(price, baseQuantity)
-	return price.RescaleUp(precision).Divide(baseQuantity), nil
+	return price.RescaleUp(price.Exp() + oufr.Exp()).Multiply(oufr), nil
 }
 
 // goblLineQuantity reads the (credited or invoiced) quantity and its unit.
@@ -228,29 +238,4 @@ func goblApplyLineTaxCategory(ctc *ClassifiedTaxCategory, line *bill.Line, taxCa
 		}
 		line.Taxes[0].Percent = &percent
 	}
-}
-
-func goblLineCharges(allowances []*AllowanceCharge, line *bill.Line) (*bill.Line, error) {
-	for _, ac := range allowances {
-		if ac.ChargeIndicator {
-			charge, err := goblLineCharge(ac)
-			if err != nil {
-				return nil, err
-			}
-			if line.Charges == nil {
-				line.Charges = make([]*bill.LineCharge, 0)
-			}
-			line.Charges = append(line.Charges, charge)
-		} else {
-			discount, err := goblLineDiscount(ac)
-			if err != nil {
-				return nil, err
-			}
-			if line.Discounts == nil {
-				line.Discounts = make([]*bill.LineDiscount, 0)
-			}
-			line.Discounts = append(line.Discounts, discount)
-		}
-	}
-	return line, nil
 }

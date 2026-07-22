@@ -7,10 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// cac:Price/cac:AllowanceCharge (a price-level adjustment, e.g. a packaging
-// fee baked into how the unit price was derived) must map onto the line the
-// same way an ordinary cac:InvoiceLine/cac:AllowanceCharge does, not be
-// silently dropped.
+// cac:Price/cac:AllowanceCharge is advisory only (G17 3.3: already priced
+// into PriceAmount) -- it must become a line note, not a charge, and must
+// not be silently dropped either.
 func TestGoblConvertLinePriceAllowanceCharge(t *testing.T) {
 	docLine := &InvoiceLine{
 		Price: &Price{
@@ -28,15 +27,13 @@ func TestGoblConvertLinePriceAllowanceCharge(t *testing.T) {
 	line, err := goblConvertLine(docLine, nil)
 	require.NoError(t, err)
 	require.NotNil(t, line)
-	require.Len(t, line.Charges, 1)
-	assert.Equal(t, "Emballageafgift", line.Charges[0].Reason)
-	assert.Equal(t, "50", line.Charges[0].Amount.String())
-	require.NotNil(t, line.Charges[0].Base)
-	assert.Equal(t, "1000", line.Charges[0].Base.String())
+	assert.Empty(t, line.Charges)
+	require.Len(t, line.Notes, 1)
+	assert.Equal(t, "Emballageafgift", line.Notes[0].Text)
 }
 
 // A line-level cac:AllowanceCharge and a cac:Price/cac:AllowanceCharge can
-// both be present at once; both must be captured, in order.
+// both be present at once; both are advisory (G17 3.2/3.3) and become notes, in order.
 func TestGoblConvertLineCombinesOrdinaryAndPriceAllowanceCharges(t *testing.T) {
 	docLine := &InvoiceLine{
 		AllowanceCharge: []*AllowanceCharge{{
@@ -57,7 +54,8 @@ func TestGoblConvertLineCombinesOrdinaryAndPriceAllowanceCharges(t *testing.T) {
 	line, err := goblConvertLine(docLine, nil)
 	require.NoError(t, err)
 	require.NotNil(t, line)
-	require.Len(t, line.Charges, 2)
-	assert.Equal(t, "Fragt", line.Charges[0].Reason)
-	assert.Equal(t, "Emballageafgift", line.Charges[1].Reason)
+	assert.Empty(t, line.Charges)
+	require.Len(t, line.Notes, 2)
+	assert.Equal(t, "Fragt", line.Notes[0].Text)
+	assert.Equal(t, "Emballageafgift", line.Notes[1].Text)
 }

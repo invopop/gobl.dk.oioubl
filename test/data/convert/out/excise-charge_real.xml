@@ -152,7 +152,7 @@
     </cac:TaxSubtotal>
   </cac:TaxTotal>
   <cac:TaxTotal>
-    <cbc:TaxAmount currencyID="DKK">50.00</cbc:TaxAmount>
+    <cbc:TaxAmount currencyID="DKK">170.00</cbc:TaxAmount>
     <cac:TaxSubtotal>
       <cbc:TaxableAmount currencyID="DKK">1000.00</cbc:TaxableAmount>
       <cbc:TaxAmount currencyID="DKK">50.00</cbc:TaxAmount>
@@ -165,9 +165,6 @@
         </cac:TaxScheme>
       </cac:TaxCategory>
     </cac:TaxSubtotal>
-  </cac:TaxTotal>
-  <cac:TaxTotal>
-    <cbc:TaxAmount currencyID="DKK">120.00</cbc:TaxAmount>
     <cac:TaxSubtotal>
       <cbc:TaxableAmount currencyID="DKK">1000.00</cbc:TaxableAmount>
       <cbc:TaxAmount currencyID="DKK">120.00</cbc:TaxAmount>
@@ -212,7 +209,7 @@
       </cac:TaxSubtotal>
     </cac:TaxTotal>
     <cac:TaxTotal>
-      <cbc:TaxAmount currencyID="DKK">50.00</cbc:TaxAmount>
+      <cbc:TaxAmount currencyID="DKK">170.00</cbc:TaxAmount>
       <cac:TaxSubtotal>
         <cbc:TaxableAmount currencyID="DKK">1000.00</cbc:TaxableAmount>
         <cbc:TaxAmount currencyID="DKK">50.00</cbc:TaxAmount>
@@ -225,9 +222,6 @@
           </cac:TaxScheme>
         </cac:TaxCategory>
       </cac:TaxSubtotal>
-    </cac:TaxTotal>
-    <cac:TaxTotal>
-      <cbc:TaxAmount currencyID="DKK">120.00</cbc:TaxAmount>
       <cac:TaxSubtotal>
         <cbc:TaxableAmount currencyID="DKK">1000.00</cbc:TaxableAmount>
         <cbc:TaxAmount currencyID="DKK">120.00</cbc:TaxAmount>

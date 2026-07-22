@@ -225,15 +225,3 @@ func (ui *Invoice) parseBillingReferences(out *bill.Invoice) error {
 	return nil
 }
 
-func (ui *Invoice) applyTaxRepresentative(out *bill.Invoice) {
-	if ui.TaxRepresentativeParty == nil {
-		return
-	}
-	if out.Ordering == nil {
-		out.Ordering = &bill.Ordering{}
-	}
-	out.Ordering.Seller = out.Supplier
-
-	out.Supplier = goblParty(ui.TaxRepresentativeParty)
-}
-

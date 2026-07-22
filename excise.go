@@ -39,8 +39,7 @@ type exciseDuty struct {
 	scheme string
 	name   string
 	amount num.Amount
-	// base is the amount the duty rate was applied to (cac:TaxSubtotal/TaxableAmount).
-	base *num.Amount
+	base   *num.Amount
 	// typeCode is the duty's taxtypecode value: a document-level duty states its
 	// own, a line-level duty inherits the line's VAT category.
 	typeCode string
@@ -147,10 +146,14 @@ func exciseVATBases(inv *bill.Invoice) map[cbc.Key]num.Amount {
 	return bases
 }
 
-// makeExciseTaxTotals builds one cac:TaxTotal per duty: category "Excise", the
-// duty code as the scheme ID, name from the reason, TaxTypeCode from the caller.
+// makeExciseTaxTotals builds one cac:TaxTotal per duty scheme (code), grouping
+// same-code duties into shared TaxSubtotal entries: OIOUBL forbids the same
+// duty code from appearing in more than one TaxTotal class (G27 3.5).
 func makeExciseTaxTotals(excises []exciseDuty, currency string) []TaxTotal {
-	var totals []TaxTotal
+	var order []string
+	subtotals := make(map[string][]TaxSubtotal)
+	sums := make(map[string]num.Amount)
+
 	for _, e := range excises {
 		amt := Amount{Value: e.amount.String(), CurrencyID: &currency}
 		taxable := amt
@@ -171,16 +174,28 @@ func makeExciseTaxTotals(excises []exciseDuty, currency string) []TaxTotal {
 			name := e.name
 			scheme.Name = &name
 		}
+
+		if _, ok := subtotals[e.scheme]; !ok {
+			order = append(order, e.scheme)
+			sums[e.scheme] = e.amount
+		} else {
+			sums[e.scheme] = sums[e.scheme].Add(e.amount.Rescale(sums[e.scheme].Exp()))
+		}
+		subtotals[e.scheme] = append(subtotals[e.scheme], TaxSubtotal{
+			TaxableAmount: taxable,
+			TaxAmount:     amt,
+			TaxCategory: TaxCategory{
+				ID:        stampTaxCategoryID(&IDType{Value: taxCategoryExcise}),
+				TaxScheme: scheme,
+			},
+		})
+	}
+
+	var totals []TaxTotal
+	for _, scheme := range order {
 		totals = append(totals, TaxTotal{
-			TaxAmount: amt,
-			TaxSubtotal: []TaxSubtotal{{
-				TaxableAmount: taxable,
-				TaxAmount:     amt,
-				TaxCategory: TaxCategory{
-					ID:        stampTaxCategoryID(&IDType{Value: taxCategoryExcise}),
-					TaxScheme: scheme,
-				},
-			}},
+			TaxAmount:   Amount{Value: sums[scheme].String(), CurrencyID: &currency},
+			TaxSubtotal: subtotals[scheme],
 		})
 	}
 	return totals

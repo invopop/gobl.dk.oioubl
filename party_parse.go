@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
+	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/l10n"
@@ -281,4 +282,18 @@ func handlePartyIdentifications(party *Party, p *org.Party) {
 			p.Identities = append(p.Identities, identity)
 		}
 	}
+}
+
+// applyTaxRepresentative reverses the outbound tax-rep swap: OIOUBL's real
+// supplier moves back to Ordering.Seller, and the tax rep becomes the supplier.
+func (ui *Invoice) applyTaxRepresentative(out *bill.Invoice) {
+	if ui.TaxRepresentativeParty == nil {
+		return
+	}
+	if out.Ordering == nil {
+		out.Ordering = &bill.Ordering{}
+	}
+	out.Ordering.Seller = out.Supplier
+
+	out.Supplier = goblParty(ui.TaxRepresentativeParty)
 }

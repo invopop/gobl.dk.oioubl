@@ -12,15 +12,14 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// goblAddCharges parses the document's own cac:AllowanceCharge entries,
-// skipping any that just mirror a charge/discount already parsed from a line.
+// goblAddCharges parses the document's own cac:AllowanceCharge entries. Per
+// OIOUBL's guideline (G17 3.5), only header-level AllowanceCharge is real
+// money -- line-level entries never reach this far (see applyLineAllowanceNotes).
 func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 	var charges []*bill.Charge
 	var discounts []*bill.Discount
 
 	taxCategoryMap := (*ubl.Invoice)(ui).BuildTaxCategoryMap()
-	chargeMirrors := lineChargeMirrors(out.Lines)
-	discountMirrors := lineDiscountMirrors(out.Lines)
 
 	for _, allowanceCharge := range ui.AllowanceCharge {
 		if allowanceCharge.ChargeIndicator {
@@ -28,25 +27,11 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 			if err != nil {
 				return err
 			}
-			if key := chargeMirrorKey(charge.Reason, charge.Amount, charge.Base); chargeMirrors[key] > 0 {
-				chargeMirrors[key]--
-				continue
-			}
-			if charges == nil {
-				charges = make([]*bill.Charge, 0)
-			}
 			charges = append(charges, charge)
 		} else {
 			discount, err := goblDiscount(&allowanceCharge, taxCategoryMap)
 			if err != nil {
 				return err
-			}
-			if key := chargeMirrorKey(discount.Reason, discount.Amount, discount.Base); discountMirrors[key] > 0 {
-				discountMirrors[key]--
-				continue
-			}
-			if discounts == nil {
-				discounts = make([]*bill.Discount, 0)
 			}
 			discounts = append(discounts, discount)
 		}
@@ -58,38 +43,6 @@ func (ui *Invoice) goblAddCharges(out *bill.Invoice) error {
 		out.Discounts = discounts
 	}
 	return nil
-}
-
-// chargeMirrorKey keys a charge/discount by reason+amount+base, so a
-// document-level entry can be matched against a line-level one it mirrors.
-func chargeMirrorKey(reason string, amount num.Amount, base *num.Amount) string {
-	return reason + "|" + amount.String() + "|" + baseKeyPart(base)
-}
-
-// lineChargeMirrors counts line-level charges, so goblAddCharges can drop
-// document-level entries that just mirror one already captured at the line.
-func lineChargeMirrors(lines []*bill.Line) map[string]int {
-	mirrors := make(map[string]int)
-	for _, l := range lines {
-		for _, ch := range l.Charges {
-			if chargeIsExcise(ch.Key) {
-				continue
-			}
-			mirrors[chargeMirrorKey(ch.Reason, ch.Amount, ch.Base)]++
-		}
-	}
-	return mirrors
-}
-
-// lineDiscountMirrors is lineChargeMirrors' discount equivalent.
-func lineDiscountMirrors(lines []*bill.Line) map[string]int {
-	mirrors := make(map[string]int)
-	for _, l := range lines {
-		for _, d := range l.Discounts {
-			mirrors[chargeMirrorKey(d.Reason, d.Amount, d.Base)]++
-		}
-	}
-	return mirrors
 }
 
 // goblAllowancePercent reads OIOUBL's decimal factor (0.05 = 5%, F-LIB228);
@@ -220,68 +173,5 @@ func goblDiscount(ac *AllowanceCharge, taxCategoryMap map[string]*ubl.TaxCategor
 		Percent: p.Percent,
 		Ext:     p.Ext,
 		Taxes:   p.Taxes,
-	}, nil
-}
-
-// parseLineAllowanceCharge reads a line-level charge/discount's shared fields
-// (OIOUBL decimal-factor percent, F-LIB228).
-func parseLineAllowanceCharge(ac *AllowanceCharge, extKey cbc.Key) (parsedAllowanceCharge, error) {
-	var out parsedAllowanceCharge
-	amount, err := num.AmountFromString(ubl.NormalizeNumericString(ac.Amount.Value))
-	if err != nil {
-		return out, err
-	}
-	out.Amount = amount
-	if ac.AllowanceChargeReasonCode != nil {
-		out.Ext = tax.ExtensionsOf(cbc.CodeMap{
-			extKey: cbc.Code(*ac.AllowanceChargeReasonCode),
-		})
-	}
-	if ac.AllowanceChargeReason != nil {
-		out.Reason = *ac.AllowanceChargeReason
-	}
-	pct, err := goblAllowancePercent(ac)
-	if err != nil {
-		return out, err
-	}
-	if pct != nil {
-		out.Percent = pct
-
-		if ac.BaseAmount != nil {
-			base, err := num.AmountFromString(ubl.NormalizeNumericString(ac.BaseAmount.Value))
-			if err != nil {
-				return out, err
-			}
-			out.Base = &base
-		}
-	}
-	return out, nil
-}
-
-func goblLineCharge(ac *AllowanceCharge) (*bill.LineCharge, error) {
-	p, err := parseLineAllowanceCharge(ac, untdid.ExtKeyCharge)
-	if err != nil {
-		return nil, err
-	}
-	return &bill.LineCharge{
-		Reason:  p.Reason,
-		Amount:  p.Amount,
-		Base:    p.Base,
-		Percent: p.Percent,
-		Ext:     p.Ext,
-	}, nil
-}
-
-func goblLineDiscount(ac *AllowanceCharge) (*bill.LineDiscount, error) {
-	p, err := parseLineAllowanceCharge(ac, untdid.ExtKeyAllowance)
-	if err != nil {
-		return nil, err
-	}
-	return &bill.LineDiscount{
-		Reason:  p.Reason,
-		Amount:  p.Amount,
-		Base:    p.Base,
-		Percent: p.Percent,
-		Ext:     p.Ext,
 	}, nil
 }

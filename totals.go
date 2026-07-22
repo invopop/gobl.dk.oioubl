@@ -21,8 +21,7 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 	grossSum := num.MakeAmount(0, exp)
 	lineDiscounts := num.MakeAmount(0, exp)
 	lineCharges := num.MakeAmount(0, exp)
-	// excise holds duty charges emitted as cac:TaxTotal/Excise subtotals; they
-	// land in TaxInclusiveAmount as tax rather than in ChargeTotalAmount.
+	// excise duties land in TaxInclusiveAmount as tax, not in ChargeTotalAmount.
 	excise := num.MakeAmount(0, exp)
 	for _, l := range inv.Lines {
 		if l.Sum != nil {
@@ -63,10 +62,8 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 			chg = chg.Subtract(ch.Amount) // counted in t.Charge above; OIOUBL emits it as tax
 		}
 	}
-	// addTotals pre-sets ChargeTotalAmount from t.Charge, which also includes
-	// any excise duty; clear it back out here if excise absorbed all of it, or
-	// F-INV130/F-INV128/F-INV133 see a stale charge with no matching
-	// AllowanceCharge (an excise duty is never promoted to one).
+	// Clear a charge total left over purely from excise, which is never
+	// promoted to an AllowanceCharge (F-INV128/F-INV130/F-INV133).
 	if chg.IsZero() {
 		ui.LegalMonetaryTotal.ChargeTotalAmount = nil
 	} else {
@@ -119,9 +116,7 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 	t := inv.Totals
 	currency := inv.Currency.String()
 
-	// LineExtensionAmount/TaxExclusiveAmount/TaxInclusiveAmount/PayableAmount/
-	// ChargeTotalAmount are all unconditionally overwritten below (addMonetaryTotal,
-	// applyTotals), so there's no need to set them from t here first.
+	// The monetary total fields are all overwritten below; no need to set them from t first.
 	ui.addMonetaryTotal(inv, currency)
 	ui.addPrepaidPayments(inv, currency)
 
@@ -167,9 +162,8 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 	}
 }
 
-// isExciseOnlyRate reports whether a VAT rate row is owed entirely to excise
-// and so has no subtotal of its own (F-LIB404); its type travels on the
-// excise TaxTotal instead.
+// isExciseOnlyRate reports whether a VAT rate row is owed entirely to excise,
+// so it has no subtotal of its own (F-LIB404) -- its type travels on the excise TaxTotal instead.
 func isExciseOnlyRate(cat *tax.CategoryTotal, r *tax.RateTotal, exciseBases map[cbc.Key]num.Amount) bool {
 	if cat.Code != tax.CategoryVAT || !r.Amount.IsZero() {
 		return false

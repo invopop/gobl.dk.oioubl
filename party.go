@@ -171,7 +171,14 @@ func applyParty(p *Party) {
 		applyTaxScheme(pts.TaxScheme)
 	}
 	if p.PartyLegalEntity != nil {
-		applyCompanyID(p.PartyLegalEntity.CompanyID, schemeDKCVR, danish)
+		if p.PartyLegalEntity.CompanyID == nil {
+			// OIOUBL requires CompanyID whenever PartyLegalEntity is present
+			// (F-LIB187/189, enforced for every party role); a name with no
+			// legal identity to back it isn't enough to justify the class.
+			p.PartyLegalEntity = nil
+		} else {
+			applyCompanyID(p.PartyLegalEntity.CompanyID, schemeDKCVR, danish)
+		}
 	}
 	applyPartyIdentifications(p)
 }

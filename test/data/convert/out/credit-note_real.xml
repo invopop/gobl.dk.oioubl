@@ -77,9 +77,6 @@
           <cbc:IdentificationCode>DK</cbc:IdentificationCode>
         </cac:Country>
       </cac:PostalAddress>
-      <cac:PartyLegalEntity>
-        <cbc:RegistrationName>Den Lille Skole</cbc:RegistrationName>
-      </cac:PartyLegalEntity>
       <cac:Contact>
         <cbc:ID>7778</cbc:ID>
         <cbc:Name>Hans Hansen</cbc:Name>
