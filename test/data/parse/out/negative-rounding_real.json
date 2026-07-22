@@ -1,0 +1,267 @@
+{
+	"$schema": "https://gobl.org/draft-0/envelope",
+	"head": {
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+		"dig": {
+			"alg": "sha256",
+			"val": "878e5d9d3dc91f18a66fc9e61a05a02bbc56df2b0847207507d6cd61dbb278d8"
+		},
+		"from": "DK:CVR:11668216",
+		"to": "GLN:5790123456789"
+	},
+	"doc": {
+		"$schema": "https://gobl.org/draft-0/bill/invoice",
+		"$regime": "DK",
+		"$addons": [
+			"eu-en16931-v2017",
+			"dk-oioubl-v2"
+		],
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+		"type": "credit-note",
+		"code": "70390",
+		"issue_date": "2009-06-02",
+		"currency": "DKK",
+		"tax": {
+			"rounding": "currency",
+			"ext": {
+				"untdid-document-type": "381"
+			}
+		},
+		"supplier": {
+			"name": "Demo Firma Aps.",
+			"tax_id": {
+				"country": "DK",
+				"code": "11668216"
+			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "DK11668216",
+					"ext": {
+						"iso-scheme-id": "DK:CVR"
+					}
+				},
+				{
+					"code": "11668216",
+					"ext": {
+						"iso-scheme-id": "DK:CVR"
+					}
+				}
+			],
+			"people": [
+				{
+					"name": {
+						"given": "Demo Firma Aps."
+					},
+					"identities": [
+						{
+							"code": "n/a"
+						}
+					]
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "DK:CVR:11668216"
+				}
+			],
+			"addresses": [
+				{
+					"street": "Frydenlunds Allé 6",
+					"locality": "Vedbæk",
+					"code": "2950",
+					"country": "DK"
+				}
+			],
+			"emails": [
+				{
+					"addr": ""
+				}
+			],
+			"telephones": [
+				{
+					"num": "45 67 80 00"
+				}
+			]
+		},
+		"customer": {
+			"name": "Jensens Bolighus",
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "DK45234578",
+					"ext": {
+						"iso-scheme-id": "DK:CVR"
+					}
+				},
+				{
+					"code": "45234578",
+					"ext": {
+						"iso-scheme-id": "DK:CVR"
+					}
+				}
+			],
+			"people": [
+				{
+					"name": null,
+					"identities": [
+						{
+							"code": "n/a"
+						}
+					]
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "GLN:5790123456789"
+				}
+			],
+			"addresses": [
+				{
+					"street": "Boliggade 52",
+					"locality": "København V",
+					"code": "1600",
+					"country": "DK"
+				}
+			]
+		},
+		"lines": [
+			{
+				"i": 1,
+				"quantity": "1.00",
+				"item": {
+					"ref": "Materialer",
+					"name": "Skrivebord i Bøg",
+					"description": "Skrivebord i Bøg",
+					"price": "288.00",
+					"unit": "item"
+				},
+				"sum": "288.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"percent": "25%"
+					}
+				],
+				"total": "288.00"
+			},
+			{
+				"i": 2,
+				"quantity": "1.00",
+				"item": {
+					"ref": "Materialer",
+					"name": "Stolesæde",
+					"description": "Stolesæde",
+					"price": "108.00",
+					"unit": "item"
+				},
+				"sum": "108.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"percent": "25%"
+					}
+				],
+				"total": "108.00"
+			},
+			{
+				"i": 3,
+				"quantity": "1.00",
+				"item": {
+					"ref": "MatSpec",
+					"name": "spec produkt fejl",
+					"description": "spec produkt fejl",
+					"price": "22.80",
+					"unit": "item"
+				},
+				"sum": "22.80",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"percent": "25%"
+					}
+				],
+				"total": "22.80"
+			},
+			{
+				"i": 4,
+				"quantity": "-2.00",
+				"item": {
+					"ref": "Materialer",
+					"name": "Stol i Bøg",
+					"description": "Stol i Bøg",
+					"price": "160.00",
+					"unit": "item"
+				},
+				"sum": "-320.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"percent": "25%"
+					}
+				],
+				"total": "-320.00"
+			}
+		],
+		"discounts": [
+			{
+				"i": 1,
+				"base": "98.80",
+				"amount": "7.90",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard"
+					}
+				]
+			}
+		],
+		"ordering": {
+			"purchases": [
+				{
+					"issue_date": "2009-06-02",
+					"code": "n/a"
+				}
+			],
+			"sales": [
+				{
+					"code": "30013"
+				}
+			]
+		},
+		"totals": {
+			"sum": "98.80",
+			"discount": "7.90",
+			"total": "90.90",
+			"taxes": {
+				"categories": [
+					{
+						"code": "VAT",
+						"rates": [
+							{
+								"key": "standard",
+								"base": "98.80",
+								"percent": "25%",
+								"amount": "24.70"
+							},
+							{
+								"key": "standard",
+								"base": "-7.90",
+								"amount": "0.00"
+							}
+						],
+						"amount": "24.70"
+					}
+				],
+				"sum": "24.70"
+			},
+			"tax": "24.70",
+			"total_with_tax": "115.60",
+			"payable": "115.60"
+		}
+	}
+}

@@ -152,14 +152,61 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 	}
 	exciseBases := exciseVATBases(inv)
 	for _, cat := range t.Taxes.Categories {
+		foldedBase, hasRealRate := foldedBaseByCategory(cat.Rates)
 		for _, r := range cat.Rates {
+			catID := taxCategoryID(r.Key)
+			if r.Percent == nil && r.Amount.IsZero() && hasRealRate[catID] {
+				// Folded into the category's real rate row below instead of
+				// its own (G17 3.1: a discount/charge's VAT-liability flag).
+				// A category with no real rate of its own (e.g. ReverseCharge,
+				// itself percent-less and zero-amount) keeps its own row.
+				continue
+			}
 			if isExciseOnlyRate(cat, r, exciseBases) {
 				continue
 			}
-			subtotal := buildVATSubtotal(inv, cat, r, accRate, rCurrency, currency)
+			base := r.Base
+			if extra, ok := foldedBase[catID]; ok {
+				base = base.Add(extra.Rescale(base.Exp()))
+			}
+			subtotal := buildVATSubtotal(inv, cat, r, base, accRate, rCurrency, currency)
 			ui.TaxTotal[0].TaxSubtotal = append(ui.TaxTotal[0].TaxSubtotal, subtotal)
 		}
 	}
+}
+
+// foldedBaseByCategory sums the base of every zero-amount, percent-less rate
+// row (a discount/charge's VAT-liability flag, not its own rate -- G17 3.1)
+// per OIOUBL category, and reports which categories have a real (rated or
+// non-zero) row to fold into: OIOUBL forbids splitting one category across
+// two TaxSubtotal entries in the same TaxTotal (G27 3.5), and a discount
+// always reduces the VAT base outright (G27 1.1).
+func foldedBaseByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[string]bool) {
+	hasRealRate := make(map[string]bool)
+	for _, r := range rates {
+		if r.Percent == nil && r.Amount.IsZero() {
+			continue
+		}
+		if catID := taxCategoryID(r.Key); catID != "" {
+			hasRealRate[catID] = true
+		}
+	}
+	folded := make(map[string]num.Amount)
+	for _, r := range rates {
+		if r.Percent != nil || !r.Amount.IsZero() {
+			continue
+		}
+		catID := taxCategoryID(r.Key)
+		if catID == "" || !hasRealRate[catID] {
+			continue
+		}
+		if sum, ok := folded[catID]; ok {
+			folded[catID] = sum.Add(r.Base.Rescale(sum.Exp()))
+		} else {
+			folded[catID] = r.Base
+		}
+	}
+	return folded, hasRealRate
 }
 
 // isExciseOnlyRate reports whether a VAT rate row is owed entirely to excise,
@@ -179,12 +226,12 @@ func isExciseOnlyRate(cat *tax.CategoryTotal, r *tax.RateTotal, exciseBases map[
 // key (taxCategoryID) instead of the UNTDID ext our normalizer strips,
 // TransactionCurrencyTaxAmount (F-LIB373), and excise-only-rate skipping.
 // Re-diff against gobl.ubl on every version bump.
-func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTotal, accRate *cur.ExchangeRate, rCurrency, currency string) TaxSubtotal {
+func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTotal, base num.Amount, accRate *cur.ExchangeRate, rCurrency, currency string) TaxSubtotal {
 	subtotal := TaxSubtotal{
 		TaxAmount: Amount{Value: r.Amount.String(), CurrencyID: &currency},
 	}
-	if r.Base != (num.Amount{}) {
-		subtotal.TaxableAmount = Amount{Value: r.Base.String(), CurrencyID: &currency}
+	if base != (num.Amount{}) {
+		subtotal.TaxableAmount = Amount{Value: base.String(), CurrencyID: &currency}
 	}
 	// Computed early because F-LIB373 gates the dual-currency amount on the category.
 	catID := taxCategoryID(r.Key)

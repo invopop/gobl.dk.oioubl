@@ -1,0 +1,255 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CreditNote xmlns="urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:udt="urn:un:unece:uncefact:data:specification:UnqualifiedDataTypesSchemaModule:2" xmlns:ccts="urn:un:unece:uncefact:documentation:2" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2" xmlns:qdt="urn:oasis:names:specification:ubl:schema:xsd:QualifiedDatatypes-2">
+
+<!--
+******************************************************************************************************************
+20090830 Finn Christensen
+CreditNote showing negative rounding amount.
+		
+******************************************************************************************************************
+-->
+
+	<cbc:UBLVersionID schemeAgencyID="320" schemeAgencyName="urn:oioubl:id:profileid-1.1">2.0</cbc:UBLVersionID>
+	<cbc:CustomizationID>OIOUBL-2.02</cbc:CustomizationID>
+	<cbc:ProfileID schemeID="urn:oioubl:id:profileid-1.2" schemeAgencyID="320">Procurement-BilSim-1.0</cbc:ProfileID>
+	<cbc:ID>70390</cbc:ID>
+	<cbc:IssueDate>2009-06-02</cbc:IssueDate>
+	<cbc:DocumentCurrencyCode>DKK</cbc:DocumentCurrencyCode>
+	<cac:OrderReference>
+		<cbc:ID>n/a</cbc:ID>
+		<cbc:SalesOrderID>30013</cbc:SalesOrderID>
+		<cbc:IssueDate>2009-06-02</cbc:IssueDate>
+	</cac:OrderReference>
+	<cac:AccountingSupplierParty>
+		<cac:Party>
+			<cbc:EndpointID schemeID="DK:CVR">DK11668216</cbc:EndpointID>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="DK:CVR">DK11668216</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyName>
+				<cbc:Name>Demo Firma Aps.</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:AddressFormatCode listID="urn:oioubl:codelist:addressformatcode-1.1" listAgencyID="320">StructuredLax</cbc:AddressFormatCode>
+				<cbc:StreetName>Frydenlunds Allé 6</cbc:StreetName>
+				<cbc:CityName>Vedbæk</cbc:CityName>
+				<cbc:PostalZone>2950</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyTaxScheme>
+				<cbc:CompanyID schemeID="DK:SE">DK11668216</cbc:CompanyID>
+				<cac:TaxScheme>
+					<cbc:ID schemeID="urn:oioubl:id:taxschemeid-1.1" schemeAgencyID="320">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+				</cac:TaxScheme>
+			</cac:PartyTaxScheme>
+			<cac:PartyLegalEntity>
+				<cbc:RegistrationName>Demo Firma Aps.</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:CVR">DK11668216</cbc:CompanyID>
+			</cac:PartyLegalEntity>
+			<cac:Contact>
+				<cbc:ID>n/a</cbc:ID>
+				<cbc:Name>Demo Firma Aps.</cbc:Name>
+				<cbc:Telephone>45 67 80 00</cbc:Telephone>
+				<cbc:Telefax>45 67 80 01</cbc:Telefax>
+				<cbc:ElectronicMail>
+				</cbc:ElectronicMail>
+			</cac:Contact>
+		</cac:Party>
+	</cac:AccountingSupplierParty>
+	<cac:AccountingCustomerParty>
+		<cac:Party>
+			<cbc:EndpointID schemeID="GLN" schemeAgencyID="9">5790123456789</cbc:EndpointID>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="DK:CVR">DK45234578</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyName>
+				<cbc:Name>Jensens Bolighus</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:AddressFormatCode listID="urn:oioubl:codelist:addressformatcode-1.1" listAgencyID="320">StructuredLax</cbc:AddressFormatCode>
+				<cbc:StreetName>Boliggade 52</cbc:StreetName>
+				<cbc:CityName>København V</cbc:CityName>
+				<cbc:PostalZone>1600</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyLegalEntity>
+				<cbc:RegistrationName>Jensens Bolighus</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:CVR">DK45234578</cbc:CompanyID>
+			</cac:PartyLegalEntity>
+			<cac:Contact>
+				<cbc:ID>n/a</cbc:ID>
+			</cac:Contact>
+		</cac:Party>
+	</cac:AccountingCustomerParty>
+	<cac:AllowanceCharge>
+		<cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+		<cbc:SequenceNumeric>1</cbc:SequenceNumeric>
+		<cbc:Amount currencyID="DKK">7.90</cbc:Amount>
+		<cbc:BaseAmount currencyID="DKK">98.80</cbc:BaseAmount>
+		<cac:TaxCategory>
+			<cbc:ID schemeID="urn:oioubl:id:taxcategoryid-1.1" schemeAgencyID="320">StandardRated</cbc:ID>
+			<cbc:Percent>00</cbc:Percent>
+			<cac:TaxScheme>
+				<cbc:ID schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+				<cbc:Name>Moms</cbc:Name>
+			</cac:TaxScheme>
+		</cac:TaxCategory>
+	</cac:AllowanceCharge>
+	<cac:TaxTotal>
+		<cbc:TaxAmount currencyID="DKK">22.73</cbc:TaxAmount>
+		<cbc:RoundingAmount currencyID="DKK">-0.01</cbc:RoundingAmount>
+		<cac:TaxSubtotal>
+			<cbc:TaxableAmount currencyID="DKK">90.90</cbc:TaxableAmount>
+			<cbc:TaxAmount currencyID="DKK">22.73</cbc:TaxAmount>
+			<cac:TaxCategory>
+				<cbc:ID schemeID="urn:oioubl:id:taxcategoryid-1.1" schemeAgencyID="320">StandardRated</cbc:ID>
+				<cbc:Percent>25</cbc:Percent>
+				<cac:TaxScheme>
+					<cbc:ID schemeID="urn:oioubl:id:taxschemeid-1.1" schemeAgencyID="320">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+				</cac:TaxScheme>
+			</cac:TaxCategory>
+		</cac:TaxSubtotal>
+	</cac:TaxTotal>
+	<cac:LegalMonetaryTotal>
+		<cbc:LineExtensionAmount currencyID="DKK">98.80</cbc:LineExtensionAmount>
+		<cbc:TaxExclusiveAmount currencyID="DKK">22.73</cbc:TaxExclusiveAmount>
+		<cbc:TaxInclusiveAmount currencyID="DKK">113.62</cbc:TaxInclusiveAmount>
+		<cbc:AllowanceTotalAmount currencyID="DKK">7.90</cbc:AllowanceTotalAmount>
+		<cbc:PayableRoundingAmount currencyID="DKK">-0.01</cbc:PayableRoundingAmount>
+		<cbc:PayableAmount currencyID="DKK">113.62</cbc:PayableAmount>
+	</cac:LegalMonetaryTotal>
+	<cac:CreditNoteLine>
+		<cbc:ID>1</cbc:ID>
+		<cbc:CreditedQuantity unitCode="EA">1.00</cbc:CreditedQuantity>
+		<cbc:LineExtensionAmount currencyID="DKK">288.00</cbc:LineExtensionAmount>
+		<cac:TaxTotal>
+			<cbc:TaxAmount currencyID="DKK">72.00</cbc:TaxAmount>
+			<cac:TaxSubtotal>
+				<cbc:TaxableAmount currencyID="DKK">288.00</cbc:TaxableAmount>
+				<cbc:TaxAmount currencyID="DKK">72.00</cbc:TaxAmount>
+				<cac:TaxCategory>
+					<cbc:ID schemeID="urn:oioubl:id:taxcategoryid-1.1" schemeAgencyID="320">StandardRated</cbc:ID>
+					<cbc:Percent>25</cbc:Percent>
+					<cac:TaxScheme>
+						<cbc:ID schemeID="urn:oioubl:id:taxschemeid-1.1" schemeAgencyID="320">63</cbc:ID>
+						<cbc:Name>Moms</cbc:Name>
+					</cac:TaxScheme>
+				</cac:TaxCategory>
+			</cac:TaxSubtotal>
+		</cac:TaxTotal>
+		<cac:Item>
+			<cbc:Description>Skrivebord i Bøg</cbc:Description>
+			<cbc:Name>Skrivebord i Bøg</cbc:Name>
+			<cac:SellersItemIdentification>
+				<cbc:ID>Materialer</cbc:ID>
+			</cac:SellersItemIdentification>
+		</cac:Item>
+		<cac:Price>
+			<cbc:PriceAmount currencyID="DKK">288.00</cbc:PriceAmount>
+			<cbc:BaseQuantity unitCode="EA">1.00</cbc:BaseQuantity>
+			<cbc:OrderableUnitFactorRate>1</cbc:OrderableUnitFactorRate>
+		</cac:Price>
+	</cac:CreditNoteLine>
+	<cac:CreditNoteLine>
+		<cbc:ID>2</cbc:ID>
+		<cbc:CreditedQuantity unitCode="EA">1.00</cbc:CreditedQuantity>
+		<cbc:LineExtensionAmount currencyID="DKK">108.00</cbc:LineExtensionAmount>
+		<cac:TaxTotal>
+			<cbc:TaxAmount currencyID="DKK">27.00</cbc:TaxAmount>
+			<cac:TaxSubtotal>
+				<cbc:TaxableAmount currencyID="DKK">108.00</cbc:TaxableAmount>
+				<cbc:TaxAmount currencyID="DKK">27.00</cbc:TaxAmount>
+				<cac:TaxCategory>
+					<cbc:ID schemeID="urn:oioubl:id:taxcategoryid-1.1" schemeAgencyID="320">StandardRated</cbc:ID>
+					<cbc:Percent>25</cbc:Percent>
+					<cac:TaxScheme>
+						<cbc:ID schemeID="urn:oioubl:id:taxschemeid-1.1" schemeAgencyID="320">63</cbc:ID>
+						<cbc:Name>Moms</cbc:Name>
+					</cac:TaxScheme>
+				</cac:TaxCategory>
+			</cac:TaxSubtotal>
+		</cac:TaxTotal>
+		<cac:Item>
+			<cbc:Description>Stolesæde</cbc:Description>
+			<cbc:Name>Stolesæde</cbc:Name>
+			<cac:SellersItemIdentification>
+				<cbc:ID>Materialer</cbc:ID>
+			</cac:SellersItemIdentification>
+		</cac:Item>
+		<cac:Price>
+			<cbc:PriceAmount currencyID="DKK">108.00</cbc:PriceAmount>
+			<cbc:BaseQuantity unitCode="EA">1.00</cbc:BaseQuantity>
+			<cbc:OrderableUnitFactorRate>1</cbc:OrderableUnitFactorRate>
+		</cac:Price>
+	</cac:CreditNoteLine>
+	<cac:CreditNoteLine>
+		<cbc:ID>3</cbc:ID>
+		<cbc:CreditedQuantity unitCode="EA">1.00</cbc:CreditedQuantity>
+		<cbc:LineExtensionAmount currencyID="DKK">22.80</cbc:LineExtensionAmount>
+		<cac:TaxTotal>
+			<cbc:TaxAmount currencyID="DKK">5.70</cbc:TaxAmount>
+			<cac:TaxSubtotal>
+				<cbc:TaxableAmount currencyID="DKK">22.80</cbc:TaxableAmount>
+				<cbc:TaxAmount currencyID="DKK">5.70</cbc:TaxAmount>
+				<cac:TaxCategory>
+					<cbc:ID schemeID="urn:oioubl:id:taxcategoryid-1.1" schemeAgencyID="320">StandardRated</cbc:ID>
+					<cbc:Percent>25</cbc:Percent>
+					<cac:TaxScheme>
+						<cbc:ID schemeID="urn:oioubl:id:taxschemeid-1.1" schemeAgencyID="320">63</cbc:ID>
+						<cbc:Name>Moms</cbc:Name>
+					</cac:TaxScheme>
+				</cac:TaxCategory>
+			</cac:TaxSubtotal>
+		</cac:TaxTotal>
+		<cac:Item>
+			<cbc:Description>spec produkt fejl</cbc:Description>
+			<cbc:Name>spec produkt fejl</cbc:Name>
+			<cac:SellersItemIdentification>
+				<cbc:ID>MatSpec</cbc:ID>
+			</cac:SellersItemIdentification>
+		</cac:Item>
+		<cac:Price>
+			<cbc:PriceAmount currencyID="DKK">22.80</cbc:PriceAmount>
+			<cbc:BaseQuantity unitCode="EA">1.00</cbc:BaseQuantity>
+			<cbc:OrderableUnitFactorRate>1</cbc:OrderableUnitFactorRate>
+		</cac:Price>
+	</cac:CreditNoteLine>
+	<cac:CreditNoteLine>
+		<cbc:ID>4</cbc:ID>
+		<cbc:CreditedQuantity unitCode="EA">2.00</cbc:CreditedQuantity>
+		<cbc:LineExtensionAmount currencyID="DKK">-320.00</cbc:LineExtensionAmount>
+		<cac:TaxTotal>
+			<cbc:TaxAmount currencyID="DKK">-80.00</cbc:TaxAmount>
+			<cac:TaxSubtotal>
+				<cbc:TaxableAmount currencyID="DKK">-320.00</cbc:TaxableAmount>
+				<cbc:TaxAmount currencyID="DKK">-80.00</cbc:TaxAmount>
+				<cac:TaxCategory>
+					<cbc:ID schemeID="urn:oioubl:id:taxcategoryid-1.1" schemeAgencyID="320">StandardRated</cbc:ID>
+					<cbc:Percent>25</cbc:Percent>
+					<cac:TaxScheme>
+						<cbc:ID schemeID="urn:oioubl:id:taxschemeid-1.1" schemeAgencyID="320">63</cbc:ID>
+						<cbc:Name>Moms</cbc:Name>
+					</cac:TaxScheme>
+				</cac:TaxCategory>
+			</cac:TaxSubtotal>
+		</cac:TaxTotal>
+		<cac:Item>
+			<cbc:Description>Stol i Bøg</cbc:Description>
+			<cbc:Name>Stol i Bøg</cbc:Name>
+			<cac:SellersItemIdentification>
+				<cbc:ID>Materialer</cbc:ID>
+			</cac:SellersItemIdentification>
+		</cac:Item>
+		<cac:Price>
+			<cbc:PriceAmount currencyID="DKK">-160.00</cbc:PriceAmount>
+			<cbc:BaseQuantity unitCode="EA">1.00</cbc:BaseQuantity>
+			<cbc:OrderableUnitFactorRate>1</cbc:OrderableUnitFactorRate>
+		</cac:Price>
+	</cac:CreditNoteLine>
+</CreditNote>
