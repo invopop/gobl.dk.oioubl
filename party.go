@@ -28,9 +28,8 @@ func (ui *Invoice) applyPartyAndAddressFlavor(inv *bill.Invoice) {
 	applyParty(ui.PayeeParty)
 	applyTaxRepParty(ui.TaxRepresentativeParty)
 
-	ui.Delivery = nil
-	if d := newDelivery(inv.Delivery); d != nil {
-		ui.Delivery = []*ubl.Delivery{d}
+	if len(ui.Delivery) > 0 {
+		applyDelivery(ui.Delivery[0], inv.Delivery)
 	}
 }
 
@@ -69,7 +68,7 @@ func applyPartyEndpoint(p *ubl.Party, party *org.Party) {
 		if ep == nil {
 			continue
 		}
-		if scheme, value, ok := parseOIOUBLEndpoint(ep.URI.String()); ok {
+		if scheme, value, ok := splitEndpointURI(ep.URI.String()); ok {
 			p.EndpointID = &ubl.EndpointID{SchemeID: scheme.String(), Value: value.String()}
 			return
 		}
@@ -134,7 +133,7 @@ const (
 	schemeZZZ   = "ZZZ"
 )
 
-func parseOIOUBLEndpoint(uri string) (scheme, code cbc.Code, ok bool) {
+func splitEndpointURI(uri string) (scheme, code cbc.Code, ok bool) {
 	i := strings.LastIndex(uri, ":")
 	if i <= 0 || i == len(uri)-1 {
 		return "", "", false

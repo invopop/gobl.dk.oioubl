@@ -18,11 +18,6 @@ import (
 // generic Convert is not inherited. It shares the wire layout, so it marshals identically.
 type Invoice ubl.Invoice
 
-var (
-	ErrUnknownDocumentType     = fmt.Errorf("unknown document type")
-	ErrUnsupportedDocumentType = fmt.Errorf("unsupported document type")
-)
-
 const Version = ubl.Version
 
 const (
@@ -34,15 +29,6 @@ const (
 	VESIDInvoice    = "dk.oioubl:invoice:1.17.2"
 	VESIDCreditNote = "dk.oioubl:credit-note:1.17.2"
 )
-
-var Addons = []cbc.Key{oioubl.V2}
-
-func GetVESID(inv *bill.Invoice) string {
-	if inv.Type.In(bill.InvoiceTypeCreditNote) {
-		return VESIDCreditNote
-	}
-	return VESIDInvoice
-}
 
 // OIOUBL code-list and scheme identifiers the schematron expects (agency 320 throughout).
 const (
@@ -57,6 +43,20 @@ const (
 	listAddressFormat  = "urn:oioubl:codelist:addressformatcode-1.1"
 	listTaxType        = "urn:oioubl:codelist:taxtypecode-1.1"
 )
+
+var (
+	ErrUnknownDocumentType     = fmt.Errorf("unknown document type")
+	ErrUnsupportedDocumentType = fmt.Errorf("unsupported document type")
+)
+
+var Addons = []cbc.Key{oioubl.V2}
+
+func GetVESID(inv *bill.Invoice) string {
+	if inv.Type.In(bill.InvoiceTypeCreditNote) {
+		return VESIDCreditNote
+	}
+	return VESIDInvoice
+}
 
 // Parse parses an OIOUBL document into an *Invoice; call its Convert for the GOBL envelope.
 func Parse(data []byte) (any, error) {
@@ -90,16 +90,14 @@ func ConvertInvoice(env *gobl.Envelope) (*Invoice, error) {
 	return inv, nil
 }
 
-// convertViaOverlay builds gobl.ubl's plain EN16931 base document, then
-// applies the OIOUBL flavor on top -- the base builder never sees OIOUBL's
-// own context, so it stays entirely decoupled from OIOUBL specifics.
+// convertViaOverlay builds the plain EN16931 base, then decorates it into OIOUBL.
 func convertViaOverlay(env *gobl.Envelope) (*Invoice, error) {
 	inv, ok := env.Extract().(*bill.Invoice)
 	if !ok {
 		return nil, ErrUnsupportedDocumentType
 	}
-	// Both the base builder and the flavor dereference the regime definition;
-	// reject a regime-less invoice cleanly instead of panicking downstream.
+	// totals.go dereferences RegimeDef() unconditionally; a regime-less
+	// invoice (e.g. an unsupported supplier country) would panic there.
 	if inv.RegimeDef() == nil {
 		return nil, fmt.Errorf("invoice requires a tax regime (usually derived from the supplier's tax ID)")
 	}
@@ -113,10 +111,22 @@ func convertViaOverlay(env *gobl.Envelope) (*Invoice, error) {
 		return nil, err
 	}
 	out := (*Invoice)(base)
-	if err := out.applyOIOUBLFlavor(inv); err != nil {
+	err = out.applyOIOUBLFlavor(inv)
+	if err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+// applyOIOUBLFlavor turns gobl.ubl's plain EN16931 base into OIOUBL 2.1, in
+// three stages: party/address, then line/categories/tax_total, then schemes.
+func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
+	ui.applyPartyAndAddressFlavor(inv)
+	if err := ui.applyLineCategoryAndTaxTotalFlavor(inv); err != nil {
+		return err
+	}
+	ui.applySchemeFlavor(inv)
+	return nil
 }
 
 // ensureOIOUBLAddon declares the OIOUBL addon on the invoice if absent and

@@ -7,41 +7,39 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// OIOUBL: uses RequestedDeliveryPeriod for the period (F-INV087/089/090) and drops the delivery PartyLegalEntity (F-LIB187).
-func newDelivery(del *bill.DeliveryDetails) *ubl.Delivery {
-	if del == nil {
-		return nil
+// applyDelivery adjusts the base's already-built delivery (via gobl.ubl's
+// NewDelivery) for OIOUBL: uses RequestedDeliveryPeriod for the period
+// (F-INV087/089/090) and drops the delivery PartyLegalEntity (F-LIB187).
+func applyDelivery(d *ubl.Delivery, del *bill.DeliveryDetails) {
+	if d == nil || del == nil {
+		return
 	}
-
-	out := ubl.NewDelivery(del, ubl.Context{})
 
 	if del.Period != nil {
 		// OIOUBL only permits RequestedDeliveryPeriod for a period (F-INV087/089/090).
-		out.LatestDeliveryDate = nil
-		out.ActualDeliveryDate = nil
+		d.LatestDeliveryDate = nil
+		d.ActualDeliveryDate = nil
 		if del.Date != nil {
 			date := ubl.FormatDate(*del.Date)
-			out.ActualDeliveryDate = &date
+			d.ActualDeliveryDate = &date
 		}
-		out.RequestedDeliveryPeriod = &ubl.Period{
+		d.RequestedDeliveryPeriod = &ubl.Period{
 			StartDate: ubl.FormatDate(del.Period.Start),
 			EndDate:   ubl.FormatDate(del.Period.End),
 		}
 	}
 
-	if out.DeliveryParty != nil {
+	if d.DeliveryParty != nil {
 		// OIOUBL requires a non-empty CompanyID on PartyLegalEntity (F-LIB187);
 		// the delivery party never has one, so drop the element entirely.
-		out.DeliveryParty.PartyLegalEntity = nil
+		d.DeliveryParty.PartyLegalEntity = nil
 	}
 
-	if out.DeliveryLocation != nil && del.Receiver != nil {
+	if d.DeliveryLocation != nil && del.Receiver != nil {
 		var a *org.Address
 		if len(del.Receiver.Addresses) > 0 {
 			a = del.Receiver.Addresses[0]
 		}
-		applyAddress(out.DeliveryLocation.Address, a)
+		applyAddress(d.DeliveryLocation.Address, a)
 	}
-
-	return out
 }
