@@ -10,10 +10,8 @@ import (
 )
 
 // applyLines adjusts the base's already-built InvoiceLines/CreditNoteLines
-// for OIOUBL: gross line amount with no line-level allowances (promoted to
-// the document instead, F-INV126/128/129), no forbidden OriginCountry
-// (F-INV211/F-CRN109), and the OIOUBL ClassifiedTaxCategory ID (the base
-// reads it from the UNTDID tax-category ext, which our normalizer strips).
+// for OIOUBL: gross line amount with no line-level allowances, no forbidden 
+// (F-INV211/F-CRN109), and the OIOUBL ClassifiedTaxCategory ID.
 func (ui *Invoice) applyLines(inv *bill.Invoice) {
 	lines := ui.InvoiceLines
 	if len(ui.CreditNoteLines) > 0 {
