@@ -184,9 +184,7 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 	}
 }
 
-// foldedBaseByCategory folds VAT-liability-flag rows (zero-amount, percent-less, G17 3.1)
-// into their category's real rate -- OIOUBL forbids the same category in two TaxSubtotal
-// entries within one TaxTotal (G27 3.5).
+// OIOUBL forbids the same category in two TaxSubtotal entries within one TaxTotal (G27 3.5).
 func foldedBaseByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[string]bool) {
 	hasRealRate := make(map[string]bool)
 	for _, r := range rates {
