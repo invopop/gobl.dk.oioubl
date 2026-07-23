@@ -14,8 +14,7 @@ import (
 
 // applyLineCategoryAndTaxTotalFlavor rebuilds lines, tax categories, charges
 // and tax/monetary totals to OIOUBL's conventions. Totals have no reusable
-// equivalent in the base (excise-as-tax, document-level promotion), so they're
-// rebuilt outright.
+// equivalent in the base, so they're rebuilt outright.
 func (ui *Invoice) applyLineCategoryAndTaxTotalFlavor(inv *bill.Invoice) error {
 	// Drop the tax currency unless a StandardRated rate (%>0) carries it (F-LIB373/F-INV018).
 	if ui.TaxCurrencyCode != "" && !hasStandardRated(inv) {
@@ -222,8 +221,7 @@ func isExciseOnlyRate(cat *tax.CategoryTotal, r *tax.RateTotal, exciseBases map[
 	return ok && r.Base.Compare(base.Rescale(r.Base.Exp())) == 0
 }
 
-// buildVATSubtotal ports gobl.ubl's own subtotal builder, adding GOBL-key category
-// IDs, TransactionCurrencyTaxAmount (F-LIB373), and excise-rate skipping -- re-diff on version bumps.
+// buildVATSubtotal ports gobl.ubl's own subtotal builder
 func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTotal, base num.Amount, accRate *cur.ExchangeRate, rCurrency, currency string) ubl.TaxSubtotal {
 	subtotal := ubl.TaxSubtotal{
 		TaxAmount: ubl.Amount{Value: r.Amount.String(), CurrencyID: &currency},
@@ -298,8 +296,7 @@ func (ui *Invoice) applyTotals() {
 	for i := range ui.TaxTotal {
 		for j := range ui.TaxTotal[i].TaxSubtotal {
 			st := &ui.TaxTotal[i].TaxSubtotal[j]
-			// Excise subtotals carry their own scheme code, name and TaxTypeCode; the
-			// VAT overlay would clobber them with 63/Moms, so leave them untouched.
+			// Excise subtotals carry their own scheme code, name and TaxTypeCode
 			if st.TaxCategory.ID != nil && st.TaxCategory.ID.Value == taxCategoryExcise {
 				continue
 			}
