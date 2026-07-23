@@ -28,8 +28,8 @@ github.com/invopop/gobl.fr.ctc v0.0.4 h1:x4eJ3hp9Y9lTCzWFhNqZYm9kCXyuC34EytOuaU0
 github.com/invopop/gobl.fr.ctc v0.0.4/go.mod h1:YXJ0G7lCWxUehI4C2xBPL1y6rTNC29t/kOul7wY+3Xs=
 github.com/invopop/gobl.sa.zatca v0.0.2 h1:qU2Y0LP+4mjvZkuG1TOUp/Zs0XxRAzkzQFHy3WOVFEU=
 github.com/invopop/gobl.sa.zatca v0.0.2/go.mod h1:tmLCoaKb4X7sZ2zRU8LalA1sgxM2kQv/uqMzZslhE6A=
-github.com/invopop/gobl.ubl v0.56.0 h1:v3nF0HAysOLCDnDMcTS3qnZCFdibeWq4cpZEZZ5+WAs=
-github.com/invopop/gobl.ubl v0.56.0/go.mod h1:R6+ENuOExqbwayTHblx+xwZg2gnjHpLiIytX5BIvW2o=
+github.com/invopop/gobl.ubl v0.57.0 h1:VJCq4tzX+95fnfoBHxgC0cfhF1HpV/g+EtNm4cCNoeM=
+github.com/invopop/gobl.ubl v0.57.0/go.mod h1:R6+ENuOExqbwayTHblx+xwZg2gnjHpLiIytX5BIvW2o=
 github.com/invopop/jsonschema v0.14.0 h1:MHQqLhvpNUZfw+hM3AZDYK7jxO8FZoQeQM77g8iyZjg=
 github.com/invopop/jsonschema v0.14.0/go.mod h1:ygm6C2EaVNMBDPpaPlnOA2pFAxBnxGjFlMZABxm9n2I=
 github.com/invopop/phive v0.6.0 h1:wtk5+ieD/muViF6SJXGGVA/vYPzed9NoaCl63TjmWU4=
