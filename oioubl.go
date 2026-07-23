@@ -1,4 +1,4 @@
-// Package dkoioubl converts GOBL documents to and from OIOUBL 2.1, the Danish
+// Package dkoioubl converts GOBL documents to OIOUBL 2.1, the Danish
 // NemHandel profile of UBL 2.1. Generic UBL plumbing is shared with gobl.ubl;
 // OIOUBL-specifics live here alongside the dk-oioubl addon subpackage.
 package dkoioubl
@@ -13,9 +13,8 @@ import (
 	"github.com/invopop/gobl/cbc"
 )
 
-// Invoice is the OIOUBL view of a UBL invoice: a defined type over ubl.Invoice
-// (not an alias) so the OIOUBL build/parse methods hang off it and gobl.ubl's
-// generic Convert is not inherited. It shares the wire layout, so it marshals identically.
+// Invoice is the OIOUBL view of a UBL invoice: a defined type over ubl.Invoice, not an
+// alias, so OIOUBL's own methods attach to it without inheriting gobl.ubl's generic Convert.
 type Invoice ubl.Invoice
 
 const Version = ubl.Version
@@ -38,16 +37,13 @@ const (
 	schemeTaxScheme   = "urn:oioubl:id:taxschemeid-1.5"
 	schemeProfileV12  = "urn:oioubl:id:profileid-1.2"
 
-	listInvoiceType    = "urn:oioubl:codelist:invoicetypecode-1.1"
-	listPaymentChannel = "urn:oioubl:codelist:paymentchannelcode-1.1"
-	listAddressFormat  = "urn:oioubl:codelist:addressformatcode-1.1"
-	listTaxType        = "urn:oioubl:codelist:taxtypecode-1.1"
+	codelistInvoiceType    = "urn:oioubl:codelist:invoicetypecode-1.1"
+	codelistPaymentChannel = "urn:oioubl:codelist:paymentchannelcode-1.1"
+	codelistAddressFormat  = "urn:oioubl:codelist:addressformatcode-1.1"
+	codelistTaxType        = "urn:oioubl:codelist:taxtypecode-1.1"
 )
 
-var (
-	ErrUnknownDocumentType     = fmt.Errorf("unknown document type")
-	ErrUnsupportedDocumentType = fmt.Errorf("unsupported document type")
-)
+var ErrUnsupportedDocumentType = fmt.Errorf("unsupported document type")
 
 var Addons = []cbc.Key{oioubl.V2}
 
@@ -56,18 +52,6 @@ func GetVESID(inv *bill.Invoice) string {
 		return VESIDCreditNote
 	}
 	return VESIDInvoice
-}
-
-// Parse parses an OIOUBL document into an *Invoice; call its Convert for the GOBL envelope.
-func Parse(data []byte) (any, error) {
-	doc, err := ubl.Parse(data)
-	if err != nil {
-		return nil, err
-	}
-	if in, ok := doc.(*ubl.Invoice); ok {
-		return (*Invoice)(in), nil
-	}
-	return nil, ErrUnknownDocumentType
 }
 
 func Convert(env *gobl.Envelope) (any, error) {

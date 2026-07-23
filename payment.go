@@ -7,6 +7,16 @@ import (
 	"github.com/invopop/gobl/pay"
 )
 
+// OIOUBL paymentchannelcode-1.1 wire values derived from the payment means
+// (see paymentChannel); the codelist's other values aren't supported outbound.
+const (
+	paymentChannelIBAN     = "IBAN"
+	paymentChannelGiro     = "DK:GIRO"
+	paymentChannelFIK      = "DK:FIK"
+	paymentChannelDKBank   = "DK:BANK"
+	paymentChannelNemKonto = "DK:NEMKONTO"
+)
+
 // applyPayment adjusts the base's already-built PaymentMeans for OIOUBL:
 // stamps the channel code, and replaces the Giro/FIK shape outright.
 func (ui *Invoice) applyPayment(inv *bill.Invoice) {
@@ -49,16 +59,6 @@ func applyPaymentTermsAmount(ui *Invoice) {
 	}
 }
 
-// OIOUBL paymentchannelcode-1.1 wire values derived from the payment means
-// (see paymentChannel); the codelist's other values aren't supported outbound.
-const (
-	paymentChannelIBAN     = "IBAN"
-	paymentChannelGiro     = "DK:GIRO"
-	paymentChannelFIK      = "DK:FIK"
-	paymentChannelDKBank   = "DK:BANK"
-	paymentChannelNemKonto = "DK:NEMKONTO"
-)
-
 func paymentChannel(means string) string {
 	switch means {
 	case "50":
@@ -75,8 +75,8 @@ func paymentChannel(means string) string {
 	return ""
 }
 
-// applyRegNr replaces the base's BIC branch with the Danish bank reg. nr.
-// carried on the credit transfer's branch label (F-LIB124/F-LIB130).
+// applyRegNr replaces the base's BIC (EN16931 has no reg. nr. concept) with
+// the Danish bank reg. nr. OIOUBL wants there instead (F-LIB124/F-LIB130).
 func applyRegNr(pm *ubl.PaymentMeans, instr *pay.Instructions) {
 	if pm.PayeeFinancialAccount == nil {
 		return
@@ -128,7 +128,7 @@ func stampPaymentChannel(pm *ubl.PaymentMeans) {
 	if pm.PaymentChannelCode == nil {
 		return
 	}
-	listID := listPaymentChannel
+	listID := codelistPaymentChannel
 	pm.PaymentChannelCode.ListID = &listID
 	if pm.PaymentChannelCode.Value != paymentChannelIBAN || pm.PayeeFinancialAccount == nil {
 		return

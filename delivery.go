@@ -7,22 +7,16 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// applyDelivery adjusts the base's already-built delivery (via gobl.ubl's
-// NewDelivery) for OIOUBL: uses RequestedDeliveryPeriod for the period
-// (F-INV087/089/090) and drops the delivery PartyLegalEntity (F-LIB187).
+// applyDelivery adjusts the base's already-built delivery for OIOUBL (F-INV087/089/090, F-LIB187).
 func applyDelivery(d *ubl.Delivery, del *bill.DeliveryDetails) {
 	if d == nil || del == nil {
 		return
 	}
 
 	if del.Period != nil {
-		// OIOUBL only permits RequestedDeliveryPeriod for a period (F-INV087/089/090).
+		// GOBL never sets Date alongside Period, so OIOUBL's RequestedDeliveryPeriod replaces both date fields.
 		d.LatestDeliveryDate = nil
 		d.ActualDeliveryDate = nil
-		if del.Date != nil {
-			date := ubl.FormatDate(*del.Date)
-			d.ActualDeliveryDate = &date
-		}
 		d.RequestedDeliveryPeriod = &ubl.Period{
 			StartDate: ubl.FormatDate(del.Period.Start),
 			EndDate:   ubl.FormatDate(del.Period.End),

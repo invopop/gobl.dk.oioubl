@@ -6,10 +6,8 @@ import (
 	"github.com/invopop/gobl/bill"
 )
 
-// applySchemeFlavor stamps the OIOUBL scheme/list/agency identifiers the
-// schematron expects (UBLVersionID, CustomizationID/ProfileID, type code
-// lists) along with the document-header fields the base drops, and adjusts
-// the payment means' channel codes.
+// applySchemeFlavor stamps OIOUBL's scheme/list identifiers, header fields
+// the base drops, and payment channel codes.
 func (ui *Invoice) applySchemeFlavor(inv *bill.Invoice) {
 	ui.UBLVersionID = Version
 	ui.CustomizationID = CustomizationID
@@ -64,7 +62,7 @@ func applyTypeCode(t *ubl.IDType) {
 	if t == nil {
 		return
 	}
-	listID := listInvoiceType
+	listID := codelistInvoiceType
 	listAgencyID := agencyID
 	t.ListID = &listID
 	t.ListAgencyID = &listAgencyID

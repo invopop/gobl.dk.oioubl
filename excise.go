@@ -14,11 +14,10 @@ import (
 const taxCategoryExcise = "Excise"
 
 type exciseDuty struct {
-	scheme string
-	name   string
-	amount num.Amount
-	base   *num.Amount
-	// typeCode is the duty's taxtypecode value (own for document-level, inherited from the line's VAT category for line-level).
+	scheme   string
+	name     string
+	amount   num.Amount
+	base     *num.Amount
 	typeCode string
 }
 
@@ -135,7 +134,7 @@ func makeExciseTaxTotals(excises []exciseDuty, currency string) []ubl.TaxTotal {
 		schemeID := schemeTaxScheme
 		schemeAgencyID := agencyID
 		typeAgencyID := agencyID
-		listID := listTaxType
+		listID := codelistTaxType
 		scheme := &ubl.TaxScheme{
 			ID: ubl.IDType{SchemeID: &schemeID, SchemeAgencyID: &schemeAgencyID, Value: e.scheme},
 		}

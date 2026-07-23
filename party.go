@@ -10,9 +10,7 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// applyPartyAndAddressFlavor adjusts the base's already-correct parties and
-// addresses (built by gobl.ubl's NewParty) with OIOUBL's extras, and rebuilds
-// the delivery party/address.
+// applyPartyAndAddressFlavor adjusts the base's parties, addresses, and delivery for OIOUBL.
 func (ui *Invoice) applyPartyAndAddressFlavor(inv *bill.Invoice) {
 	supplierSrc := inv.Supplier
 	if inv.Ordering != nil && inv.Ordering.Seller != nil {
@@ -112,7 +110,7 @@ func applyAddress(addr *ubl.PostalAddress, a *org.Address) {
 
 // newAddressFormatCode builds the cbc:AddressFormatCode required on every OIOUBL address (F-LIB025).
 func newAddressFormatCode(value string) *ubl.IDType {
-	listID := listAddressFormat
+	listID := codelistAddressFormat
 	listAgencyID := agencyID
 	return &ubl.IDType{
 		ListID:       &listID,
@@ -182,7 +180,7 @@ func applyParty(p *ubl.Party) {
 		}
 	}
 	if p.PostalAddress != nil && p.PostalAddress.AddressFormatCode == nil {
-		// A tax identity with no address yields a bare PostalAddress lacking a format code.
+		// gobl.ubl's NewParty sets only the tax ID's country here, with no AddressFormatCode; stamp the one OIOUBL requires.
 		p.PostalAddress.AddressFormatCode = newAddressFormatCode(addressStructuredLax)
 	}
 	danish := partyIsDanish(p)
@@ -193,9 +191,7 @@ func applyParty(p *ubl.Party) {
 	}
 	if p.PartyLegalEntity != nil {
 		if p.PartyLegalEntity.CompanyID == nil {
-			// OIOUBL requires CompanyID whenever PartyLegalEntity is present
-			// (F-LIB187/189, enforced for every party role); a name with no
-			// legal identity to back it isn't enough to justify the class.
+			// OIOUBL requires CompanyID whenever PartyLegalEntity is present (F-LIB187/189); drop the element rather than leave it incomplete.
 			p.PartyLegalEntity = nil
 		} else {
 			applyCompanyID(p.PartyLegalEntity.CompanyID, schemeDKCVR, danish)

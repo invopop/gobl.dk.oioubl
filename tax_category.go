@@ -16,9 +16,7 @@ const (
 	taxSchemeVATCode = "63" // taxschemeid-1.5 VAT (Moms)
 )
 
-// taxCategoryID maps a GOBL VAT key to its OIOUBL taxcategoryid-1.1 code. OIOUBL
-// 2.1 has no exempt category, so exempt reports as ZeroRated; keys with no
-// OIOUBL category (export/intra-community/outside-scope) return "".
+// taxCategoryID maps a GOBL VAT key to its OIOUBL taxcategoryid-1.1 code (exempt maps to ZeroRated, since OIOUBL 2.1 has no exempt category; unsupported keys return "").
 func taxCategoryID(key cbc.Key) string {
 	switch key {
 	case tax.KeyStandard, "":

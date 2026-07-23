@@ -77,15 +77,14 @@ func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
 			chg = chg.Subtract(ch.Amount) // counted in t.Charge above; OIOUBL emits it as tax
 		}
 	}
-	// Clear a charge total left over purely from excise, which is never
-	// promoted to an AllowanceCharge (F-INV128/F-INV130/F-INV133).
+	// A charge total left over purely from excise isn't real (excise is never
+	// promoted to an AllowanceCharge, F-INV128/130/133) -- clear it.
 	if chg.IsZero() {
 		ui.LegalMonetaryTotal.ChargeTotalAmount = nil
 	} else {
 		ui.LegalMonetaryTotal.ChargeTotalAmount = &ubl.Amount{Value: chg.String(), CurrencyID: &currency}
 	}
-	// OIOUBL rounds per line then sums (F-INV128/F-INV133), which can differ from
-	// GOBL's end-rounding by a cent; recompute totals from the rounded components.
+	// Recomputed since OIOUBL regroups excise from charge to tax (F-INV128/F-INV133); GOBL's own totals have no field for that.
 	incl := grossSum.Add(t.Tax).Add(excise).Add(chg).Subtract(allow)
 	if t.Rounding != nil {
 		incl = incl.Add(*t.Rounding)
@@ -169,10 +168,7 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 		for _, r := range cat.Rates {
 			catID := taxCategoryID(r.Key)
 			if r.Percent == nil && r.Amount.IsZero() && hasRealRate[catID] {
-				// Folded into the category's real rate row below instead of
-				// its own (G17 3.1: a discount/charge's VAT-liability flag).
-				// A category with no real rate of its own (e.g. ReverseCharge,
-				// itself percent-less and zero-amount) keeps its own row.
+				// Folds into the category's real rate below (G17 3.1), unless it has none of its own (e.g. ReverseCharge).
 				continue
 			}
 			if isExciseOnlyRate(cat, r, exciseBases) {
@@ -188,10 +184,9 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 	}
 }
 
-// foldedBaseByCategory sums zero-amount, percent-less rate rows (discount/charge
-// VAT-liability flags, not real rates -- G17 3.1) into the matching real-rate
-// category's base, since OIOUBL forbids splitting one category across two
-// TaxSubtotal entries (G27 3.5); it also reports which categories have a real row.
+// foldedBaseByCategory folds VAT-liability-flag rows (zero-amount, percent-less, G17 3.1)
+// into their category's real rate -- OIOUBL forbids the same category in two TaxSubtotal
+// entries within one TaxTotal (G27 3.5).
 func foldedBaseByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[string]bool) {
 	hasRealRate := make(map[string]bool)
 	for _, r := range rates {
@@ -229,13 +224,8 @@ func isExciseOnlyRate(cat *tax.CategoryTotal, r *tax.RateTotal, exciseBases map[
 	return ok && r.Base.Compare(base.Rescale(r.Base.Exp())) == 0
 }
 
-// buildVATSubtotal builds one cac:TaxSubtotal for a VAT rate row; percent is
-// required unless the category is "O" (outside scope). Copied from gobl.ubl's
-// addTotals subtotal loop (totals.go) since that TaxTotal is discarded
-// wholesale -- deltas: category ID from the GOBL VAT key (taxCategoryID)
-// instead of the UNTDID ext our normalizer strips, TransactionCurrencyTaxAmount
-// (F-LIB373), and excise-only-rate skipping. Re-diff against gobl.ubl on every
-// version bump.
+// buildVATSubtotal ports gobl.ubl's own subtotal builder, adding GOBL-key category
+// IDs, TransactionCurrencyTaxAmount (F-LIB373), and excise-rate skipping -- re-diff on version bumps.
 func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTotal, base num.Amount, accRate *cur.ExchangeRate, rCurrency, currency string) ubl.TaxSubtotal {
 	subtotal := ubl.TaxSubtotal{
 		TaxAmount: ubl.Amount{Value: r.Amount.String(), CurrencyID: &currency},
@@ -273,9 +263,7 @@ func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTota
 	return subtotal
 }
 
-// findTaxNote copies gobl.ubl's own findTaxNote (totals.go); the only delta is
-// matching by the tax.Note category + VAT key instead of the UNTDID category
-// extension. Re-diff against gobl.ubl on every version bump.
+// findTaxNote ports gobl.ubl's own version, matching by GOBL VAT key instead of the UNTDID ext -- re-diff on version bumps.
 func findTaxNote(notes []*tax.Note, catCode cbc.Code, rate *tax.RateTotal) *tax.Note {
 	for _, n := range notes {
 		if n.Category == catCode && n.Key == rate.Key {

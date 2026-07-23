@@ -14,19 +14,18 @@ import (
 // (F-INV211/F-CRN109), and the OIOUBL ClassifiedTaxCategory ID (the base
 // reads it from the UNTDID tax-category ext, which our normalizer strips).
 func (ui *Invoice) applyLines(inv *bill.Invoice) {
-	applyLineSet(ui.InvoiceLines, inv.Lines)
-	applyLineSet(ui.CreditNoteLines, inv.Lines)
-	applyLineTaxCategories(ui.InvoiceLines)
-	applyLineTaxCategories(ui.CreditNoteLines)
-}
-
-func applyLineSet(lines []ubl.InvoiceLine, glines []*bill.Line) {
+	lines := ui.InvoiceLines
+	if len(ui.CreditNoteLines) > 0 {
+		lines = ui.CreditNoteLines
+	}
 	for i := range lines {
-		if i >= len(glines) {
+		if i >= len(inv.Lines) {
 			break
 		}
-		applyLine(&lines[i], glines[i])
+		applyLine(&lines[i], inv.Lines[i])
 	}
+	applyLineTaxCategories(ui.InvoiceLines)
+	applyLineTaxCategories(ui.CreditNoteLines)
 }
 
 func applyLine(invLine *ubl.InvoiceLine, l *bill.Line) {
@@ -63,8 +62,7 @@ func applyLineTaxCategories(lines []ubl.InvoiceLine) {
 		for j := range line.TaxTotal {
 			for k := range line.TaxTotal[j].TaxSubtotal {
 				st := &line.TaxTotal[j].TaxSubtotal[k]
-				// Excise subtotals carry their own scheme code, name and TaxTypeCode;
-				// the VAT overlay would clobber them with 63/Moms, so leave them be.
+				// Skip excise subtotals -- the VAT overlay here would overwrite their own scheme/TaxTypeCode.
 				if st.TaxCategory.ID != nil && st.TaxCategory.ID.Value == taxCategoryExcise {
 					continue
 				}
@@ -86,16 +84,11 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []ubl.TaxTotal {
 		return nil
 	}
 
-	var taxable num.Amount
-	switch {
-	case line.Sum != nil:
-		// Line TaxableAmount is gross (Price×Qty); the discount is taken once at document level (F-LIB402).
-		taxable = *line.Sum
-	case line.Total != nil:
-		taxable = *line.Total
-	default:
+	// Gross line amount (Price×Qty), what OIOUBL wants per F-LIB402; nil means an unpriced line, nothing to tax.
+	if line.Sum == nil {
 		return nil
 	}
+	taxable := *line.Sum
 
 	// An excise duty is emitted as its own tax, not an AllowanceCharge, so fold
 	// it into the VAT taxable base here: VAT lands on the duty-inclusive amount (F-LIB402).
@@ -127,8 +120,7 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []ubl.TaxTotal {
 			subtotal.TaxAmount = ubl.Amount{Value: amount.String(), CurrencyID: &ccy}
 			totalAmount = totalAmount.Add(amount)
 		} else {
-			// No percent (e.g. exempt): still emit at currency precision
-			// ("0.00"), or OIOUBL F-LIB263 rejects a bare "0".
+			// Exempt lines still need a currency-precision zero ("0.00"); F-LIB263 rejects a bare "0".
 			subtotal.TaxAmount = ubl.Amount{Value: num.MakeAmount(0, taxable.Exp()).String(), CurrencyID: &ccy}
 		}
 
@@ -147,19 +139,16 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []ubl.TaxTotal {
 	return totals
 }
 
-// makeLineCharges builds on gobl.ubl's own line-allowance builder, adding the
-// TaxCategory OIOUBL requires (F-LIB226) and fixing MultiplierFactorNumeric to
-// OIOUBL's decimal-factor form (F-LIB228), not EN 16931's percentage number.
+// makeLineCharges adds OIOUBL's required TaxCategory (F-LIB226) and decimal-factor
+// MultiplierFactorNumeric (F-LIB228) onto gobl.ubl's own line-allowance builder.
 func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount, ccy string, baseSum *num.Amount, taxes tax.Set) []*ubl.AllowanceCharge {
 	acs := ubl.MakeLineCharges(charges, discounts, ccy, baseSum)
-	i := 0
-	for _, ch := range charges {
-		applyLineAllowanceCharge(acs[i], ch.Percent, taxes)
-		i++
+	for idx, ch := range charges {
+		applyLineAllowanceCharge(acs[idx], ch.Percent, taxes)
 	}
-	for _, d := range discounts {
-		applyLineAllowanceCharge(acs[i], d.Percent, taxes)
-		i++
+	// gobl.ubl's MakeLineCharges appends charges then discounts, in that order.
+	for idx, d := range discounts {
+		applyLineAllowanceCharge(acs[len(charges)+idx], d.Percent, taxes)
 	}
 	return acs
 }
