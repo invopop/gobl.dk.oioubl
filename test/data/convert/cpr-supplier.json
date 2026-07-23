@@ -1,0 +1,171 @@
+{
+	"$schema": "https://gobl.org/draft-0/envelope",
+	"head": {
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3",
+		"dig": {
+			"alg": "sha256",
+			"val": "4ec5f5f6c29105938902c7e3b1bc3e0004b27d8d6e7ba830260f2a0ab2803203"
+		},
+		"from": "DK:CPR:1111111118",
+		"to": "GLN:5790001968502"
+	},
+	"doc": {
+		"$schema": "https://gobl.org/draft-0/bill/invoice",
+		"$regime": "DK",
+		"$addons": [
+			"eu-en16931-v2017",
+			"dk-oioubl-v2"
+		],
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3",
+		"type": "standard",
+		"series": "SAMPLE",
+		"code": "002",
+		"issue_date": "2024-05-15",
+		"currency": "DKK",
+		"tax": {
+			"rounding": "currency",
+			"ext": {
+				"untdid-document-type": "380"
+			}
+		},
+		"supplier": {
+			"name": "afsender",
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "1111111118",
+					"ext": {
+						"iso-scheme-id": "DK:CPR"
+					}
+				},
+				{
+					"code": "1111111118",
+					"ext": {
+						"iso-scheme-id": "DK:CPR"
+					}
+				}
+			],
+			"people": [
+				{
+					"name": {
+						"given": "afsender"
+					},
+					"identities": [
+						{
+							"code": "support@nemhandel.dk"
+						}
+					]
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "DK:CPR:1111111118"
+				}
+			],
+			"addresses": [
+				{
+					"num": "12",
+					"street": "afsendervej",
+					"locality": "AfsenderBy",
+					"code": "1111",
+					"country": "DK"
+				}
+			]
+		},
+		"customer": {
+			"name": "Test-mod",
+			"tax_id": {
+				"country": "DK",
+				"code": "13585628"
+			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "13585628"
+				}
+			],
+			"people": [
+				{
+					"name": {
+						"given": "nejTak"
+					},
+					"identities": [
+						{
+							"code": "nejTak"
+						}
+					]
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "GLN:5790001968502"
+				}
+			],
+			"addresses": [
+				{
+					"num": "7",
+					"street": "mod-vej",
+					"locality": "modtagerBy",
+					"code": "9999",
+					"country": "DK"
+				}
+			]
+		},
+		"lines": [
+			{
+				"i": 1,
+				"quantity": "1.00",
+				"item": {
+					"name": "Ydelse",
+					"price": "100.00",
+					"unit": "one"
+				},
+				"sum": "100.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "zero",
+						"percent": "0%"
+					}
+				],
+				"total": "100.00"
+			}
+		],
+		"payment": {
+			"terms": {
+				"notes": "Netto 30 dage"
+			},
+			"instructions": {
+				"key": "other",
+				"detail": "NemKonto udbetaling",
+				"ext": {
+					"untdid-payment-means": "97"
+				}
+			}
+		},
+		"totals": {
+			"sum": "100.00",
+			"total": "100.00",
+			"taxes": {
+				"categories": [
+					{
+						"code": "VAT",
+						"rates": [
+							{
+								"key": "zero",
+								"base": "100.00",
+								"percent": "0%",
+								"amount": "0.00"
+							}
+						],
+						"amount": "0.00"
+					}
+				],
+				"sum": "0.00"
+			},
+			"tax": "0.00",
+			"total_with_tax": "100.00",
+			"payable": "100.00"
+		}
+	}
+}

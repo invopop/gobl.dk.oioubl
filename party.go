@@ -128,6 +128,7 @@ const addressStructuredLax = "StructuredLax"
 const (
 	schemeDKCVR = string(oioubl.SchemeDKCVR)
 	schemeDKSE  = "DK:SE"
+	schemeDKCPR = "DK:CPR"
 	schemeZZZ   = "ZZZ"
 )
 
@@ -147,11 +148,24 @@ func dkPrefixed(value string) string {
 	return "DK" + value
 }
 
-// applyCompanyID stamps a CompanyID's OIOUBL scheme: Danish scheme + DK-prefixed
-// value for a Danish party (F-LIB190/196), ZZZ + unchanged value otherwise.
+// applyCompanyID stamps a CompanyID's OIOUBL scheme. A symbolic OIOUBL scheme
+// the base already carried from the identity's iso-scheme-id extension wins —
+// a CPR-identified person must not be relabelled as a CVR company (F-LIB190/191)
+// — with the wire-only DK prefix added on DK:CVR/DK:SE values (F-LIB190/196).
+// Otherwise the party's country decides: Danish scheme + DK-prefixed value, or
+// ZZZ + unchanged value.
 func applyCompanyID(id *ubl.IDType, danishScheme string, danish bool) {
 	if id == nil {
 		return
+	}
+	if id.SchemeID != nil {
+		switch *id.SchemeID {
+		case schemeDKCVR, schemeDKSE:
+			id.Value = dkPrefixed(id.Value)
+			return
+		case schemeDKCPR, schemeZZZ:
+			return
+		}
 	}
 	if danish {
 		id.SchemeID = &danishScheme
