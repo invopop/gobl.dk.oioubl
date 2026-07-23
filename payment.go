@@ -38,8 +38,6 @@ func (ui *Invoice) applyPayment(inv *bill.Invoice) {
 		}
 	case "42":
 		applyRegNr(pm, instr)
-	case "97":
-		clearNemKontoDetails(pm)
 	}
 	if ch := paymentChannel(paymentMeansCode); ch != "" {
 		pm.PaymentChannelCode = &ubl.IDType{Value: ch}
@@ -91,19 +89,6 @@ func applyRegNr(pm *ubl.PaymentMeans, instr *pay.Instructions) {
 	}
 	regNr := branch.Label
 	pm.PayeeFinancialAccount.FinancialInstitutionBranch = &ubl.Branch{ID: &regNr}
-}
-
-// clearNemKontoDetails strips everything but the means/channel codes: NemKonto
-// (97) allows no account or payment identification at all (F-LIB159-165).
-func clearNemKontoDetails(pm *ubl.PaymentMeans) {
-	pm.InstructionID = nil
-	pm.InstructionNote = nil
-	pm.PaymentID = nil
-	pm.CardAccount = nil
-	pm.PayerFinancialAccount = nil
-	pm.PayeeFinancialAccount = nil
-	pm.CreditAccount = nil
-	pm.PaymentMandate = nil
 }
 
 // applyPaymentMeans stamps the payment channel and moves the document due date onto each means.
