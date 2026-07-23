@@ -2,6 +2,7 @@ package dkoioubl
 
 import (
 	"strconv"
+	"strings"
 
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
@@ -110,7 +111,7 @@ func (ui *Invoice) addPrepaidPayments(inv *bill.Invoice, currency string) {
 			PaidAmount: &ubl.Amount{Value: adv.Amount.String(), CurrencyID: &currency},
 		}
 		if adv.Date != nil {
-			d := ubl.FormatDate(*adv.Date)
+			d := formatDate(*adv.Date)
 			pp.ReceivedDate = &d
 		}
 		if adv.Ref != "" {
@@ -312,6 +313,15 @@ func (ui *Invoice) applyTotals() {
 	ui.LegalMonetaryTotal.TaxExclusiveAmount = sumTaxTotalAmounts(ui.TaxTotal)
 }
 
+// normalizeNumericString preps a wire amount for num parsing: trims space, zero-pads a leading decimal point.
+func normalizeNumericString(s string) string {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, ".") {
+		s = "0" + s
+	}
+	return s
+}
+
 // sumTaxTotalAmounts totals the TaxAmount of every cac:TaxTotal (VAT plus excise).
 func sumTaxTotalAmounts(totals []ubl.TaxTotal) ubl.Amount {
 	if len(totals) == 0 {
@@ -320,12 +330,12 @@ func sumTaxTotalAmounts(totals []ubl.TaxTotal) ubl.Amount {
 	if len(totals) == 1 {
 		return totals[0].TaxAmount
 	}
-	sum, err := num.AmountFromString(ubl.NormalizeNumericString(totals[0].TaxAmount.Value))
+	sum, err := num.AmountFromString(normalizeNumericString(totals[0].TaxAmount.Value))
 	if err != nil {
 		return totals[0].TaxAmount
 	}
 	for _, tt := range totals[1:] {
-		a, err := num.AmountFromString(ubl.NormalizeNumericString(tt.TaxAmount.Value))
+		a, err := num.AmountFromString(normalizeNumericString(tt.TaxAmount.Value))
 		if err != nil {
 			continue
 		}

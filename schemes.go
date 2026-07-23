@@ -43,7 +43,7 @@ func newProfileID() *ubl.IDType {
 func (ui *Invoice) applyOrderingRefs(inv *bill.Invoice) {
 	if o := inv.Ordering; o != nil && len(o.Purchases) > 0 && ui.OrderReference != nil {
 		if d := o.Purchases[0].IssueDate; d != nil {
-			ui.OrderReference.IssueDate = ubl.FormatDate(*d)
+			ui.OrderReference.IssueDate = formatDate(*d)
 		}
 	}
 	for i, ref := range inv.Preceding {

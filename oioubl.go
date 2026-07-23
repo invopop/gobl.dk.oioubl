@@ -10,6 +10,7 @@ import (
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"
 )
 
@@ -124,6 +125,14 @@ func ensureOIOUBLAddon(env *gobl.Envelope, inv *bill.Invoice) error {
 		return err
 	}
 	return env.Validate()
+}
+
+// formatDate renders a GOBL date in UBL's YYYY-MM-DD form.
+func formatDate(d cal.Date) string {
+	if d.IsZero() {
+		return ""
+	}
+	return d.Time().Format("2006-01-02")
 }
 
 func Bytes(in any) ([]byte, error) {

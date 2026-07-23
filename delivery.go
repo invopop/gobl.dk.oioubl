@@ -18,8 +18,8 @@ func applyDelivery(d *ubl.Delivery, del *bill.DeliveryDetails) {
 		d.LatestDeliveryDate = nil
 		d.ActualDeliveryDate = nil
 		d.RequestedDeliveryPeriod = &ubl.Period{
-			StartDate: ubl.FormatDate(del.Period.Start),
-			EndDate:   ubl.FormatDate(del.Period.End),
+			StartDate: formatDate(del.Period.Start),
+			EndDate:   formatDate(del.Period.End),
 		}
 	}
 

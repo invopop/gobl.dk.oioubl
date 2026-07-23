@@ -3,6 +3,7 @@ package dkoioubl
 import (
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/currency"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/tax"
@@ -139,22 +140,43 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []ubl.TaxTotal {
 	return totals
 }
 
-// makeLineCharges adds OIOUBL's required TaxCategory (F-LIB226) and decimal-factor
-// MultiplierFactorNumeric (F-LIB228) onto gobl.ubl's own line-allowance builder.
+// makeLineCharges rebuilds a line's allowances/charges for document-level promotion,
+// with OIOUBL's required TaxCategory (F-LIB226) and decimal-factor MultiplierFactorNumeric (F-LIB228).
 func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount, ccy string, baseSum *num.Amount, taxes tax.Set) []*ubl.AllowanceCharge {
-	acs := ubl.MakeLineCharges(charges, discounts, ccy, baseSum)
-	for idx, ch := range charges {
-		applyLineAllowanceCharge(acs[idx], ch.Percent, taxes)
+	var acs []*ubl.AllowanceCharge
+	for _, ch := range charges {
+		ac := &ubl.AllowanceCharge{
+			ChargeIndicator: true,
+			Amount:          ubl.Amount{Value: rescaleToCurrency(ch.Amount, ccy).String(), CurrencyID: &ccy},
+		}
+		if e := ch.Ext.Get(untdid.ExtKeyCharge).String(); e != "" {
+			ac.AllowanceChargeReasonCode = &e
+		}
+		if ch.Reason != "" {
+			ac.AllowanceChargeReason = &ch.Reason
+		}
+		ac.BaseAmount = chargeBaseAmount(ch.Percent, ch.Base, baseSum, ccy)
+		applyLineAllowanceCharge(ac, ch.Percent, taxes)
+		acs = append(acs, ac)
 	}
-	// gobl.ubl's MakeLineCharges appends charges then discounts, in that order.
-	for idx, d := range discounts {
-		applyLineAllowanceCharge(acs[len(charges)+idx], d.Percent, taxes)
+	for _, d := range discounts {
+		ac := &ubl.AllowanceCharge{
+			Amount: ubl.Amount{Value: rescaleToCurrency(d.Amount, ccy).String(), CurrencyID: &ccy},
+		}
+		if e := d.Ext.Get(untdid.ExtKeyAllowance).String(); e != "" {
+			ac.AllowanceChargeReasonCode = &e
+		}
+		if d.Reason != "" {
+			ac.AllowanceChargeReason = &d.Reason
+		}
+		ac.BaseAmount = chargeBaseAmount(d.Percent, d.Base, baseSum, ccy)
+		applyLineAllowanceCharge(ac, d.Percent, taxes)
+		acs = append(acs, ac)
 	}
 	return acs
 }
 
-// applyLineAllowanceCharge stamps MultiplierFactorNumeric/TaxCategory;
-// gobl.ubl's own MakeLineCharges already handles the base amount.
+// applyLineAllowanceCharge stamps MultiplierFactorNumeric/TaxCategory.
 func applyLineAllowanceCharge(ac *ubl.AllowanceCharge, pct *num.Percentage, taxes tax.Set) {
 	if pct != nil {
 		p := allowanceMultiplier(pct)
