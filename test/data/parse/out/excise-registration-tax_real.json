@@ -1,0 +1,241 @@
+{
+	"$addons": [
+		"eu-en16931-v2017",
+		"dk-oioubl-v2"
+	],
+	"$regime": "DK",
+	"charges": [
+		{
+			"amount": "78169.00",
+			"ext": {
+				"dk-oioubl-duty-code": "0"
+			},
+			"i": 1,
+			"key": "excise",
+			"reason": "Registreringsafgift",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "zero",
+					"percent": "0.00%"
+				}
+			]
+		}
+	],
+	"code": "5555",
+	"currency": "DKK",
+	"customer": {
+		"addresses": [
+			{
+				"code": "3000",
+				"country": "DK",
+				"locality": "Helsingør",
+				"num": "10",
+				"street": "Fredericiavej"
+			}
+		],
+		"emails": [
+			{
+				"addr": "Hans@dls.dk"
+			}
+		],
+		"endpoints": [
+			{
+				"uri": "GLN:5798000416604"
+			}
+		],
+		"identities": [
+			{
+				"code": "16356709",
+				"ext": {
+					"iso-scheme-id": "DK:CVR"
+				},
+				"scope": "legal"
+			},
+			{
+				"code": "5798000416604",
+				"ext": {
+					"iso-scheme-id": "GLN"
+				}
+			}
+		],
+		"name": "Den Lille Skole",
+		"people": [
+			{
+				"identities": [
+					{
+						"code": "7778"
+					}
+				],
+				"name": {
+					"given": "Hans Hansen"
+				}
+			}
+		],
+		"telephones": [
+			{
+				"num": "26532147"
+			}
+		]
+	},
+	"delivery": {
+		"date": "2009-06-02"
+	},
+	"discounts": [
+		{
+			"amount": "0.40",
+			"i": 1,
+			"reason": "Rabat",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "standard",
+					"percent": "25.00%"
+				}
+			]
+		}
+	],
+	"issue_date": "2009-06-02",
+	"lines": [
+		{
+			"i": 1,
+			"item": {
+				"description": "Honda Jazz 1,4 Comfort I-shift",
+				"name": "Honda Jazz 1,4 Comfort I-shift",
+				"price": "102842.00",
+				"unit": "item"
+			},
+			"quantity": "1.00",
+			"sum": "102842.00",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "standard",
+					"percent": "25.00%"
+				}
+			],
+			"total": "102842.00"
+		},
+		{
+			"i": 2,
+			"item": {
+				"description": "Byttebil",
+				"name": "Byttebil",
+				"price": "26721.00",
+				"unit": "item"
+			},
+			"quantity": "-1.00",
+			"sum": "-26721.00",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "zero",
+					"percent": "0.00%"
+				}
+			],
+			"total": "-26721.00"
+		}
+	],
+	"payment": {
+		"instructions": {
+			"credit_transfer": [
+				{
+					"branch": {
+						"country": "DK",
+						"label": "1234"
+					},
+					"number": "1234123456"
+				}
+			],
+			"ext": {
+				"untdid-payment-means": "42"
+			},
+			"key": "other"
+		},
+		"terms": {
+			"due_dates": [
+				{
+					"amount": "180000.00",
+					"date": "2009-06-05",
+					"percent": "100%"
+				}
+			]
+		}
+	},
+	"supplier": {
+		"addresses": [
+			{
+				"code": "2870",
+				"country": "DK",
+				"locality": "Dyssegård",
+				"num": "11",
+				"street": "Bilvej"
+			}
+		],
+		"endpoints": [
+			{
+				"uri": "DK:CVR:37990485"
+			}
+		],
+		"identities": [
+			{
+				"code": "37990485",
+				"ext": {
+					"iso-scheme-id": "DK:CVR"
+				},
+				"scope": "legal"
+			},
+			{
+				"code": "37990485",
+				"ext": {
+					"iso-scheme-id": "DK:CVR"
+				}
+			}
+		],
+		"name": "Super Biler",
+		"tax_id": {
+			"code": "37990485",
+			"country": "DK"
+		}
+	},
+	"tax": {
+		"ext": {
+			"untdid-document-type": "380"
+		},
+		"rounding": "currency"
+	},
+	"totals": {
+		"charge": "78169.00",
+		"discount": "0.40",
+		"payable": "180000.00",
+		"sum": "76121.00",
+		"tax": "25710.40",
+		"taxes": {
+			"categories": [
+				{
+					"amount": "25710.40",
+					"code": "VAT",
+					"rates": [
+						{
+							"amount": "25710.40",
+							"base": "102841.60",
+							"key": "standard",
+							"percent": "25.00%"
+						},
+						{
+							"amount": "0.00",
+							"base": "51448.00",
+							"key": "zero",
+							"percent": "0.00%"
+						}
+					]
+				}
+			],
+			"sum": "25710.40"
+		},
+		"total": "154289.60",
+		"total_with_tax": "180000.00"
+	},
+	"type": "standard",
+	"uuid": "00000000-0000-0000-0000-000000000000"
+}

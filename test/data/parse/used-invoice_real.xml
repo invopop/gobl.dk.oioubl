@@ -1,0 +1,1069 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ccts="urn:oasis:names:specification:ubl:schema:xsd:CoreComponentParameters-2" xmlns:sdt="urn:oasis:names:specification:ubl:schema:xsd:SpecializedDatatypes-2" xmlns:udt="urn:un:unece:uncefact:data:specification:UnqualifiedDataTypesSchemaModule:2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 UBL-Invoice-2.0.xsd">
+
+	<cbc:UBLVersionID>2.0</cbc:UBLVersionID>
+	<cbc:CustomizationID>OIOUBL-2.01</cbc:CustomizationID>
+	<cbc:ProfileID schemeAgencyID="320" schemeID="urn:oioubl:id:profileid-1.1">Procurement-OrdSimR-BilSim-1.0</cbc:ProfileID>
+	<cbc:ID>A00095678</cbc:ID>
+	<cbc:CopyIndicator>true</cbc:CopyIndicator>
+	<cbc:UUID>9756b4d0-8815-1029-857a-e388fe63f399</cbc:UUID>
+	<cbc:IssueDate>2007-02-20</cbc:IssueDate>
+	<cbc:InvoiceTypeCode listAgencyID="320" listID="urn:oioubl:codelist:invoicetypecode-1.1">380</cbc:InvoiceTypeCode>
+	<cbc:Note>Note til dokumentet</cbc:Note>
+	<cbc:DocumentCurrencyCode>DKK</cbc:DocumentCurrencyCode>
+	<cbc:TaxCurrencyCode>DKK</cbc:TaxCurrencyCode>
+	<cbc:PricingCurrencyCode>DKK</cbc:PricingCurrencyCode>
+	<cbc:PaymentCurrencyCode>DKK</cbc:PaymentCurrencyCode>
+	<cbc:PaymentAlternativeCurrencyCode>DKK</cbc:PaymentAlternativeCurrencyCode>
+	<cbc:AccountingCost>5250124502</cbc:AccountingCost>
+	<cac:InvoicePeriod>
+		<cbc:StartDate>2007-02-20</cbc:StartDate>
+		<cbc:EndDate>2007-02-20</cbc:EndDate>
+		<cbc:Description>periodebeskr.</cbc:Description>
+	</cac:InvoicePeriod>
+	<cac:OrderReference>
+		<cbc:ID>5002701</cbc:ID>
+		<cbc:UUID>9756b468-8815-1029-857a-e388fe63f399</cbc:UUID>
+		<cac:DocumentReference>
+			<cbc:ID>123</cbc:ID>
+			<cbc:UUID>6E09886B-DC6E-439F-82D1-7CCAC7F4E3B1</cbc:UUID>
+			<cbc:IssueDate>2007-02-20</cbc:IssueDate>
+			<cbc:DocumentType>Order</cbc:DocumentType>
+			<cac:Attachment>
+				<cac:ExternalReference>
+					<cbc:URI>http://www.ordrereference.dk</cbc:URI>
+					<cbc:DocumentHash>dkfgqasdfæaljrtg9q0</cbc:DocumentHash>
+					<cbc:ExpiryDate>2007-02-20</cbc:ExpiryDate>
+					<cbc:ExpiryTime>12:00:00</cbc:ExpiryTime>
+				</cac:ExternalReference>
+			</cac:Attachment>
+		</cac:DocumentReference>
+	</cac:OrderReference>
+	<cac:ContractDocumentReference>
+		<cbc:ID>234</cbc:ID>
+		<cbc:UUID>6E09886B-DC6E-439F-82D1-7CCAC7F4E3B1</cbc:UUID>
+		<cbc:IssueDate>2007-02-20</cbc:IssueDate>
+		<cbc:DocumentType>Contract</cbc:DocumentType>
+		<cac:Attachment>
+			<cbc:EmbeddedDocumentBinaryObject mimeCode="image/tiff">
+				TIFF
+			</cbc:EmbeddedDocumentBinaryObject>
+		</cac:Attachment>
+	</cac:ContractDocumentReference>
+	<cac:AdditionalDocumentReference>
+		<cbc:ID>345</cbc:ID>
+		<cbc:UUID>6E09886B-DC6E-439F-82D1-7CCAC7F4E3B1</cbc:UUID>
+		<cbc:IssueDate>2007-02-20</cbc:IssueDate>
+		<cbc:DocumentType>AdditionalDocument</cbc:DocumentType>
+		<cac:Attachment>
+			<cac:ExternalReference>
+				<cbc:URI>http://www.leverandør.dk/yderligere.pdf</cbc:URI>
+				<cbc:DocumentHash>dkfgqasdfæaljrtg9q0</cbc:DocumentHash>
+				<cbc:ExpiryDate>2007-02-20</cbc:ExpiryDate>
+				<cbc:ExpiryTime>12:00:00</cbc:ExpiryTime>
+			</cac:ExternalReference>
+		</cac:Attachment>
+	</cac:AdditionalDocumentReference>
+	<cac:Signature>
+		<cbc:ID>123</cbc:ID>
+		<cbc:Note>Signatur note</cbc:Note>
+		<cbc:ValidationDate>2007-02-20</cbc:ValidationDate>
+		<cbc:ValidationTime>12:00:00</cbc:ValidationTime>
+		<cbc:ValidatorID>9000000001</cbc:ValidatorID>
+		<cbc:CanonicalizationMethod>Metode 1</cbc:CanonicalizationMethod>
+		<cbc:SignatureMethod>Metode 2</cbc:SignatureMethod>
+		<cac:SignatoryParty>
+			<cbc:EndpointID schemeID="DK:CVR">DK16356712</cbc:EndpointID>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="DK:CVR">DK12457812</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyName>
+				<cbc:Name>Signatør A/S</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+				<cbc:StreetName>Signatørvej</cbc:StreetName>
+				<cbc:BuildingNumber>11</cbc:BuildingNumber>
+				<cbc:CityName>Dyssegård</cbc:CityName>
+				<cbc:PostalZone>2870</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PhysicalLocation>
+				<cbc:ID>456</cbc:ID>
+				<cbc:Description>Text</cbc:Description>
+				<cbc:Conditions>Text</cbc:Conditions>
+				<cac:Address>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Signatørvej</cbc:StreetName>
+					<cbc:BuildingNumber>12</cbc:BuildingNumber>
+					<cbc:CityName>Dyssegård</cbc:CityName>
+					<cbc:PostalZone>2870</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:Address>				
+			</cac:PhysicalLocation>
+			<cac:PartyTaxScheme>
+				<cbc:RegistrationName>Signatør A/S</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:SE">DK16356719</cbc:CompanyID>
+				<cbc:ExemptionReasonCode>UndtagelsesKode</cbc:ExemptionReasonCode>
+				<cbc:ExemptionReason>Undtagelse</cbc:ExemptionReason>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Signatørvej</cbc:StreetName>
+					<cbc:BuildingNumber>12</cbc:BuildingNumber>
+					<cbc:CityName>Dyssegård</cbc:CityName>
+					<cbc:PostalZone>2870</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+					<cbc:CurrencyCode>DKK</cbc:CurrencyCode>
+				</cac:TaxScheme>
+			</cac:PartyTaxScheme>
+			<cac:PartyLegalEntity>
+				<cbc:RegistrationName>Signatør A/S</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:CVR">DK16356719</cbc:CompanyID>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Signatørvej</cbc:StreetName>
+					<cbc:BuildingNumber>12</cbc:BuildingNumber>
+					<cbc:CityName>Dyssegård</cbc:CityName>
+					<cbc:PostalZone>2870</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>
+			</cac:PartyLegalEntity>
+			<cac:Contact>
+				<cbc:ID>9000000002</cbc:ID>
+				<cbc:Name>Salgsafdelingen</cbc:Name>
+				<cbc:Telephone>15812337</cbc:Telephone>
+				<cbc:Telefax>15812330</cbc:Telefax>
+				<cbc:ElectronicMail>salg@signatør.dk</cbc:ElectronicMail>
+				<cbc:Note>tekst</cbc:Note>
+				<cac:OtherCommunication>
+					<cbc:Channel>Skype</cbc:Channel>
+					<cbc:Value>signatør@signatør.dk</cbc:Value>
+				</cac:OtherCommunication>
+			</cac:Contact>
+			<cac:Person>
+				<cbc:FirstName>Søren</cbc:FirstName>
+				<cbc:FamilyName>Jensen</cbc:FamilyName>
+				<cbc:MiddleName>Back</cbc:MiddleName>
+			</cac:Person>
+		</cac:SignatoryParty>
+		<cac:DigitalSignatureAttachment>
+			<cbc:EmbeddedDocumentBinaryObject mimeCode="image/tiff">
+				TIFF
+			</cbc:EmbeddedDocumentBinaryObject>
+		</cac:DigitalSignatureAttachment>
+		<cac:OriginalDocumentReference>
+			<cbc:ID>2345</cbc:ID>
+			<cbc:UUID>6E09886B-DC6E-439F-82D1-7CCAC7F4E3B1</cbc:UUID>
+			<cbc:IssueDate>2007-02-20</cbc:IssueDate>
+			<cbc:DocumentType>OriginalDocument</cbc:DocumentType>
+			<cac:Attachment>
+				<cac:ExternalReference>
+					<cbc:URI>http://www.signaturdokumentreference.dk</cbc:URI>
+					<cbc:DocumentHash>dkfgqasdfæaljrtg9q0</cbc:DocumentHash>
+					<cbc:ExpiryDate>2007-02-20</cbc:ExpiryDate>
+					<cbc:ExpiryTime>12:00:00</cbc:ExpiryTime>
+				</cac:ExternalReference>
+			</cac:Attachment>
+		</cac:OriginalDocumentReference>
+	</cac:Signature>
+	<cac:AccountingSupplierParty>
+		<cac:Party>
+			<cbc:EndpointID schemeID="DK:CVR">DK16356700</cbc:EndpointID>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="DK:CVR">DK12457845</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyName>
+				<cbc:Name>Tavleverandøren</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+				<cbc:Postbox>1523</cbc:Postbox>
+				<cbc:Floor>1. sal th</cbc:Floor>
+				<cbc:StreetName>Leverandørvej</cbc:StreetName>
+				<cbc:BuildingNumber>11</cbc:BuildingNumber>
+				<cbc:Department>Salgsafdelingen</cbc:Department>
+				<cbc:CityName>Dyssegård</cbc:CityName>
+				<cbc:PostalZone>2870</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyTaxScheme>
+				<cbc:CompanyID schemeID="DK:SE">DK16356700</cbc:CompanyID>
+				<cbc:ExemptionReasonCode>UndtagelsesKode</cbc:ExemptionReasonCode>
+				<cbc:ExemptionReason>Undtagelse</cbc:ExemptionReason>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Signatørvej</cbc:StreetName>
+					<cbc:BuildingNumber>12</cbc:BuildingNumber>
+					<cbc:CityName>Dyssegård</cbc:CityName>
+					<cbc:PostalZone>2870</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+				</cac:TaxScheme>
+			</cac:PartyTaxScheme>
+			<cac:PartyLegalEntity>
+				<cbc:RegistrationName>Tavleleverandøren</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:CVR">DK16356700</cbc:CompanyID>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Signatørvej</cbc:StreetName>
+					<cbc:BuildingNumber>12</cbc:BuildingNumber>
+					<cbc:CityName>Dyssegård</cbc:CityName>
+					<cbc:PostalZone>2870</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>				
+			</cac:PartyLegalEntity>
+			<cac:Contact>
+				<cbc:ID>23456</cbc:ID>
+				<cbc:Name>Hugo Jensen</cbc:Name>
+				<cbc:Telephone>15812337</cbc:Telephone>
+				<cbc:Telefax>15812330</cbc:Telefax>
+				<cbc:ElectronicMail>Hugo@tavl.dk</cbc:ElectronicMail>
+				<cbc:Note>text</cbc:Note>
+				<cac:OtherCommunication>
+					<cbc:Channel>Skype</cbc:Channel>
+					<cbc:Value>Hugo@tavl.dk</cbc:Value>
+				</cac:OtherCommunication>				
+			</cac:Contact>
+			<cac:Person>
+				<cbc:FirstName>Hugo</cbc:FirstName>
+				<cbc:FamilyName>Jensen</cbc:FamilyName>
+				<cbc:MiddleName>Holm</cbc:MiddleName>
+			</cac:Person>			
+		</cac:Party>
+	</cac:AccountingSupplierParty>
+	<cac:AccountingCustomerParty>
+		<cac:Party>
+			<cbc:EndpointID schemeAgencyID="9" schemeID="GLN">5798000416604</cbc:EndpointID>
+			<cac:PartyIdentification>
+				<cbc:ID schemeAgencyID="9" schemeID="GLN">5798000416604</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyName>
+				<cbc:Name>Den Lille Skole</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+				<cbc:StreetName>Fredericiavej</cbc:StreetName>
+				<cbc:BuildingNumber>10</cbc:BuildingNumber>
+				<cbc:CityName>Helsingør</cbc:CityName>
+				<cbc:PostalZone>3000</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyTaxScheme>
+				<cbc:CompanyID schemeID="DK:SE">DK16356700</cbc:CompanyID>
+				<cbc:ExemptionReasonCode>UndtagelsesKode</cbc:ExemptionReasonCode>
+				<cbc:ExemptionReason>Undtagelse</cbc:ExemptionReason>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Fredericiavej</cbc:StreetName>
+					<cbc:BuildingNumber>10</cbc:BuildingNumber>
+					<cbc:CityName>Helsingør</cbc:CityName>
+					<cbc:PostalZone>3000</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+				</cac:TaxScheme>
+			</cac:PartyTaxScheme>			
+			<cac:PartyLegalEntity>
+				<cbc:RegistrationName>Den Lille Skole</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:CVR">DK16356700</cbc:CompanyID>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Fredericiavej</cbc:StreetName>
+					<cbc:BuildingNumber>10</cbc:BuildingNumber>
+					<cbc:CityName>Helsingør</cbc:CityName>
+					<cbc:PostalZone>3000</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>				
+			</cac:PartyLegalEntity>
+			<cac:Contact>
+				<cbc:ID>9000000005</cbc:ID>
+				<cbc:Name>Hans Hansen</cbc:Name>
+				<cbc:Telephone>26532147</cbc:Telephone>
+				<cbc:Telefax>26532140</cbc:Telefax>
+				<cbc:ElectronicMail>Hans@dls.dk</cbc:ElectronicMail>
+				<cbc:Note>tekst</cbc:Note>
+				<cac:OtherCommunication>
+					<cbc:Channel>Skype</cbc:Channel>
+					<cbc:Value>Hans@dls.dk</cbc:Value>
+				</cac:OtherCommunication>				
+			</cac:Contact>
+			<cac:Person>
+				<cbc:FirstName>Hans</cbc:FirstName>
+				<cbc:FamilyName>Hansen</cbc:FamilyName>
+				<cbc:MiddleName>H.</cbc:MiddleName>
+			</cac:Person>
+		</cac:Party>
+	</cac:AccountingCustomerParty>
+	<cac:PayeeParty>
+		<cbc:EndpointID schemeAgencyID="9" schemeID="GLN">5798000416605</cbc:EndpointID>
+		<cac:PartyIdentification>
+			<cbc:ID schemeAgencyID="9" schemeID="GLN">5798000416605</cbc:ID>
+		</cac:PartyIdentification>
+		<cac:PartyName>
+			<cbc:Name>Den Lille Skole, adm</cbc:Name>
+		</cac:PartyName>
+		<cac:PostalAddress>
+			<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredLax</cbc:AddressFormatCode>
+			<cbc:Postbox>1344</cbc:Postbox>
+			<cbc:Floor>2. sal tv</cbc:Floor>
+			<cbc:Room>3</cbc:Room>
+			<cbc:StreetName>Fredericiavej</cbc:StreetName>
+			<cbc:AdditionalStreetName>ekstra</cbc:AdditionalStreetName>
+			<cbc:BuildingName>Hvide hus</cbc:BuildingName>
+			<cbc:BuildingNumber>10</cbc:BuildingNumber>
+			<cbc:Department>Bogholderiet</cbc:Department>
+			<cbc:MarkAttention>Peter Jensen</cbc:MarkAttention>
+			<cbc:MarkCare>test</cbc:MarkCare>
+			<cbc:CityName>Helsingør</cbc:CityName>
+			<cbc:PostalZone>3000</cbc:PostalZone>
+			<cbc:Region>Syd</cbc:Region>
+			<cbc:District>Nord</cbc:District>
+			<cac:Country>
+				<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+			</cac:Country>
+		</cac:PostalAddress>
+		<cac:PartyTaxScheme>
+			<cbc:RegistrationName>Den Lille Skole, adm</cbc:RegistrationName>
+			<cbc:CompanyID schemeID="DK:SE">DK16356700</cbc:CompanyID>
+			<cbc:ExemptionReasonCode>UndtagelsesKode</cbc:ExemptionReasonCode>
+			<cbc:ExemptionReason>Undtagelse</cbc:ExemptionReason>
+			<cac:RegistrationAddress>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+				<cbc:StreetName>Fredericiavej</cbc:StreetName>
+				<cbc:BuildingNumber>10</cbc:BuildingNumber>
+				<cbc:CityName>Helsingør</cbc:CityName>
+				<cbc:PostalZone>3000</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:RegistrationAddress>
+			<cac:TaxScheme>
+				<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+				<cbc:Name>Moms</cbc:Name>
+				<cbc:CurrencyCode>DKK</cbc:CurrencyCode>
+			</cac:TaxScheme>
+		</cac:PartyTaxScheme>
+		<cac:PartyLegalEntity>
+			<cbc:RegistrationName>Den Lille Skole, adm</cbc:RegistrationName>
+			<cbc:CompanyID schemeID="DK:CVR">DK16356700</cbc:CompanyID>
+			<cac:RegistrationAddress>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+				<cbc:StreetName>Signatørvej</cbc:StreetName>
+				<cbc:BuildingNumber>12</cbc:BuildingNumber>
+				<cbc:CityName>Dyssegård</cbc:CityName>
+				<cbc:PostalZone>2870</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:RegistrationAddress>			
+		</cac:PartyLegalEntity>
+		<cac:Contact>
+			<cbc:ID>9000000005</cbc:ID>
+			<cbc:Name>Hans Hansen</cbc:Name>
+			<cbc:Telephone>26532147</cbc:Telephone>
+			<cbc:Telefax>26532140</cbc:Telefax>
+			<cbc:ElectronicMail>Hans@dls.dk</cbc:ElectronicMail>
+			<cbc:Note>tekst</cbc:Note>
+			<cac:OtherCommunication>
+				<cbc:Channel>Skype</cbc:Channel>
+				<cbc:Value>Hans@dls.dk</cbc:Value>
+			</cac:OtherCommunication>			
+		</cac:Contact>
+		<cac:Person>
+			<cbc:FirstName>Hans</cbc:FirstName>
+			<cbc:FamilyName>Hansen</cbc:FamilyName>
+			<cbc:MiddleName>H.</cbc:MiddleName>
+		</cac:Person>		
+	</cac:PayeeParty>
+	<cac:BuyerCustomerParty>
+		<cac:Party>
+			<cbc:EndpointID schemeAgencyID="9" schemeID="GLN">5798000416604</cbc:EndpointID>
+			<cac:PartyIdentification>
+				<cbc:ID schemeAgencyID="9" schemeID="GLN">5798000416604</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyName>
+				<cbc:Name>Den Lille Skole, indkøb</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+				<cbc:StreetName>Fredericiavej</cbc:StreetName>
+				<cbc:BuildingNumber>10</cbc:BuildingNumber>
+				<cbc:CityName>Helsingør</cbc:CityName>
+				<cbc:PostalZone>3000</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyTaxScheme>
+				<cbc:RegistrationName>Den Lille Skole, indkøb</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:SE">DK16356719</cbc:CompanyID>
+				<cbc:ExemptionReasonCode>UndtagelsesKode</cbc:ExemptionReasonCode>
+				<cbc:ExemptionReason>Undtagelse</cbc:ExemptionReason>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Fredericiavej</cbc:StreetName>
+					<cbc:BuildingNumber>10</cbc:BuildingNumber>
+					<cbc:CityName>Helsingør</cbc:CityName>
+					<cbc:PostalZone>3000</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+					<cbc:CurrencyCode>DKK</cbc:CurrencyCode>
+				</cac:TaxScheme>
+			</cac:PartyTaxScheme>			
+			<cac:PartyLegalEntity>
+				<cbc:RegistrationName>Den Lille Skole, indkøb</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:CVR">DK16356719</cbc:CompanyID>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Fredericiavej</cbc:StreetName>
+					<cbc:BuildingNumber>10</cbc:BuildingNumber>
+					<cbc:CityName>Helsingør</cbc:CityName>
+					<cbc:PostalZone>3000</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>				
+			</cac:PartyLegalEntity>
+			<cac:Contact>
+				<cbc:ID>9000000005</cbc:ID>
+				<cbc:Name>Hans Hansen</cbc:Name>
+				<cbc:Telephone>26532147</cbc:Telephone>
+				<cbc:Telefax>26532140</cbc:Telefax>
+				<cbc:ElectronicMail>Hans@dls.dk</cbc:ElectronicMail>
+				<cbc:Note>tekst</cbc:Note>
+				<cac:OtherCommunication>
+					<cbc:Channel>Skype</cbc:Channel>
+					<cbc:Value>Hans@dls.dk</cbc:Value>
+				</cac:OtherCommunication>
+			</cac:Contact>
+			<cac:Person>
+				<cbc:FirstName>Hans</cbc:FirstName>
+				<cbc:FamilyName>Hansen</cbc:FamilyName>
+				<cbc:MiddleName>H.</cbc:MiddleName>
+			</cac:Person>				
+		</cac:Party>
+	</cac:BuyerCustomerParty>
+	<cac:SellerSupplierParty>
+		<cac:Party>
+			<cbc:EndpointID schemeID="DK:CVR">DK16356700</cbc:EndpointID>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="DK:CVR">DK12457850</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyName>
+				<cbc:Name>Tavleverandøren</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+				<cbc:StreetName>Leverandørvej</cbc:StreetName>
+				<cbc:BuildingNumber>11</cbc:BuildingNumber>
+				<cbc:CityName>Dyssegård</cbc:CityName>
+				<cbc:PostalZone>2870</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyTaxScheme>
+				<cbc:RegistrationName>Tavleverandøren</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:SE">DK16356700</cbc:CompanyID>
+				<cbc:ExemptionReasonCode>UndtagelsesKode</cbc:ExemptionReasonCode>
+				<cbc:ExemptionReason>Undtagelse</cbc:ExemptionReason>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Leverandørvej</cbc:StreetName>
+					<cbc:BuildingNumber>11</cbc:BuildingNumber>
+					<cbc:CityName>Dyssegård</cbc:CityName>
+					<cbc:PostalZone>2870</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+					<cbc:CurrencyCode>DKK</cbc:CurrencyCode>					
+				</cac:TaxScheme>
+			</cac:PartyTaxScheme>
+			<cac:PartyLegalEntity>
+				<cbc:RegistrationName>Tavleleverandøren</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:CVR">DK16356794</cbc:CompanyID>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Signatørvej</cbc:StreetName>
+					<cbc:BuildingNumber>12</cbc:BuildingNumber>
+					<cbc:CityName>Dyssegård</cbc:CityName>
+					<cbc:PostalZone>2870</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>				
+			</cac:PartyLegalEntity>
+			<cac:Contact>
+				<cbc:ID>23456</cbc:ID>
+				<cbc:Name>Hugo Jensen</cbc:Name>
+				<cbc:Telephone>15812337</cbc:Telephone>
+				<cbc:Telefax>15812330</cbc:Telefax>
+				<cbc:ElectronicMail>Hugo@tavl.dk</cbc:ElectronicMail>
+				<cbc:Note>tekst</cbc:Note>
+				<cac:OtherCommunication>
+					<cbc:Channel>Skype</cbc:Channel>
+					<cbc:Value>Hugo@tavl.dk</cbc:Value>
+				</cac:OtherCommunication>
+			</cac:Contact>
+			<cac:Person>
+				<cbc:FirstName>Hugo</cbc:FirstName>
+				<cbc:FamilyName>Jensen</cbc:FamilyName>
+				<cbc:MiddleName>Holm</cbc:MiddleName>
+			</cac:Person>
+		</cac:Party>
+	</cac:SellerSupplierParty>
+	<cac:Delivery>
+		<cbc:ActualDeliveryDate>2005-11-15</cbc:ActualDeliveryDate>
+		<cac:DeliveryLocation>
+			<cbc:ID>5551</cbc:ID>
+			<cbc:Description>Skal overdrages personligt</cbc:Description>
+			<cbc:Conditions>Før kl. 12</cbc:Conditions>
+			<cac:Address>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+				<cbc:StreetName>Fredericiavej</cbc:StreetName>
+				<cbc:BuildingNumber>10</cbc:BuildingNumber>
+				<cbc:CityName>Helsingør</cbc:CityName>
+				<cbc:PostalZone>3100</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:Address>
+		</cac:DeliveryLocation>
+		<cac:RequestedDeliveryPeriod>
+			<cbc:StartDate>2007-02-21</cbc:StartDate>
+			<cbc:EndDate>2007-02-25</cbc:EndDate>
+			<cbc:Description>text</cbc:Description>
+		</cac:RequestedDeliveryPeriod>
+		<cac:DeliveryParty>
+			<cbc:EndpointID schemeAgencyID="9" schemeID="GLN">5798000416607</cbc:EndpointID>
+			<cac:PartyIdentification>
+				<cbc:ID schemeAgencyID="9" schemeID="GLN">5798000416607</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyName>
+				<cbc:Name>Den lille skole Indkøb</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+				<cbc:StreetName>Fredericiavej</cbc:StreetName>
+				<cbc:BuildingNumber>100</cbc:BuildingNumber>
+				<cbc:CityName>Helsingør</cbc:CityName>
+				<cbc:PostalZone>3000</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PhysicalLocation>
+				<cbc:ID>456</cbc:ID>
+				<cbc:Description>Text</cbc:Description>
+				<cbc:Conditions>Text</cbc:Conditions>
+				<cac:Address>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Fredericiavej</cbc:StreetName>
+					<cbc:BuildingNumber>10</cbc:BuildingNumber>
+					<cbc:CityName>Helsingør</cbc:CityName>
+					<cbc:PostalZone>3000</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:Address>				
+			</cac:PhysicalLocation>
+			<cac:PartyTaxScheme>
+				<cbc:RegistrationName>Den lille skole</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:SE">DK16356700</cbc:CompanyID>
+				<cbc:ExemptionReasonCode>UndtagelsesKode</cbc:ExemptionReasonCode>
+				<cbc:ExemptionReason>Undtagelse</cbc:ExemptionReason>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Fredericiavej</cbc:StreetName>
+					<cbc:BuildingNumber>10</cbc:BuildingNumber>
+					<cbc:CityName>Helsingør</cbc:CityName>
+					<cbc:PostalZone>3000</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+					<cbc:CurrencyCode>DKK</cbc:CurrencyCode>
+				</cac:TaxScheme>
+			</cac:PartyTaxScheme>
+			<cac:PartyLegalEntity>
+				<cbc:RegistrationName>Den lille skole</cbc:RegistrationName>
+				<cbc:CompanyID schemeID="DK:CVR">DK16356700</cbc:CompanyID>
+				<cac:RegistrationAddress>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Fredericiavej</cbc:StreetName>
+					<cbc:BuildingNumber>10</cbc:BuildingNumber>
+					<cbc:CityName>Helsingør</cbc:CityName>
+					<cbc:PostalZone>3000</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:RegistrationAddress>
+			</cac:PartyLegalEntity>
+			<cac:Contact>
+				<cbc:ID>9000000005</cbc:ID>
+				<cbc:Name>Hans Hansen</cbc:Name>
+				<cbc:Telephone>15812337</cbc:Telephone>
+				<cbc:Telefax>15812330</cbc:Telefax>
+				<cbc:ElectronicMail>Hans@dls.dk</cbc:ElectronicMail>
+				<cbc:Note>tekst</cbc:Note>
+				<cac:OtherCommunication>
+					<cbc:Channel>Skype</cbc:Channel>
+					<cbc:Value>Hans@dls.dk</cbc:Value>
+				</cac:OtherCommunication>
+			</cac:Contact>
+			<cac:Person>
+				<cbc:FirstName>Hans</cbc:FirstName>
+				<cbc:FamilyName>Hansen</cbc:FamilyName>
+				<cbc:MiddleName>H.</cbc:MiddleName>
+			</cac:Person>
+		</cac:DeliveryParty>
+	</cac:Delivery>
+	<cac:DeliveryTerms>
+		<cbc:ID>INCOTERMS</cbc:ID>
+		<cbc:LossRiskResponsibilityCode>FOB</cbc:LossRiskResponsibilityCode>
+		<cac:DeliveryLocation>
+			<cbc:ID>5552</cbc:ID>
+			<cbc:Description>Skal leveres hertil</cbc:Description>
+			<cbc:Conditions>Før kl. 12</cbc:Conditions>
+			<cac:Address>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredLax</cbc:AddressFormatCode>
+				<cbc:Postbox>1234</cbc:Postbox>
+			</cac:Address>
+		</cac:DeliveryLocation>
+	</cac:DeliveryTerms>
+	<cac:PaymentMeans>
+		<cbc:ID>1</cbc:ID>
+		<cbc:PaymentMeansCode>42</cbc:PaymentMeansCode>
+		<cbc:PaymentDueDate>2007-03-01</cbc:PaymentDueDate>
+		<cbc:PaymentChannelCode listAgencyID="320" listID="urn:oioubl:codelist:paymentchannelcode-1.1">DK:BANK</cbc:PaymentChannelCode>
+		<cac:PayerFinancialAccount>
+			<cbc:ID>1234567890</cbc:ID>
+			<cbc:Name>Kreditorkonto</cbc:Name>
+			<cbc:CurrencyCode>DKK</cbc:CurrencyCode>
+			<cbc:PaymentNote>Til egen konto</cbc:PaymentNote>
+			<cac:FinancialInstitutionBranch>
+				<cbc:ID>3456</cbc:ID>
+				<cbc:Name>Danske Bank, Aalborg afd.</cbc:Name>
+			</cac:FinancialInstitutionBranch>
+		</cac:PayerFinancialAccount>
+		<cac:PayeeFinancialAccount>
+			<cbc:ID>1234567891</cbc:ID>
+			<cbc:Name>Bankkonto</cbc:Name>
+			<cbc:CurrencyCode>DKK</cbc:CurrencyCode>
+			<cbc:PaymentNote>Til modtager</cbc:PaymentNote>
+			<cac:FinancialInstitutionBranch>
+				<cbc:ID>1234</cbc:ID>
+				<cbc:Name>Nordea, Århus</cbc:Name>
+			</cac:FinancialInstitutionBranch>
+		</cac:PayeeFinancialAccount>
+	</cac:PaymentMeans>
+	<cac:PaymentMeans>
+		<cbc:ID>2a</cbc:ID>
+		<cbc:PaymentMeansCode>31</cbc:PaymentMeansCode>
+		<cbc:PaymentDueDate>2007-03-01</cbc:PaymentDueDate>
+		<cbc:PaymentChannelCode listAgencyID="320" listID="urn:oioubl:codelist:paymentchannelcode-1.1">IBAN</cbc:PaymentChannelCode>
+		<cac:PayeeFinancialAccount>
+			<cbc:ID>123456789012345678</cbc:ID>
+			<cbc:PaymentNote>Til modtager</cbc:PaymentNote>
+			<cac:FinancialInstitutionBranch>
+				<cbc:ID>1234</cbc:ID>
+				<cac:FinancialInstitution>
+					<cbc:ID>DADABKKK</cbc:ID>
+					<cbc:Name>Danske Bank</cbc:Name>
+				</cac:FinancialInstitution>
+			</cac:FinancialInstitutionBranch>
+		</cac:PayeeFinancialAccount>
+		<cac:CreditAccount>
+			<cbc:AccountID>12345678</cbc:AccountID>
+		</cac:CreditAccount>
+	</cac:PaymentMeans>
+	<cac:PaymentMeans>
+		<cbc:ID>2b</cbc:ID>
+		<cbc:PaymentMeansCode>31</cbc:PaymentMeansCode>
+		<cbc:PaymentDueDate>2007-03-01</cbc:PaymentDueDate>
+		<cbc:PaymentChannelCode listAgencyID="320" listID="urn:oioubl:codelist:paymentchannelcode-1.1">ZZZ</cbc:PaymentChannelCode>
+		<cac:PayeeFinancialAccount>
+			<cbc:ID>123456789012345678</cbc:ID>
+			<cbc:PaymentNote>Til modtager</cbc:PaymentNote>
+			<cac:FinancialInstitutionBranch>
+				<cbc:ID>FW123456789</cbc:ID>
+				<cbc:Name>USA Bank</cbc:Name>
+				<cac:Address>
+					<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
+					<cbc:StreetName>Bankvej</cbc:StreetName>
+					<cbc:BuildingNumber>10</cbc:BuildingNumber>
+					<cbc:CityName>København K</cbc:CityName>
+					<cbc:PostalZone>1057</cbc:PostalZone>
+					<cac:Country>
+						<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+					</cac:Country>
+				</cac:Address>
+			</cac:FinancialInstitutionBranch>
+		</cac:PayeeFinancialAccount>
+		<cac:CreditAccount>
+			<cbc:AccountID>12345678</cbc:AccountID>
+		</cac:CreditAccount>
+	</cac:PaymentMeans>
+	<cac:PaymentMeans>
+		<cbc:ID>3</cbc:ID>
+		<cbc:PaymentMeansCode>50</cbc:PaymentMeansCode>
+		<cbc:PaymentDueDate>2007-03-01</cbc:PaymentDueDate>
+		<cbc:PaymentChannelCode listAgencyID="320" listID="urn:oioubl:codelist:paymentchannelcode-1.1">DK:GIRO</cbc:PaymentChannelCode>
+		<cbc:InstructionID>1234567890123456</cbc:InstructionID>
+		<cbc:PaymentID>04</cbc:PaymentID>
+	</cac:PaymentMeans>
+	<cac:PaymentMeans>
+		<cbc:ID>4</cbc:ID>
+		<cbc:PaymentMeansCode>93</cbc:PaymentMeansCode>
+		<cbc:PaymentDueDate>2007-03-01</cbc:PaymentDueDate>
+		<cbc:InstructionID>123412124135125</cbc:InstructionID>
+		<cbc:InstructionNote>Note</cbc:InstructionNote>
+		<cbc:PaymentID>75</cbc:PaymentID>
+		<cac:CreditAccount>
+			<cbc:AccountID>12345678</cbc:AccountID>
+		</cac:CreditAccount>
+	</cac:PaymentMeans>
+	<cac:PaymentMeans>
+		<cbc:ID>5</cbc:ID>
+		<cbc:PaymentMeansCode>48</cbc:PaymentMeansCode>
+		<cbc:PaymentDueDate>2007-03-01</cbc:PaymentDueDate>
+	</cac:PaymentMeans>
+	<cac:PaymentMeans>
+		<cbc:ID>6</cbc:ID>
+		<cbc:PaymentMeansCode>49</cbc:PaymentMeansCode>
+		<cbc:PaymentDueDate>2007-03-01</cbc:PaymentDueDate>
+		<cbc:InstructionID>123412124135125</cbc:InstructionID>
+	</cac:PaymentMeans>
+	<cac:PaymentMeans>
+		<cbc:ID>7</cbc:ID>
+		<cbc:PaymentMeansCode>97</cbc:PaymentMeansCode>
+		<cbc:PaymentDueDate>2007-03-01</cbc:PaymentDueDate>
+	</cac:PaymentMeans>
+	<cac:PaymentTerms>
+		<cbc:ID>1</cbc:ID>
+		<cbc:PaymentMeansID>1</cbc:PaymentMeansID>
+		<cbc:PrepaidPaymentReferenceID>INV-123</cbc:PrepaidPaymentReferenceID>
+		<cbc:Note>Løbende måned + 30 dage</cbc:Note>
+		<cbc:ReferenceEventCode>Milepæl</cbc:ReferenceEventCode>
+		<cbc:SettlementDiscountPercent>5</cbc:SettlementDiscountPercent>
+		<cbc:PenaltySurchargePercent>3</cbc:PenaltySurchargePercent>
+		<cbc:Amount currencyID="DKK">6312.50</cbc:Amount>
+		<cac:SettlementPeriod>
+			<cbc:StartDate>2007-02-01</cbc:StartDate>
+			<cbc:EndDate>2007-03-31</cbc:EndDate>
+		</cac:SettlementPeriod>
+		<cac:PenaltyPeriod>
+			<cbc:StartDate>2007-04-01</cbc:StartDate>
+			<cbc:EndDate>2007-04-30</cbc:EndDate>
+		</cac:PenaltyPeriod>
+	</cac:PaymentTerms>
+	<cac:PrepaidPayment>
+		<cbc:ID>INV-123</cbc:ID>
+		<cbc:PaidAmount currencyID="DKK">100.00</cbc:PaidAmount>
+		<cbc:ReceivedDate>2006-12-14</cbc:ReceivedDate>
+		<cbc:PaidDate>2006-12-14</cbc:PaidDate>
+		<cbc:PaidTime>12:00:00</cbc:PaidTime>
+		<cbc:InstructionID>165456</cbc:InstructionID>
+	</cac:PrepaidPayment>
+	<cac:AllowanceCharge>
+		<cbc:ID>AC_1234</cbc:ID>
+		<cbc:ChargeIndicator>true</cbc:ChargeIndicator>
+		<cbc:AllowanceChargeReason>Fragt</cbc:AllowanceChargeReason>
+		<cbc:MultiplierFactorNumeric>0.1</cbc:MultiplierFactorNumeric>
+		<cbc:SequenceNumeric>1</cbc:SequenceNumeric>
+		<cbc:Amount currencyID="DKK">15.00</cbc:Amount>
+		<cbc:BaseAmount currencyID="DKK">150.00</cbc:BaseAmount>
+		<cbc:AccountingCost>123456789</cbc:AccountingCost>
+		<cac:TaxCategory>
+			<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
+			<cbc:Percent>25</cbc:Percent>
+			<cbc:BaseUnitMeasure unitCode="EA">1</cbc:BaseUnitMeasure>
+			<cbc:PerUnitAmount currencyID="DKK">10</cbc:PerUnitAmount>
+			<cac:TaxScheme>
+				<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+				<cbc:Name>Moms</cbc:Name>
+				<cbc:CurrencyCode>DKK</cbc:CurrencyCode>					
+			</cac:TaxScheme>
+		</cac:TaxCategory>
+	</cac:AllowanceCharge>
+	<cac:TaxExchangeRate>
+		<cbc:SourceCurrencyCode>DKK</cbc:SourceCurrencyCode>
+		<cbc:SourceCurrencyBaseRate>1.0000</cbc:SourceCurrencyBaseRate>
+		<cbc:TargetCurrencyCode>EUR</cbc:TargetCurrencyCode>
+		<cbc:TargetCurrencyBaseRate>2.0000</cbc:TargetCurrencyBaseRate>
+		<cbc:ExchangeMarketID>Valutamarked</cbc:ExchangeMarketID>
+		<cbc:CalculationRate>2.0000</cbc:CalculationRate>
+		<cbc:MathematicOperatorCode>*</cbc:MathematicOperatorCode>
+		<cbc:Date>2006-12-15</cbc:Date>
+		<cac:ForeignExchangeContract>
+			<cbc:ID>215</cbc:ID>
+			<cbc:ContractType>kontrakt</cbc:ContractType>
+			<cac:ContractDocumentReference>
+				<cbc:ID>123</cbc:ID>
+				<cbc:UUID>6E09886B-DC6E-439F-82D1-7CCAC7F4E3B1</cbc:UUID>
+				<cbc:IssueDate>2007-02-20</cbc:IssueDate>
+				<cbc:DocumentType>Order</cbc:DocumentType>
+				<cac:Attachment>
+					<cac:ExternalReference>
+						<cbc:URI>http://www.valutakursfererence.dk</cbc:URI>
+						<cbc:DocumentHash>dkfgqasdfæaljrtg9q0</cbc:DocumentHash>
+						<cbc:ExpiryDate>2007-02-20</cbc:ExpiryDate>
+						<cbc:ExpiryTime>12:00:00</cbc:ExpiryTime>
+					</cac:ExternalReference>
+				</cac:Attachment>
+			</cac:ContractDocumentReference>
+		</cac:ForeignExchangeContract>
+	</cac:TaxExchangeRate>
+	<cac:PricingExchangeRate>
+		<cbc:SourceCurrencyCode>DKK</cbc:SourceCurrencyCode>
+		<cbc:TargetCurrencyCode>USD</cbc:TargetCurrencyCode>
+	</cac:PricingExchangeRate>
+	<cac:PaymentExchangeRate>
+		<cbc:SourceCurrencyCode>DKK</cbc:SourceCurrencyCode>
+		<cbc:TargetCurrencyCode>EUR</cbc:TargetCurrencyCode>
+	</cac:PaymentExchangeRate>
+	<cac:PaymentAlternativeExchangeRate>
+		<cbc:SourceCurrencyCode>DKK</cbc:SourceCurrencyCode>
+		<cbc:TargetCurrencyCode>EUR</cbc:TargetCurrencyCode>
+	</cac:PaymentAlternativeExchangeRate>
+	<cac:TaxTotal>
+		<cbc:TaxAmount currencyID="DKK">1400.00</cbc:TaxAmount>
+		<cbc:RoundingAmount currencyID="DKK">1.00</cbc:RoundingAmount>
+		<cac:TaxSubtotal>
+			<cbc:TaxableAmount currencyID="DKK">5600.00</cbc:TaxableAmount>
+			<cbc:TaxAmount currencyID="DKK">1400.00</cbc:TaxAmount>
+			<cbc:CalculationSequenceNumeric>1</cbc:CalculationSequenceNumeric>
+			<cbc:TransactionCurrencyTaxAmount currencyID="DKK">10.00</cbc:TransactionCurrencyTaxAmount>
+			<cac:TaxCategory>
+				<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
+				<cbc:Percent>25</cbc:Percent>
+				<cbc:BaseUnitMeasure unitCode="EA">1</cbc:BaseUnitMeasure>
+				<cbc:PerUnitAmount currencyID="DKK">10.00</cbc:PerUnitAmount>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+					<cbc:CurrencyCode>DKK</cbc:CurrencyCode>
+				</cac:TaxScheme>
+			</cac:TaxCategory>
+		</cac:TaxSubtotal>
+		<cac:TaxSubtotal>
+			<cbc:TaxableAmount currencyID="DKK">100.00</cbc:TaxableAmount>
+			<cbc:TaxAmount currencyID="DKK">0</cbc:TaxAmount>
+			<cac:TaxCategory>
+				<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">ZeroRated</cbc:ID>
+				<cbc:Percent>00</cbc:Percent>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+				</cac:TaxScheme>
+			</cac:TaxCategory>
+		</cac:TaxSubtotal>
+	</cac:TaxTotal>
+	<cac:TaxTotal>
+		<cbc:TaxAmount currencyID="DKK">600.00</cbc:TaxAmount>
+		<cac:TaxSubtotal>
+			<cbc:TaxableAmount currencyID="DKK">5000.00</cbc:TaxableAmount>
+			<cbc:TaxAmount currencyID="DKK">600.00</cbc:TaxAmount>
+			<cbc:CalculationSequenceNumeric>2</cbc:CalculationSequenceNumeric>
+			<cac:TaxCategory>
+				<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">Excise</cbc:ID>
+				<cbc:Percent>12</cbc:Percent>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">31</cbc:ID>
+					<cbc:Name>Bæreposer</cbc:Name>
+					<cbc:TaxTypeCode listAgencyID="320" listID="urn:oioubl:codelist:taxtypecode-1.1">StandardRated</cbc:TaxTypeCode>
+				</cac:TaxScheme>
+			</cac:TaxCategory>
+		</cac:TaxSubtotal>
+	</cac:TaxTotal>
+	<cac:LegalMonetaryTotal>
+		<cbc:LineExtensionAmount currencyID="DKK">5000.00</cbc:LineExtensionAmount>
+		<cbc:TaxExclusiveAmount currencyID="DKK">2000.00</cbc:TaxExclusiveAmount>
+		<cbc:TaxInclusiveAmount currencyID="DKK">7000.00</cbc:TaxInclusiveAmount>
+		<cbc:ChargeTotalAmount currencyID="DKK">15.00</cbc:ChargeTotalAmount>
+		<cbc:PrepaidAmount currencyID="DKK">50.00</cbc:PrepaidAmount>
+		<cbc:PayableRoundingAmount currencyID="DKK">0.25</cbc:PayableRoundingAmount>
+		<cbc:PayableAmount currencyID="DKK">7000.00</cbc:PayableAmount>
+	</cac:LegalMonetaryTotal>
+	
+	
+	<cac:InvoiceLine>
+		<cbc:ID>1</cbc:ID>
+		<cbc:Note>Note på linjen</cbc:Note>
+		<cbc:InvoicedQuantity unitCode="EA">1.00</cbc:InvoicedQuantity>
+		<cbc:LineExtensionAmount currencyID="DKK">5000.00</cbc:LineExtensionAmount>
+		<cbc:AccountingCost>1234567890</cbc:AccountingCost>
+		<cbc:FreeOfChargeIndicator>true</cbc:FreeOfChargeIndicator>
+		<cac:OrderLineReference>
+			<cbc:LineID>1</cbc:LineID>
+		</cac:OrderLineReference>
+		<cac:DocumentReference>
+			<cbc:ID>123</cbc:ID>
+			<cbc:UUID>6E09886B-DC6E-439F-82D1-7CCAC7F4E3B1</cbc:UUID>
+			<cbc:IssueDate>2007-02-20</cbc:IssueDate>
+			<cbc:DocumentType>Order</cbc:DocumentType>
+			<cac:Attachment>
+				<cac:ExternalReference>
+					<cbc:URI>http://www.ordrereference.dk</cbc:URI>
+					<cbc:DocumentHash>dkfgqasdfæaljrtg9q0</cbc:DocumentHash>
+					<cbc:ExpiryDate>2007-02-20</cbc:ExpiryDate>
+					<cbc:ExpiryTime>12:00:00</cbc:ExpiryTime>
+				</cac:ExternalReference>
+			</cac:Attachment>
+		</cac:DocumentReference>
+		<cac:AllowanceCharge>
+			<cbc:ID>AC_1234</cbc:ID>
+			<cbc:ChargeIndicator>true</cbc:ChargeIndicator>
+			<cbc:AllowanceChargeReason>Fragt</cbc:AllowanceChargeReason>
+			<cbc:MultiplierFactorNumeric>0.1</cbc:MultiplierFactorNumeric>
+			<cbc:SequenceNumeric>1</cbc:SequenceNumeric>
+			<cbc:Amount currencyID="DKK">15.00</cbc:Amount>
+			<cbc:BaseAmount currencyID="DKK">150.00</cbc:BaseAmount>
+			<cbc:AccountingCost>123456789</cbc:AccountingCost>
+			<cac:TaxCategory>
+				<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
+				<cbc:Percent>25</cbc:Percent>
+				<cbc:BaseUnitMeasure unitCode="EA">1</cbc:BaseUnitMeasure>
+				<cbc:PerUnitAmount currencyID="DKK">10</cbc:PerUnitAmount>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+					<cbc:Name>Moms</cbc:Name>
+					<cbc:CurrencyCode>DKK</cbc:CurrencyCode>					
+				</cac:TaxScheme>
+			</cac:TaxCategory>
+		</cac:AllowanceCharge>
+		<cac:TaxTotal>
+			<cbc:TaxAmount currencyID="DKK">1250.00</cbc:TaxAmount>
+			<cbc:RoundingAmount currencyID="DKK">1.00</cbc:RoundingAmount>
+			<cac:TaxSubtotal>
+				<cbc:TaxableAmount currencyID="DKK">5000.00</cbc:TaxableAmount>
+				<cbc:TaxAmount currencyID="DKK">1250.00</cbc:TaxAmount>
+				<cbc:CalculationSequenceNumeric>1</cbc:CalculationSequenceNumeric>
+				<cbc:TransactionCurrencyTaxAmount currencyID="DKK">10.00</cbc:TransactionCurrencyTaxAmount>
+				<cac:TaxCategory>
+					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
+					<cbc:Percent>25</cbc:Percent>
+					<cbc:BaseUnitMeasure unitCode="EA">1</cbc:BaseUnitMeasure>
+					<cbc:PerUnitAmount currencyID="DKK">10.00</cbc:PerUnitAmount>
+					<cac:TaxScheme>
+						<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
+						<cbc:Name>Moms</cbc:Name>
+						<cbc:CurrencyCode>DKK</cbc:CurrencyCode>
+					</cac:TaxScheme>
+				</cac:TaxCategory>
+			</cac:TaxSubtotal>
+		</cac:TaxTotal>
+		<cac:Item>
+			<cbc:Description>Hejsetavle</cbc:Description>
+			<cbc:PackQuantity>10</cbc:PackQuantity>
+			<cbc:PackSizeNumeric>5</cbc:PackSizeNumeric>
+			<cbc:Name>Hejsetavle</cbc:Name>
+			<cac:BuyersItemIdentification>
+				<cbc:ID>4444</cbc:ID>
+				<cbc:ExtendedID>B4444</cbc:ExtendedID>
+			</cac:BuyersItemIdentification>
+			<cac:SellersItemIdentification>
+				<cbc:ID schemeAgencyID="9" schemeID="GTIN">5712345780121</cbc:ID>
+				<cbc:ExtendedID>S44444</cbc:ExtendedID>
+				<cac:PhysicalAttribute>
+					<cbc:AttributeID>Colour</cbc:AttributeID>
+					<cbc:Description>Black</cbc:Description>
+				</cac:PhysicalAttribute>
+				<cac:MeasurementDimension>
+					<cbc:AttributeID>Width</cbc:AttributeID>
+					<cbc:Measure unitCode="MTR">2</cbc:Measure>
+				</cac:MeasurementDimension>
+			</cac:SellersItemIdentification>
+			<cac:StandardItemIdentification>
+				<cbc:ID>55555</cbc:ID>
+				<cbc:ExtendedID>ST55555</cbc:ExtendedID>
+			</cac:StandardItemIdentification>
+			<cac:CommodityClassification>
+				<cbc:CommodityCode>655555</cbc:CommodityCode>
+				<cbc:ItemClassificationCode listAgencyID="113" listID="UNSPSC">12121212</cbc:ItemClassificationCode>
+			</cac:CommodityClassification>
+			<cac:OriginAddress>
+				<cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredLax</cbc:AddressFormatCode>
+				<cbc:StreetName>Signatørvej</cbc:StreetName>
+				<cbc:BuildingNumber>12</cbc:BuildingNumber>
+				<cbc:CityName>Dyssegård</cbc:CityName>
+				<cbc:PostalZone>2870</cbc:PostalZone>
+				<cac:Country>
+					<cbc:IdentificationCode>DK</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:OriginAddress>
+			<cac:ItemInstance>
+				<cbc:ProductTraceID>123</cbc:ProductTraceID>
+				<cbc:ManufactureDate>2007-01-01</cbc:ManufactureDate>
+				<cbc:ManufactureTime>12:00:00</cbc:ManufactureTime>
+				<cbc:RegistrationID>12345677890</cbc:RegistrationID>
+				<cbc:SerialID>147852369</cbc:SerialID>
+				<cac:LotIdentification>
+					<cbc:LotNumberID>111444</cbc:LotNumberID>
+				</cac:LotIdentification>
+			</cac:ItemInstance>
+		</cac:Item>
+		<cac:Price>
+			<cbc:PriceAmount currencyID="DKK">5000.00</cbc:PriceAmount>
+			<cbc:BaseQuantity unitCode="EA">1</cbc:BaseQuantity>
+			<cbc:PriceTypeCode listAgencyID="6" listID="UN/ECE 5387">111</cbc:PriceTypeCode>
+			<cbc:PriceType>222</cbc:PriceType>
+			<cbc:OrderableUnitFactorRate>1</cbc:OrderableUnitFactorRate>
+			<cac:ValidityPeriod>
+				<cbc:StartDate>2006-12-12</cbc:StartDate>
+				<cbc:EndDate>2006-12-31</cbc:EndDate>
+				<cbc:Description>tekst</cbc:Description>
+			</cac:ValidityPeriod>
+			<cac:AllowanceCharge>
+				<cbc:ID>222</cbc:ID>
+				<cbc:ChargeIndicator>true</cbc:ChargeIndicator>
+				<cbc:AllowanceChargeReason>Emballageafgift</cbc:AllowanceChargeReason>
+				<cbc:MultiplierFactorNumeric>0.05</cbc:MultiplierFactorNumeric>
+				<cbc:SequenceNumeric>1</cbc:SequenceNumeric>
+				<cbc:Amount currencyID="DKK">250</cbc:Amount>
+				<cbc:BaseAmount currencyID="DKK">5000</cbc:BaseAmount>
+			</cac:AllowanceCharge>
+		</cac:Price>
+	</cac:InvoiceLine>
+</Invoice>
