@@ -17,19 +17,6 @@ const (
 	legacyExciseCategoryMax = 3671
 )
 
-// isExciseCategoryID reports whether a taxcategoryid-1.1 value marks a
-// non-VAT excise duty rather than an ordinary VAT rate.
-func isExciseCategoryID(id string) bool {
-	if id == taxCategoryExcise {
-		return true
-	}
-	n, err := strconv.Atoi(id)
-	if err != nil {
-		return false
-	}
-	return n >= legacyExciseCategoryMin && n <= legacyExciseCategoryMax
-}
-
 // splitExciseTaxTotals separates ordinary VAT, which is kept, from excise
 // duties, which are pulled out because EN 16931 has nowhere to put them.
 func splitExciseTaxTotals(totals []ubl.TaxTotal) ([]ubl.TaxTotal, []exciseDuty, error) {
@@ -58,22 +45,6 @@ func splitExciseTaxTotals(totals []ubl.TaxTotal) ([]ubl.TaxTotal, []exciseDuty, 
 	return kept, excises, nil
 }
 
-// collectVATPercents notes each VAT rate, so a document-level duty that names
-// only a category can later find the matching percentage.
-func collectVATPercents(totals []ubl.TaxTotal, percents map[string]string) {
-	for _, tt := range totals {
-		for i := range tt.TaxSubtotal {
-			tc := &tt.TaxSubtotal[i].TaxCategory
-			if tc.ID == nil || tc.Percent == nil || isExciseCategoryID(tc.ID.Value) {
-				continue
-			}
-			if _, ok := percents[tc.ID.Value]; !ok {
-				percents[tc.ID.Value] = *tc.Percent
-			}
-		}
-	}
-}
-
 func parseExciseSubtotal(st *ubl.TaxSubtotal) (exciseDuty, error) {
 	var d exciseDuty
 	amount, err := num.AmountFromString(normalizeNumericString(st.TaxAmount.Value))
@@ -100,14 +71,54 @@ func parseExciseSubtotal(st *ubl.TaxSubtotal) (exciseDuty, error) {
 	return d, nil
 }
 
-// exciseMirrorKey identifies a duty, so a document-level copy of one already
-// counted on a line can be told from a genuine document-level duty.
-func exciseMirrorKey(d exciseDuty) string {
-	base := ""
-	if d.base != nil {
-		base = d.base.String()
+// isExciseCategoryID reports whether a taxcategoryid-1.1 value marks a
+// non-VAT excise duty rather than an ordinary VAT rate.
+func isExciseCategoryID(id string) bool {
+	if id == taxCategoryExcise {
+		return true
 	}
-	return d.scheme + "|" + d.amount.String() + "|" + base
+	n, err := strconv.Atoi(id)
+	if err != nil {
+		return false
+	}
+	return n >= legacyExciseCategoryMin && n <= legacyExciseCategoryMax
+}
+
+// collectVATPercents notes each VAT rate, so a document-level duty that names
+// only a category can later find the matching percentage.
+func collectVATPercents(totals []ubl.TaxTotal, percents map[string]string) {
+	for _, tt := range totals {
+		for i := range tt.TaxSubtotal {
+			tc := &tt.TaxSubtotal[i].TaxCategory
+			if tc.ID == nil || tc.Percent == nil || isExciseCategoryID(tc.ID.Value) {
+				continue
+			}
+			if _, ok := percents[tc.ID.Value]; !ok {
+				percents[tc.ID.Value] = *tc.Percent
+			}
+		}
+	}
+}
+
+// addExciseCharges puts each duty back on its line, then adds the document-level
+// ones, skipping any that merely repeat a line's duty.
+func addExciseCharges(inv *bill.Invoice, details oioublDetails) {
+	mirrors := make(map[string]bool)
+	for i, duties := range details.lineDuties {
+		if i >= len(inv.Lines) {
+			continue
+		}
+		for _, d := range duties {
+			inv.Lines[i].Charges = append(inv.Lines[i].Charges, dutyToLineCharge(d))
+			mirrors[exciseMirrorKey(d)] = true
+		}
+	}
+	for _, d := range details.docDuties {
+		if mirrors[exciseMirrorKey(d)] {
+			continue
+		}
+		inv.Charges = append(inv.Charges, dutyToCharge(d, details.vatPercents))
+	}
 }
 
 // No Base here: bill.LineCharge.Base only means something alongside Percent,
@@ -151,23 +162,12 @@ func dutyCodeExt(scheme string) tax.Extensions {
 	return tax.ExtensionsOf(cbc.CodeMap{addon.ExtKeyDutyCode: cbc.Code(scheme)})
 }
 
-// addExciseCharges puts each duty back on its line, then adds the document-level
-// ones, skipping any that merely repeat a line's duty.
-func addExciseCharges(inv *bill.Invoice, docExcises []exciseDuty, lineExcises map[int][]exciseDuty, vatPercents map[string]string) {
-	mirrors := make(map[string]bool)
-	for i, duties := range lineExcises {
-		if i >= len(inv.Lines) {
-			continue
-		}
-		for _, d := range duties {
-			inv.Lines[i].Charges = append(inv.Lines[i].Charges, dutyToLineCharge(d))
-			mirrors[exciseMirrorKey(d)] = true
-		}
+// exciseMirrorKey identifies a duty, so a document-level copy of one already
+// counted on a line can be told from a genuine document-level duty.
+func exciseMirrorKey(d exciseDuty) string {
+	base := ""
+	if d.base != nil {
+		base = d.base.String()
 	}
-	for _, d := range docExcises {
-		if mirrors[exciseMirrorKey(d)] {
-			continue
-		}
-		inv.Charges = append(inv.Charges, dutyToCharge(d, vatPercents))
-	}
+	return d.scheme + "|" + d.amount.String() + "|" + base
 }

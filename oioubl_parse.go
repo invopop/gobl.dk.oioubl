@@ -10,10 +10,24 @@ import (
 	"github.com/invopop/gobl/bill"
 )
 
-const rootNameCreditNote = "CreditNote"
+const (
+	rootNameCreditNote = "CreditNote"
 
-// Matches "OIOUBL-2.1", "OIOUBL-2.01", "OIOUBL-2.02", etc.
-const customizationIDPrefix = "OIOUBL-2"
+	// Matches "OIOUBL-2.1", "OIOUBL-2.01", "OIOUBL-2.02", etc.
+	customizationIDPrefix = "OIOUBL-2"
+)
+
+// BinaryAttachment is the base's type, re-exported so callers do not have to
+// import gobl.ubl just to read what ExtractBinaryAttachments hands back.
+type BinaryAttachment = ubl.BinaryAttachment
+
+// oioublDetails is what the strip pass takes out of the document, held over so
+// the add pass can put it back into GOBL.
+type oioublDetails struct {
+	docDuties   []exciseDuty
+	lineDuties  map[int][]exciseDuty
+	vatPercents map[string]string
+}
 
 // Parse reads an OIOUBL document off the wire.
 func Parse(data []byte) (any, error) {
@@ -41,10 +55,6 @@ func ParseInvoice(data []byte) (*Invoice, error) {
 	return inv, nil
 }
 
-// BinaryAttachment is the base's type, re-exported so callers do not have to
-// import gobl.ubl just to read what ExtractBinaryAttachments hands back.
-type BinaryAttachment = ubl.BinaryAttachment
-
 // ExtractBinaryAttachments returns the files embedded in the document. Invoice
 // is its own type, so the base's method does not come along and is forwarded.
 func (ui *Invoice) ExtractBinaryAttachments() []BinaryAttachment {
@@ -58,7 +68,7 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 		return nil, fmt.Errorf("unsupported customization id %q, expected an %q document", ui.CustomizationID, customizationIDPrefix)
 	}
 
-	docExcises, lineExcises, vatPercents, err := ui.stripOIOUBL()
+	details, err := ui.stripOIOUBL()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +82,7 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 		return nil, ErrUnsupportedDocumentType
 	}
 
-	ui.addOIOUBLDetails(inv, docExcises, lineExcises, vatPercents)
+	ui.addOIOUBLDetails(inv, details)
 
 	inv.SetAddons(append(inv.GetAddons(), addon.V2)...)
 	if err := env.Calculate(); err != nil {
@@ -86,32 +96,33 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 
 // stripOIOUBL rewrites the document in place into something the generic parser
 // reads correctly, handing back the excise duties it has no field for.
-func (ui *Invoice) stripOIOUBL() (docExcises []exciseDuty, lineExcises map[int][]exciseDuty, vatPercents map[string]string, err error) {
+func (ui *Invoice) stripOIOUBL() (oioublDetails, error) {
 	ui.stripParties()
 	ui.stripPaymentDueDate()
 	ui.stripDelivery()
 
-	vatPercents = make(map[string]string)
+	details := oioublDetails{vatPercents: make(map[string]string)}
 
-	lineExcises, err = ui.stripLines(vatPercents)
+	lineDuties, err := ui.stripLines(details.vatPercents)
 	if err != nil {
-		return nil, nil, nil, err
+		return details, err
 	}
+	details.lineDuties = lineDuties
 
-	ui.TaxTotal, docExcises, err = splitExciseTaxTotals(ui.TaxTotal)
+	ui.TaxTotal, details.docDuties, err = splitExciseTaxTotals(ui.TaxTotal)
 	if err != nil {
-		return nil, nil, nil, err
+		return details, err
 	}
-	collectVATPercents(ui.TaxTotal, vatPercents)
+	collectVATPercents(ui.TaxTotal, details.vatPercents)
 	for i := range ui.TaxTotal {
 		stripTaxTotalCategories(&ui.TaxTotal[i])
 	}
 	for i := range ui.AllowanceCharge {
 		for _, tc := range ui.AllowanceCharge[i].TaxCategory {
-			stripTaxCategoryWire(tc)
+			stripTaxCategory(tc)
 		}
 		stripAllowanceMultiplier(&ui.AllowanceCharge[i])
 	}
 
-	return docExcises, lineExcises, vatPercents, nil
+	return details, nil
 }

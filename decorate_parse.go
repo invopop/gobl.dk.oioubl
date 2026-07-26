@@ -8,8 +8,8 @@ import (
 
 // addOIOUBLDetails puts back what the generic parse has no field for, reading
 // it off the original document.
-func (ui *Invoice) addOIOUBLDetails(inv *bill.Invoice, docExcises []exciseDuty, lineExcises map[int][]exciseDuty, vatPercents map[string]string) {
-	addExciseCharges(inv, docExcises, lineExcises, vatPercents)
+func (ui *Invoice) addOIOUBLDetails(inv *bill.Invoice, details oioublDetails) {
+	addExciseCharges(inv, details)
 
 	if len(ui.PaymentMeans) > 0 && inv.Payment != nil {
 		addPaymentDetails(inv.Payment, &ui.PaymentMeans[0])
@@ -36,10 +36,12 @@ func (ui *Invoice) addOIOUBLDetails(inv *bill.Invoice, docExcises []exciseDuty, 
 		inv.SetRegime("DK")
 	}
 
-	addOrderingDetails(inv, ui)
+	ui.addOrderingDetails(inv)
 }
 
-func addOrderingDetails(inv *bill.Invoice, ui *Invoice) {
+// addOrderingDetails restores the ordering fields the generic parse skips: the
+// accounting cost, the order's issue date and the preceding documents' UUIDs.
+func (ui *Invoice) addOrderingDetails(inv *bill.Invoice) {
 	if ui.AccountingCost != "" {
 		if inv.Ordering == nil {
 			inv.Ordering = new(bill.Ordering)

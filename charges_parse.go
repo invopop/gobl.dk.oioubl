@@ -5,10 +5,9 @@ import (
 	"github.com/invopop/gobl/num"
 )
 
-// stripAllowanceMultiplier rewrites a discount or fee percentage the way the
-// generic parser expects it. OIOUBL states it as a fraction, so amount equals
-// base times factor (F-LIB228), while EN 16931 states the percentage itself:
-// the same 25% is 0.25 on an OIOUBL wire and 25 on an EN 16931 one.
+// stripAllowanceMultiplier restates a discount or fee percentage the way the
+// generic parser reads it: 25% arrives as the fraction 0.25 (F-LIB228) and has
+// to become 25.
 func stripAllowanceMultiplier(ac *ubl.AllowanceCharge) {
 	if ac == nil || ac.MultiplierFactorNumeric == nil {
 		return

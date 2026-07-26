@@ -31,7 +31,7 @@ func (ui *Invoice) stripLines(vatPercents map[string]string) (map[int][]exciseDu
 
 		if line.Item != nil {
 			if line.Item.ClassifiedTaxCategory != nil {
-				stripClassifiedTaxCategoryWire(line.Item.ClassifiedTaxCategory)
+				stripClassifiedTaxCategory(line.Item.ClassifiedTaxCategory)
 			} else {
 				synthesizeClassifiedTaxCategory(line)
 			}

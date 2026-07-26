@@ -20,8 +20,8 @@ func unclTaxCategoryCode(id string) string {
 	return id
 }
 
-// oioublVATKey is for a document-level excise duty's tax type, which has no
-// route through the generic parse.
+// oioublVATKey maps an OIOUBL category to the GOBL VAT key, for a document-level
+// duty's tax type, which has no route through the generic parse.
 func oioublVATKey(id string) cbc.Key {
 	switch id {
 	case taxCategoryStandardRated:
@@ -34,31 +34,30 @@ func oioublVATKey(id string) cbc.Key {
 	return ""
 }
 
-// stripTaxCategoryWire rewrites a tax category back to its generic EN16931
-// form, in place.
-func stripTaxCategoryWire(tc *ubl.TaxCategory) {
+// stripTaxCategory rewrites a tax category back to its generic EN 16931 form.
+func stripTaxCategory(tc *ubl.TaxCategory) {
 	if tc == nil {
 		return
 	}
 	if tc.ID != nil {
 		tc.ID.Value = unclTaxCategoryCode(tc.ID.Value)
 	}
-	stripTaxSchemeWire(tc.TaxScheme)
+	stripTaxScheme(tc.TaxScheme)
 }
 
-// stripClassifiedTaxCategoryWire is stripTaxCategoryWire's ClassifiedTaxCategory twin.
-func stripClassifiedTaxCategoryWire(tc *ubl.ClassifiedTaxCategory) {
+// stripClassifiedTaxCategory is stripTaxCategory's ClassifiedTaxCategory twin.
+func stripClassifiedTaxCategory(tc *ubl.ClassifiedTaxCategory) {
 	if tc == nil {
 		return
 	}
 	if tc.ID != nil {
 		tc.ID.Value = unclTaxCategoryCode(tc.ID.Value)
 	}
-	stripTaxSchemeWire(tc.TaxScheme)
+	stripTaxScheme(tc.TaxScheme)
 }
 
-// stripTaxSchemeWire rewrites OIOUBL's "63"/Moms VAT code back to plain "VAT".
-func stripTaxSchemeWire(ts *ubl.TaxScheme) {
+// stripTaxScheme rewrites OIOUBL's "63"/Moms VAT code back to plain "VAT".
+func stripTaxScheme(ts *ubl.TaxScheme) {
 	if ts == nil {
 		return
 	}
@@ -67,10 +66,10 @@ func stripTaxSchemeWire(ts *ubl.TaxScheme) {
 	}
 }
 
-// stripTaxTotalCategories applies stripTaxCategoryWire to every subtotal in a
-// (by this point, excise-free) cac:TaxTotal block.
+// stripTaxTotalCategories strips every subtotal of a tax total, which by this
+// point holds only VAT.
 func stripTaxTotalCategories(tt *ubl.TaxTotal) {
 	for i := range tt.TaxSubtotal {
-		stripTaxCategoryWire(&tt.TaxSubtotal[i].TaxCategory)
+		stripTaxCategory(&tt.TaxSubtotal[i].TaxCategory)
 	}
 }

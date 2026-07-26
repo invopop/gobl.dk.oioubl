@@ -38,7 +38,7 @@ func stripParty(p *ubl.Party) {
 		if pts.CompanyID != nil {
 			pts.CompanyID.Value = dkUnprefixed(pts.CompanyID.SchemeID, pts.CompanyID.Value)
 		}
-		stripTaxSchemeWire(pts.TaxScheme)
+		stripTaxScheme(pts.TaxScheme)
 	}
 	if le := p.PartyLegalEntity; le != nil && le.CompanyID != nil {
 		le.CompanyID.Value = dkUnprefixed(le.CompanyID.SchemeID, le.CompanyID.Value)
@@ -64,9 +64,8 @@ func markLegalIdentity(p *org.Party) {
 	if p == nil {
 		return
 	}
-	// A CPR belongs to a person, not a company, and the regime's supplier rule
-	// looks at the type rather than the scheme, so mark it wherever it appears
-	// -- including on an identity the generic parser has already scoped.
+	// The regime's supplier rule reads the type, not the scheme, so mark every
+	// CPR -- including one the generic parser has already scoped.
 	for _, id := range p.Identities {
 		if id != nil && id.Ext.Get(iso.ExtKeySchemeID).String() == schemeDKCPR {
 			id.Type = dk.IdentityTypeCPR
