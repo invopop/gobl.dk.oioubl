@@ -1,4 +1,4 @@
-package dkoioubl
+package oioubl
 
 import (
 	ubl "github.com/invopop/gobl.ubl"
@@ -6,8 +6,8 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// Maps an OIOUBL taxcategoryid-1.1 value to its UNTDID 5305 code (S/Z/AE);
-// an unrecognized value round-trips unchanged rather than failing.
+// unclTaxCategoryCode maps an OIOUBL category to its UNTDID code. Anything
+// unrecognised passes through untouched rather than failing.
 func unclTaxCategoryCode(id string) string {
 	switch id {
 	case taxCategoryStandardRated:
@@ -20,8 +20,8 @@ func unclTaxCategoryCode(id string) string {
 	return id
 }
 
-// Only for a document-level excise duty's TaxTypeCode, which has no wire
-// path through the generic parse.
+// oioublVATKey is for a document-level excise duty's tax type, which has no
+// route through the generic parse.
 func oioublVATKey(id string) cbc.Key {
 	switch id {
 	case taxCategoryStandardRated:
@@ -34,8 +34,8 @@ func oioublVATKey(id string) cbc.Key {
 	return ""
 }
 
-// stripTaxCategoryWire rewrites a wire TaxCategory's symbolic OIOUBL ID and
-// VAT TaxScheme back to their generic EN16931 form, in place.
+// stripTaxCategoryWire rewrites a tax category back to its generic EN16931
+// form, in place.
 func stripTaxCategoryWire(tc *ubl.TaxCategory) {
 	if tc == nil {
 		return
@@ -57,7 +57,7 @@ func stripClassifiedTaxCategoryWire(tc *ubl.ClassifiedTaxCategory) {
 	stripTaxSchemeWire(tc.TaxScheme)
 }
 
-// Rewrites OIOUBL's "63"/Moms VAT tax-scheme code back to gobl.ubl's generic "VAT".
+// stripTaxSchemeWire rewrites OIOUBL's "63"/Moms VAT code back to plain "VAT".
 func stripTaxSchemeWire(ts *ubl.TaxScheme) {
 	if ts == nil {
 		return

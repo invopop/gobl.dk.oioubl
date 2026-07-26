@@ -1,6 +1,9 @@
 package oioubl
 
 import (
+	"strings"
+	"time"
+
 	"github.com/invopop/gobl/cal"
 )
 
@@ -15,4 +18,28 @@ func formatDate(d cal.Date) string {
 		return ""
 	}
 	return d.Time().Format("2006-01-02")
+}
+
+// normalizeNumericString preps a wire amount for num parsing: trims space, zero-pads a leading decimal point.
+func normalizeNumericString(s string) string {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, ".") {
+		s = "0" + s
+	}
+	return s
+}
+
+// cleanString drops the Unicode replacement character, which would otherwise
+// break canonical JSON serialization.
+func cleanString(s string) string {
+	return strings.ReplaceAll(s, "�", "")
+}
+
+// parseWireDate reads a UBL YYYY-MM-DD date.
+func parseWireDate(s string) (cal.Date, error) {
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return cal.Date{}, err
+	}
+	return cal.MakeDate(t.Year(), t.Month(), t.Day()), nil
 }

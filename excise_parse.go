@@ -1,9 +1,9 @@
-package dkoioubl
+package oioubl
 
 import (
 	"strconv"
 
-	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
+	"github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
@@ -11,8 +11,7 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// Legacy UNCL5305 numeric tax-category codes (3010-3671) some real inbound
-// documents still use instead of "Excise".
+// Older documents mark excise with a numeric code instead of "Excise".
 const (
 	legacyExciseCategoryMin = 3010
 	legacyExciseCategoryMax = 3671
@@ -31,8 +30,8 @@ func isExciseCategoryID(id string) bool {
 	return n >= legacyExciseCategoryMin && n <= legacyExciseCategoryMax
 }
 
-// Partitions a cac:TaxTotal list into ordinary VAT subtotals (kept) and
-// excise duties (extracted, since EN16931 has no field for them).
+// splitExciseTaxTotals separates ordinary VAT, which is kept, from excise
+// duties, which are pulled out because EN 16931 has nowhere to put them.
 func splitExciseTaxTotals(totals []ubl.TaxTotal) ([]ubl.TaxTotal, []exciseDuty, error) {
 	var kept []ubl.TaxTotal
 	var excises []exciseDuty
@@ -59,8 +58,8 @@ func splitExciseTaxTotals(totals []ubl.TaxTotal) ([]ubl.TaxTotal, []exciseDuty, 
 	return kept, excises, nil
 }
 
-// Records each non-excise subtotal's category and percent, so a document-level
-// excise duty's TaxTypeCode (a category only, never a rate) can resolve one.
+// collectVATPercents notes each VAT rate, so a document-level duty that names
+// only a category can later find the matching percentage.
 func collectVATPercents(totals []ubl.TaxTotal, percents map[string]string) {
 	for _, tt := range totals {
 		for i := range tt.TaxSubtotal {
@@ -101,8 +100,8 @@ func parseExciseSubtotal(st *ubl.TaxSubtotal) (exciseDuty, error) {
 	return d, nil
 }
 
-// Keys a duty by scheme+amount+base, to tell a document-level mirror of a
-// line-level duty (outbound emits both) from a genuine document-level one.
+// exciseMirrorKey identifies a duty, so a document-level copy of one already
+// counted on a line can be told from a genuine document-level duty.
 func exciseMirrorKey(d exciseDuty) string {
 	base := ""
 	if d.base != nil {
@@ -115,18 +114,18 @@ func exciseMirrorKey(d exciseDuty) string {
 // and an excise duty is always a fixed Amount.
 func dutyToLineCharge(d exciseDuty) *bill.LineCharge {
 	return &bill.LineCharge{
-		Key:    oioubl.ChargeKeyExcise,
+		Key:    addon.ChargeKeyExcise,
 		Ext:    dutyCodeExt(d.scheme),
 		Reason: d.name,
 		Amount: d.amount,
 	}
 }
 
-// A document-level duty states its own VAT category via TaxTypeCode (a
-// line-level duty inherits its line's category instead, no recovery needed).
+// dutyToCharge builds a document-level duty, which unlike a line-level one has
+// to state its own VAT category.
 func dutyToCharge(d exciseDuty, percents map[string]string) *bill.Charge {
 	ch := &bill.Charge{
-		Key:    oioubl.ChargeKeyExcise,
+		Key:    addon.ChargeKeyExcise,
 		Ext:    dutyCodeExt(d.scheme),
 		Reason: d.name,
 		Amount: d.amount,
@@ -149,11 +148,11 @@ func dutyCodeExt(scheme string) tax.Extensions {
 	if scheme == "" {
 		return tax.Extensions{}
 	}
-	return tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyDutyCode: cbc.Code(scheme)})
+	return tax.ExtensionsOf(cbc.CodeMap{addon.ExtKeyDutyCode: cbc.Code(scheme)})
 }
 
-// Adds each line's duties to that line, then the genuine document-level ones
-// (skipping any that just mirror a duty already added to a line).
+// addExciseCharges puts each duty back on its line, then adds the document-level
+// ones, skipping any that merely repeat a line's duty.
 func addExciseCharges(inv *bill.Invoice, docExcises []exciseDuty, lineExcises map[int][]exciseDuty, vatPercents map[string]string) {
 	mirrors := make(map[string]bool)
 	for i, duties := range lineExcises {

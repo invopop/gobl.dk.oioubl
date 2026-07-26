@@ -1,4 +1,4 @@
-package dkoioubl
+package oioubl
 
 import (
 	"strings"
@@ -7,10 +7,12 @@ import (
 	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
+	"github.com/invopop/gobl/regimes/dk"
 )
 
-// Reverses the wire-only DK prefix on DK:CVR/DK:SE identifiers (F-LIB180/184/190/196).
-func (ui *Invoice) stripPartyFlavor() {
+// stripParties reverses the wire-only DK prefix OIOUBL puts on Danish company
+// numbers (F-LIB180/184/190/196).
+func (ui *Invoice) stripParties() {
 	stripParty(ui.AccountingSupplierParty.Party)
 	stripParty(ui.AccountingCustomerParty.Party)
 	stripParty(ui.PayeeParty)
@@ -43,9 +45,9 @@ func stripParty(p *ubl.Party) {
 	}
 }
 
-// Restores cac:Contact/cbc:ID onto the first contact person's identity
-// (F-INV051); the generic parser reads Contact/Name but not Contact/ID.
-func decoratePartyContact(p *org.Party, wire *ubl.Party) {
+// addPartyContact keeps the contact's ID, which the generic parser drops --
+// it reads Contact/Name but not Contact/ID (F-INV051).
+func addPartyContact(p *org.Party, wire *ubl.Party) {
 	if p == nil || wire == nil || wire.Contact == nil || wire.Contact.ID == nil || len(p.People) == 0 {
 		return
 	}
@@ -56,16 +58,29 @@ func decoratePartyContact(p *org.Party, wire *ubl.Party) {
 	p.People[0].Identities = []*org.Identity{{Code: cbc.Code(code)}}
 }
 
-// Promotes a DK:CVR PartyIdentification to a legal identity, since the
-// generic parser only marks Scope=legal for PartyLegalEntity/CompanyID.
-// DK:SE is excluded: F-LIB189 restricts PartyLegalEntity/CompanyID to
-// DK:CVR/DK:CPR/ZZZ, DK:SE is only valid on PartyTaxScheme (F-LIB195).
-func decoratePartyLegalIdentity(p *org.Party) {
-	if p == nil || hasLegalIdentity(p) {
+// markLegalIdentity marks which identity is the official company number. Only
+// CVR and CPR count: OIOUBL allows no other scheme there (F-LIB189).
+func markLegalIdentity(p *org.Party) {
+	if p == nil {
+		return
+	}
+	// A CPR identifies a person rather than a company. The DK regime keys its
+	// supplier rule off Type, not the scheme, so stamp it wherever the scheme
+	// appears -- including on an identity the generic parser already scoped.
+	for _, id := range p.Identities {
+		if id != nil && id.Ext.Get(iso.ExtKeySchemeID).String() == schemeDKCPR {
+			id.Type = dk.IdentityTypeCPR
+		}
+	}
+	if hasLegalIdentity(p) {
 		return
 	}
 	for _, id := range p.Identities {
-		if id != nil && id.Ext.Get(iso.ExtKeySchemeID).String() == schemeDKCVR {
+		if id == nil {
+			continue
+		}
+		switch id.Ext.Get(iso.ExtKeySchemeID).String() {
+		case schemeDKCVR, schemeDKCPR:
 			id.Scope = org.IdentityScopeLegal
 			return
 		}
@@ -81,8 +96,8 @@ func hasLegalIdentity(p *org.Party) bool {
 	return false
 }
 
-// dkUnprefixed strips the wire-only "DK" prefix OIOUBL mandates on
-// DK:CVR/DK:SE identifier values, leaving every other scheme's value as-is.
+// dkUnprefixed strips the wire-only "DK" prefix from a Danish company number,
+// leaving every other scheme alone.
 func dkUnprefixed(schemeID *string, value string) string {
 	if schemeID == nil {
 		return value

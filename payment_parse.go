@@ -1,4 +1,4 @@
-package dkoioubl
+package oioubl
 
 import (
 	ubl "github.com/invopop/gobl.ubl"
@@ -9,8 +9,8 @@ import (
 	"github.com/invopop/gobl/pay"
 )
 
-// Outbound moves DueDate onto PaymentMeans[0].PaymentDueDate and blanks it;
-// invoices (unlike credit notes) never fall back to reading it from there.
+// stripPaymentDueDate puts the due date back where the generic parser expects
+// it, since on an invoice it never looks under the payment means.
 func (ui *Invoice) stripPaymentDueDate() {
 	if ui.DueDate != "" || len(ui.PaymentMeans) == 0 || ui.PaymentMeans[0].PaymentDueDate == nil {
 		return
@@ -18,7 +18,7 @@ func (ui *Invoice) stripPaymentDueDate() {
 	ui.DueDate = *ui.PaymentMeans[0].PaymentDueDate
 }
 
-func decoratePayment(payment *bill.PaymentDetails, pm *ubl.PaymentMeans) {
+func addPaymentDetails(payment *bill.PaymentDetails, pm *ubl.PaymentMeans) {
 	if payment == nil || payment.Instructions == nil || pm.PaymentChannelCode == nil {
 		return
 	}
@@ -30,17 +30,17 @@ func decoratePayment(payment *bill.PaymentDetails, pm *ubl.PaymentMeans) {
 
 	switch pm.PaymentChannelCode.Value {
 	case paymentChannelGiro, paymentChannelFIK:
-		decorateGiroFIK(instr, pm)
+		fixGiroFIK(instr, pm)
 	case paymentChannelDKBank:
-		decorateDKBank(instr)
+		fixDKBank(instr)
 	case paymentChannelIBAN:
-		decorateIBAN(instr, pm)
+		fixIBAN(instr, pm)
 	}
 }
 
-// The real ref is under InstructionID (PaymentID carries a routing code
-// instead); for FIK, the creditor account is under CreditAccount.
-func decorateGiroFIK(instr *pay.Instructions, pm *ubl.PaymentMeans) {
+// fixGiroFIK reads the payment reference from InstructionID; PaymentID holds a
+// routing code, not the reference.
+func fixGiroFIK(instr *pay.Instructions, pm *ubl.PaymentMeans) {
 	instr.Ref = ""
 	if pm.InstructionID != nil {
 		instr.Ref = cbc.Code(cleanString(*pm.InstructionID))
@@ -50,8 +50,9 @@ func decorateGiroFIK(instr *pay.Instructions, pm *ubl.PaymentMeans) {
 	}
 }
 
-// What the base parser read as a BIC is really the bank reg. number (F-LIB124/130).
-func decorateDKBank(instr *pay.Instructions) {
+// fixDKBank corrects the bank registration number, which the base parser takes
+// for a BIC (F-LIB124/130).
+func fixDKBank(instr *pay.Instructions) {
 	if len(instr.CreditTransfer) == 0 || instr.CreditTransfer[0].BIC == "" {
 		return
 	}
@@ -60,8 +61,9 @@ func decorateDKBank(instr *pay.Instructions) {
 	ct.BIC = ""
 }
 
-// OIOUBL nests the BIC one level deeper than the base parser looks.
-func decorateIBAN(instr *pay.Instructions, pm *ubl.PaymentMeans) {
+// fixIBAN finds the BIC, which OIOUBL nests one level deeper than the base
+// parser looks.
+func fixIBAN(instr *pay.Instructions, pm *ubl.PaymentMeans) {
 	if len(instr.CreditTransfer) == 0 || instr.CreditTransfer[0].BIC != "" {
 		return
 	}

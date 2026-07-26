@@ -1,12 +1,12 @@
-package dkoioubl
+package oioubl
 
 import (
 	ubl "github.com/invopop/gobl.ubl"
 )
 
-// Returns excise duties extracted from each line's own cac:TaxTotal, keyed
-// by line index, and records ordinary VAT rates into vatPercents.
-func (ui *Invoice) stripLineFlavor(vatPercents map[string]string) (map[int][]exciseDuty, error) {
+// stripLines pulls each line's excise duties out, keyed by line number, and
+// notes the ordinary VAT rates it saw along the way.
+func (ui *Invoice) stripLines(vatPercents map[string]string) (map[int][]exciseDuty, error) {
 	lines := ui.InvoiceLines
 	if len(ui.CreditNoteLines) > 0 {
 		lines = ui.CreditNoteLines
@@ -42,8 +42,8 @@ func (ui *Invoice) stripLineFlavor(vatPercents map[string]string) (map[int][]exc
 	return lineExcises, nil
 }
 
-// Covers a line that states VAT only via its own cac:TaxTotal, not
-// cac:ClassifiedTaxCategory (which is all the generic parser reads).
+// synthesizeClassifiedTaxCategory covers a line that states its VAT only in a
+// tax total, which is not where the generic parser looks.
 func synthesizeClassifiedTaxCategory(line *ubl.InvoiceLine) {
 	for _, tt := range line.TaxTotal {
 		for i := range tt.TaxSubtotal {
@@ -61,8 +61,8 @@ func synthesizeClassifiedTaxCategory(line *ubl.InvoiceLine) {
 	}
 }
 
-// Folds a line/price-level cac:AllowanceCharge's reason into a note instead
-// of a real charge/discount: per G17 3.2/3.3 these are purely advisory.
+// stripLineAllowanceCharges turns a line's allowances into a note rather than
+// real money, because OIOUBL means them as information only (G17 3.2/3.3).
 func stripLineAllowanceCharges(line *ubl.InvoiceLine) {
 	allowances := line.AllowanceCharge
 	if line.Price != nil && line.Price.AllowanceCharge != nil {

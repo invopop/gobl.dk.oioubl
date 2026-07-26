@@ -1,4 +1,4 @@
-package dkoioubl_test
+package oioubl_test
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	dkoioubl "github.com/invopop/gobl.dk.oioubl"
+	oioubl "github.com/invopop/gobl.dk.oioubl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,7 +50,7 @@ func TestParseInvoice(t *testing.T) {
 			data, err := os.ReadFile(example)
 			require.NoError(t, err)
 
-			doc, err := dkoioubl.ParseInvoice(data)
+			doc, err := oioubl.ParseInvoice(data)
 			require.NoError(t, err)
 
 			env, err := doc.Convert()

@@ -1,26 +1,21 @@
-package dkoioubl
+package oioubl
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/invopop/gobl"
-	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
+	"github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 )
-
-// Strips the Unicode replacement character (U+FFFD), which breaks canonical
-// JSON serialization if left in.
-func cleanString(s string) string {
-	return strings.ReplaceAll(s, "�", "")
-}
 
 const rootNameCreditNote = "CreditNote"
 
 // Matches "OIOUBL-2.1", "OIOUBL-2.01", "OIOUBL-2.02", etc.
 const customizationIDPrefix = "OIOUBL-2"
 
+// Parse reads an OIOUBL document off the wire.
 func Parse(data []byte) (any, error) {
 	doc, err := ubl.Parse(data)
 	if err != nil {
@@ -33,6 +28,7 @@ func Parse(data []byte) (any, error) {
 	return (*Invoice)(in), nil
 }
 
+// ParseInvoice is Parse for callers that already know it is an invoice.
 func ParseInvoice(data []byte) (*Invoice, error) {
 	doc, err := Parse(data)
 	if err != nil {
@@ -45,14 +41,20 @@ func ParseInvoice(data []byte) (*Invoice, error) {
 	return inv, nil
 }
 
-// Strip to plain EN16931, run the generic parse, then decorate with the
-// OIOUBL specifics the base has no field for (excise, DK payment shapes).
+// ExtractBinaryAttachments returns the files embedded in the document. Invoice
+// is its own type, so the base's method does not come along and is forwarded.
+func (ui *Invoice) ExtractBinaryAttachments() []ubl.BinaryAttachment {
+	return (*ubl.Invoice)(ui).ExtractBinaryAttachments()
+}
+
+// Convert strips the document back to plain EN16931, runs the generic parse,
+// then adds the OIOUBL details the base has no field for.
 func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 	if !strings.HasPrefix(ui.CustomizationID, customizationIDPrefix) {
 		return nil, fmt.Errorf("unsupported customization id %q, expected an %q document", ui.CustomizationID, customizationIDPrefix)
 	}
 
-	docExcises, lineExcises, vatPercents, err := ui.stripOIOUBLFlavor()
+	docExcises, lineExcises, vatPercents, err := ui.stripOIOUBL()
 	if err != nil {
 		return nil, err
 	}
@@ -66,9 +68,9 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 		return nil, ErrUnsupportedDocumentType
 	}
 
-	ui.decorateGOBL(inv, docExcises, lineExcises, vatPercents)
+	ui.addOIOUBLDetails(inv, docExcises, lineExcises, vatPercents)
 
-	inv.SetAddons(append(inv.GetAddons(), oioubl.V2)...)
+	inv.SetAddons(append(inv.GetAddons(), addon.V2)...)
 	if err := env.Calculate(); err != nil {
 		return nil, err
 	}
@@ -78,16 +80,16 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 	return env, nil
 }
 
-// Mutates the wire document in place, undoing OIOUBL decorations the generic
-// parser would misread, and returns excise duties extracted along the way.
-func (ui *Invoice) stripOIOUBLFlavor() (docExcises []exciseDuty, lineExcises map[int][]exciseDuty, vatPercents map[string]string, err error) {
-	ui.stripPartyFlavor()
+// stripOIOUBL rewrites the document in place into something the generic parser
+// reads correctly, handing back the excise duties it has no field for.
+func (ui *Invoice) stripOIOUBL() (docExcises []exciseDuty, lineExcises map[int][]exciseDuty, vatPercents map[string]string, err error) {
+	ui.stripParties()
 	ui.stripPaymentDueDate()
-	ui.stripDeliveryFlavor()
+	ui.stripDelivery()
 
 	vatPercents = make(map[string]string)
 
-	lineExcises, err = ui.stripLineFlavor(vatPercents)
+	lineExcises, err = ui.stripLines(vatPercents)
 	if err != nil {
 		return nil, nil, nil, err
 	}
