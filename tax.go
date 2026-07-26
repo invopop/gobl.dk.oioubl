@@ -106,3 +106,11 @@ func hasStandardRated(inv *bill.Invoice) bool {
 	}
 	return false
 }
+
+// fixTaxCurrency drops the second currency unless a rate that charges tax uses
+// it, which is the only case OIOUBL states it for (F-LIB373/F-INV018).
+func (ui *Invoice) fixTaxCurrency(inv *bill.Invoice) {
+	if ui.TaxCurrencyCode != "" && !hasStandardRated(inv) {
+		ui.TaxCurrencyCode = ""
+	}
+}

@@ -10,12 +10,10 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// applyParties reworks the parties, their addresses and the delivery. Each
-// party takes two passes: add the details the base left out, then bring what
-// it did build in line with OIOUBL.
+// applyParties reworks the parties, their addresses and the delivery: first add
+// what the base left out, then fix what it did build.
 func (ui *Invoice) applyParties(inv *bill.Invoice) {
-	// With an ordering seller the base already swapped the two: the seller is
-	// the supplier on the wire and the real supplier is the tax representative.
+	// With an ordering seller the base already swapped these two around.
 	supplier, taxRep := inv.Supplier, (*org.Party)(nil)
 	if inv.Ordering != nil && inv.Ordering.Seller != nil {
 		supplier, taxRep = inv.Ordering.Seller, inv.Supplier
@@ -179,8 +177,8 @@ func fixParty(p *ubl.Party) {
 	applyPartyIdentifications(p)
 }
 
-// fixTaxRepParty drops what OIOUBL forbids on a tax representative, then fixes
-// it like any other party.
+// fixTaxRepParty strips a tax representative back to the name, tax scheme and
+// address OIOUBL allows there (F-LIB357/358/361/362), then fixes it as usual.
 func fixTaxRepParty(p *ubl.Party) {
 	if p == nil {
 		return

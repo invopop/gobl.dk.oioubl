@@ -11,8 +11,7 @@ import (
 const addressStructuredLax = "StructuredLax"
 
 // newPostalAddress fills the address fields applyAddress leaves alone. It takes
-// the whole slice, like gobl.ubl's own builder, so the "is there one?" check
-// lives in one place rather than at every call site.
+// the slice so the "is there one?" check lives here, not at every call site.
 func newPostalAddress(addresses []*org.Address) *ubl.PostalAddress {
 	if len(addresses) == 0 || addresses[0] == nil {
 		return nil

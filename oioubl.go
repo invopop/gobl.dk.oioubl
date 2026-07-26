@@ -109,11 +109,7 @@ func buildInvoice(env *gobl.Envelope) (*Invoice, error) {
 // reusable equivalent in the base, so they are rebuilt from scratch.
 func (ui *Invoice) applyOIOUBL(inv *bill.Invoice) {
 	ui.applyParties(inv)
-
-	// Drop the tax currency unless a StandardRated rate (%>0) carries it (F-LIB373/F-INV018).
-	if ui.TaxCurrencyCode != "" && !hasStandardRated(inv) {
-		ui.TaxCurrencyCode = ""
-	}
+	ui.fixTaxCurrency(inv)
 	ui.applyCharges(inv)
 	ui.TaxTotal = nil
 	ui.buildTotals(inv)

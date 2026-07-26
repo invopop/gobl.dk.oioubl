@@ -2,7 +2,6 @@ package dkoioubl
 
 import (
 	"strconv"
-	"strings"
 
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
@@ -174,10 +173,10 @@ func (ui *Invoice) appendVATSubtotals(inv *bill.Invoice, currency string) {
 	}
 	exciseBases := exciseVATBases(inv)
 	for _, cat := range t.Taxes.Categories {
-		extraBase, hasRealRate := extraBaseByCategory(cat.Rates)
+		groups := groupRatesByCategory(cat.Rates)
 		for _, r := range cat.Rates {
 			catID := taxCategoryID(r.Key)
-			if r.Percent == nil && r.Amount.IsZero() && hasRealRate[catID] {
+			if r.Percent == nil && r.Amount.IsZero() && groups.charging[catID] {
 				// Folds into the category's real rate below (G17 3.1), unless it has none of its own (e.g. ReverseCharge).
 				continue
 			}
@@ -185,7 +184,7 @@ func (ui *Invoice) appendVATSubtotals(inv *bill.Invoice, currency string) {
 				continue
 			}
 			base := r.Base
-			if extra, ok := extraBase[catID]; ok {
+			if extra, ok := groups.extraBase[catID]; ok {
 				base = base.Add(extra.Rescale(base.Exp()))
 			}
 			subtotal := buildVATSubtotal(inv, cat, r, base, accRate, rCurrency, currency)
@@ -194,36 +193,43 @@ func (ui *Invoice) appendVATSubtotals(inv *bill.Invoice, currency string) {
 	}
 }
 
-// extraBaseByCategory returns, per category, the amount that has to be added to
-// that category's real rate. A rate charging no tax gets no line of its own, so
-// its amount rides along with the real one -- OIOUBL only allows a category to
-// appear once (G27 3.5). Also reports which categories have a real rate at all.
-func extraBaseByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[string]bool) {
-	hasRealRate := make(map[string]bool)
+// categoryGroups says how a category's rates collapse into the one subtotal
+// OIOUBL allows it (G27 3.5).
+type categoryGroups struct {
+	charging  map[string]bool       // categories with a rate that charges tax
+	extraBase map[string]num.Amount // untaxed amounts riding along with it
+}
+
+// groupRatesByCategory works out that collapse: a rate charging no tax gets no
+// subtotal of its own, so its amount joins the category's charging rate.
+func groupRatesByCategory(rates []*tax.RateTotal) categoryGroups {
+	g := categoryGroups{
+		charging:  make(map[string]bool),
+		extraBase: make(map[string]num.Amount),
+	}
 	for _, r := range rates {
 		if r.Percent == nil && r.Amount.IsZero() {
 			continue
 		}
 		if catID := taxCategoryID(r.Key); catID != "" {
-			hasRealRate[catID] = true
+			g.charging[catID] = true
 		}
 	}
-	extra := make(map[string]num.Amount)
 	for _, r := range rates {
 		if r.Percent != nil || !r.Amount.IsZero() {
 			continue
 		}
 		catID := taxCategoryID(r.Key)
-		if catID == "" || !hasRealRate[catID] {
+		if catID == "" || !g.charging[catID] {
 			continue
 		}
-		if sum, ok := extra[catID]; ok {
-			extra[catID] = sum.Add(r.Base.Rescale(sum.Exp()))
+		if sum, ok := g.extraBase[catID]; ok {
+			g.extraBase[catID] = sum.Add(r.Base.Rescale(sum.Exp()))
 		} else {
-			extra[catID] = r.Base
+			g.extraBase[catID] = r.Base
 		}
 	}
-	return extra, hasRealRate
+	return g
 }
 
 // buildVATSubtotal ports gobl.ubl's own subtotal builder
@@ -305,13 +311,4 @@ func sumTaxTotalAmounts(totals []ubl.TaxTotal) ubl.Amount {
 		sum = sum.Add(a.Rescale(sum.Exp()))
 	}
 	return ubl.Amount{Value: sum.String(), CurrencyID: totals[0].TaxAmount.CurrencyID}
-}
-
-// normalizeNumericString preps a wire amount for num parsing: trims space, zero-pads a leading decimal point.
-func normalizeNumericString(s string) string {
-	s = strings.TrimSpace(s)
-	if strings.HasPrefix(s, ".") {
-		s = "0" + s
-	}
-	return s
 }

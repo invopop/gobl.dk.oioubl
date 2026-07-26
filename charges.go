@@ -42,7 +42,8 @@ func (ui *Invoice) applyCharges(inv *bill.Invoice) {
 	ui.AllowanceCharge = kept
 }
 
-// chargeBaseAmount prefers the charge's own base over the invoice sum, at currency precision (BR-DEC-24).
+// chargeBaseAmount is the amount a percentage is taken off: the charge's own
+// base if it has one, otherwise the invoice total.
 func chargeBaseAmount(pct *num.Percentage, base, fallback *num.Amount, ccy string) *ubl.Amount {
 	if pct == nil {
 		return nil
@@ -73,7 +74,8 @@ func applyAllowanceCharge(ac *ubl.AllowanceCharge, pct *num.Percentage, taxes ta
 	}
 }
 
-// allowanceMultiplier renders MultiplierFactorNumeric as a decimal factor (F-LIB228).
+// allowanceMultiplier writes a percentage the way OIOUBL wants it: as a
+// fraction, so 25% goes out as 0.25 and amount = base x fraction (F-LIB228).
 func allowanceMultiplier(pct *num.Percentage) string {
 	return pct.Base().String()
 }
