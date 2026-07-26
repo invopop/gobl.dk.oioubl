@@ -9,6 +9,11 @@ import (
 
 	"github.com/invopop/gobl"
 	dkoioubl "github.com/invopop/gobl.dk.oioubl"
+	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/num"
+	"github.com/invopop/gobl/org"
+	"github.com/invopop/gobl/tax"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -57,4 +62,30 @@ func TestConvertInvoice(t *testing.T) {
 			assert.Equal(t, string(output), string(data), "Output should match the expected XML. Update with --update flag.")
 		})
 	}
+}
+
+// A regime-less invoice reaches Convert (gobl.Envelop accepts one), and the
+// totals builder dereferences RegimeDef unconditionally, so the guard in
+// convertViaOverlay is what turns a panic into an error.
+func TestConvertWithoutRegime(t *testing.T) {
+	inv := &bill.Invoice{
+		IssueDate: cal.MakeDate(2026, 1, 1),
+		Code:      "1",
+		Currency:  "DKK",
+		Supplier: &org.Party{
+			Name:  "Ukendt A/S",
+			TaxID: &tax.Identity{Country: "AF", Code: "12345674"},
+		},
+		Customer: &org.Party{Name: "Kunde A/S"},
+		Lines: []*bill.Line{{
+			Quantity: num.MakeAmount(1, 0),
+			Item:     &org.Item{Name: "vare", Price: num.NewAmount(10000, 2)},
+		}},
+	}
+	env, err := gobl.Envelop(inv)
+	require.NoError(t, err)
+	require.Nil(t, inv.RegimeDef(), "fixture must have no regime for this test to mean anything")
+
+	_, err = dkoioubl.Convert(env)
+	assert.ErrorContains(t, err, "invoice requires a tax regime")
 }

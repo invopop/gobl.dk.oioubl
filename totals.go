@@ -13,24 +13,8 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// applyLineCategoryAndTaxTotalFlavor rebuilds lines, tax categories, charges
-// and tax/monetary totals to OIOUBL's conventions. Totals have no reusable
-// equivalent in the base, so they're rebuilt outright.
-func (ui *Invoice) applyLineCategoryAndTaxTotalFlavor(inv *bill.Invoice) error {
-	// Drop the tax currency unless a StandardRated rate (%>0) carries it (F-LIB373/F-INV018).
-	if ui.TaxCurrencyCode != "" && !hasStandardRated(inv) {
-		ui.TaxCurrencyCode = ""
-	}
-	ui.applyCharges(inv)
-	ui.TaxTotal = nil
-	ui.addTotals(inv)
-	ui.applyLines(inv)
-	ui.applyTotals()
-	return nil
-}
-
-// addMonetaryTotal rebuilds LegalMonetaryTotal with gross line amounts (F-INV348).
-func (ui *Invoice) addMonetaryTotal(inv *bill.Invoice, currency string) {
+// createMonetaryTotal rebuilds LegalMonetaryTotal with gross line amounts (F-INV348).
+func (ui *Invoice) createMonetaryTotal(inv *bill.Invoice, currency string) {
 	t := inv.Totals
 	exp := t.Sum.Exp()
 	grossSum := num.MakeAmount(0, exp)
@@ -129,7 +113,7 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 	t := inv.Totals
 	currency := inv.Currency.String()
 
-	ui.addMonetaryTotal(inv, currency)
+	ui.createMonetaryTotal(inv, currency)
 	ui.addPrepaidPayments(inv, currency)
 
 	if t.Rounding != nil {

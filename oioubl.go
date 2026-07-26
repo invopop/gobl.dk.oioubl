@@ -96,22 +96,26 @@ func convertViaOverlay(env *gobl.Envelope) (*Invoice, error) {
 		return nil, err
 	}
 	out := (*Invoice)(base)
-	err = out.applyOIOUBLFlavor(inv)
-	if err != nil {
-		return nil, err
-	}
+	out.applyOIOUBLFlavor(inv)
 	return out, nil
 }
 
-// applyOIOUBLFlavor turns gobl.ubl's plain EN16931 base into OIOUBL 2.1, in
-// three stages: party/address, then line/categories/tax_total, then schemes.
-func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) error {
+// applyOIOUBLFlavor turns gobl.ubl's plain EN16931 base into OIOUBL 2.1.
+// Totals have no reusable equivalent in the base, so they are rebuilt outright.
+func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) {
 	ui.applyPartyAndAddressFlavor(inv)
-	if err := ui.applyLineCategoryAndTaxTotalFlavor(inv); err != nil {
-		return err
+
+	// Drop the tax currency unless a StandardRated rate (%>0) carries it (F-LIB373/F-INV018).
+	if ui.TaxCurrencyCode != "" && !hasStandardRated(inv) {
+		ui.TaxCurrencyCode = ""
 	}
+	ui.applyCharges(inv)
+	ui.TaxTotal = nil
+	ui.addTotals(inv)
+	ui.applyLines(inv)
+	ui.applyTotals()
+
 	ui.applySchemeFlavor(inv)
-	return nil
 }
 
 // ensureOIOUBLAddon declares the OIOUBL addon on the invoice if absent and
