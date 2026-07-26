@@ -17,6 +17,12 @@ const (
 	taxCategoryReverseCharge = "ReverseCharge"
 
 	taxSchemeVATCode = "63" // taxschemeid-1.5 VAT (Moms)
+
+	// taxSchemeVATName and taxSchemeDutyName are the free-text names OIOUBL
+	// puts on a tax scheme. Only the VAT pairing is fixed: "Moms" belongs to
+	// code 63 and to nothing else (F-LIB198/199).
+	taxSchemeVATName  = "Moms"
+	taxSchemeDutyName = "Excise"
 )
 
 // taxCategoryID maps a GOBL VAT key to its OIOUBL taxcategoryid-1.1 code (exempt maps to ZeroRated, since OIOUBL 2.1 has no exempt category; unsupported keys return "").
@@ -64,15 +70,70 @@ func applyTaxScheme(ts *ubl.TaxScheme) {
 	if ts == nil {
 		return
 	}
-	schemeID := schemeTaxScheme
-	schemeAgencyID := agencyID
 	ts.ID = ubl.IDType{
-		SchemeID:       &schemeID,
-		SchemeAgencyID: &schemeAgencyID,
+		SchemeID:       ptr(schemeTaxScheme),
+		SchemeAgencyID: ptr(agencyID),
 		Value:          taxSchemeVATCode,
 	}
-	name := "Moms"
-	ts.Name = &name
+	ts.Name = ptr(taxSchemeVATName)
+}
+
+// applyPartyTaxScheme stamps a party's tax scheme. A party can be registered
+// for a duty as well as for VAT, each under its own number, so only VAT becomes
+// "63"/Moms and a duty keeps the code it came with. Where the document charges
+// that same duty, it is described in the document's own words; otherwise all we
+// can say is that it is a duty.
+func applyPartyTaxScheme(ts *ubl.TaxScheme, duties map[string]exciseDuty) {
+	if ts == nil {
+		return
+	}
+	code := ts.ID.Value
+	if code == "" || code == taxSchemeVATCode || code == string(tax.CategoryVAT) {
+		applyTaxScheme(ts)
+		return
+	}
+	name, typeCode := taxSchemeDutyName, taxCategoryStandardRated
+	if d, ok := duties[code]; ok {
+		if d.name != "" {
+			name = d.name
+		}
+		if d.typeCode != "" {
+			typeCode = d.typeCode
+		}
+	}
+	ts.ID = ubl.IDType{
+		SchemeID:       ptr(schemeTaxScheme),
+		SchemeAgencyID: ptr(agencyID),
+		Value:          code,
+	}
+	// Any name but "Moms" is allowed (F-LIB198/199), but a scheme other than
+	// VAT has to say which category it falls under (F-LIB197).
+	ts.Name = ptr(name)
+	ts.TaxTypeCode = &ubl.IDType{
+		ListAgencyID: ptr(agencyID),
+		ListID:       ptr(codelistTaxType),
+		Value:        typeCode,
+	}
+}
+
+// dutiesByCode indexes the duties the document charges, so a party registered
+// for one can be described with the same name and category the charge uses.
+func dutiesByCode(inv *bill.Invoice) map[string]exciseDuty {
+	out := make(map[string]exciseDuty)
+	for _, d := range collectExcise(inv, inv.Currency.String()) {
+		if d.scheme == "" {
+			continue
+		}
+		if _, seen := out[d.scheme]; !seen {
+			out[d.scheme] = d
+		}
+	}
+	return out
+}
+
+// ptr is a helper for the many optional UBL string fields.
+func ptr(s string) *string {
+	return &s
 }
 
 // findTaxNote ports gobl.ubl's own version, matching by GOBL VAT key instead of the UNTDID ext -- re-diff on version bumps.

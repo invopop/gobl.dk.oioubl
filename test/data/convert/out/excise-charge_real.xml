@@ -42,8 +42,9 @@
       <cac:PartyTaxScheme>
         <cbc:CompanyID schemeID="DK:SE">DK16356707</cbc:CompanyID>
         <cac:TaxScheme>
-          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
-          <cbc:Name>Moms</cbc:Name>
+          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">16</cbc:ID>
+          <cbc:Name>Chokolade- og sukkerafgift</cbc:Name>
+          <cbc:TaxTypeCode listAgencyID="320" listID="urn:oioubl:codelist:taxtypecode-1.1">StandardRated</cbc:TaxTypeCode>
         </cac:TaxScheme>
       </cac:PartyTaxScheme>
       <cac:PartyLegalEntity>

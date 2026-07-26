@@ -13,6 +13,7 @@ import (
 // applyParties reworks the parties, their addresses and the delivery: first add
 // what the base left out, then fix what it did build.
 func (ui *Invoice) applyParties(inv *bill.Invoice) {
+	duties := dutiesByCode(inv)
 	// With an ordering seller the base already swapped these two around.
 	supplier, taxRep := inv.Supplier, (*org.Party)(nil)
 	if inv.Ordering != nil && inv.Ordering.Seller != nil {
@@ -25,10 +26,10 @@ func (ui *Invoice) applyParties(inv *bill.Invoice) {
 		addPayeeDetails(ui.PayeeParty, inv.Payment.Payee)
 	}
 
-	fixParty(ui.AccountingSupplierParty.Party)
-	fixParty(ui.AccountingCustomerParty.Party)
-	fixParty(ui.PayeeParty)
-	fixTaxRepParty(ui.TaxRepresentativeParty)
+	fixParty(ui.AccountingSupplierParty.Party, duties)
+	fixParty(ui.AccountingCustomerParty.Party, duties)
+	fixParty(ui.PayeeParty, duties)
+	fixTaxRepParty(ui.TaxRepresentativeParty, duties)
 
 	if len(ui.Delivery) > 0 {
 		applyDelivery(ui.Delivery[0], inv.Delivery)
@@ -141,7 +142,7 @@ func applyCompanyID(id *ubl.IDType, danishScheme string, danish bool) {
 // fixParty corrects a finished party for OIOUBL: Danish numbers get their DK
 // prefix, a missing name falls back to the registered one, and every company ID
 // gets a scheme.
-func fixParty(p *ubl.Party) {
+func fixParty(p *ubl.Party, duties map[string]exciseDuty) {
 	if p == nil {
 		return
 	}
@@ -164,7 +165,7 @@ func fixParty(p *ubl.Party) {
 	for i := range p.PartyTaxScheme {
 		pts := &p.PartyTaxScheme[i]
 		applyCompanyID(pts.CompanyID, schemeDKSE, danish)
-		applyTaxScheme(pts.TaxScheme)
+		applyPartyTaxScheme(pts.TaxScheme, duties)
 	}
 	if p.PartyLegalEntity != nil {
 		if p.PartyLegalEntity.CompanyID == nil {
@@ -179,7 +180,7 @@ func fixParty(p *ubl.Party) {
 
 // fixTaxRepParty strips a tax representative back to the name, tax scheme and
 // address OIOUBL allows there (F-LIB357/358/361/362), then fixes it as usual.
-func fixTaxRepParty(p *ubl.Party) {
+func fixTaxRepParty(p *ubl.Party, duties map[string]exciseDuty) {
 	if p == nil {
 		return
 	}
@@ -187,7 +188,7 @@ func fixTaxRepParty(p *ubl.Party) {
 	p.PartyIdentification = nil
 	p.PartyLegalEntity = nil
 	p.Contact = nil
-	fixParty(p)
+	fixParty(p, duties)
 }
 
 // applyPartyIdentifications DK-prefixes DK:CVR/DK:SE PartyIdentification values
