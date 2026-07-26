@@ -41,9 +41,13 @@ func ParseInvoice(data []byte) (*Invoice, error) {
 	return inv, nil
 }
 
+// BinaryAttachment is the base's type, re-exported so callers do not have to
+// import gobl.ubl just to read what ExtractBinaryAttachments hands back.
+type BinaryAttachment = ubl.BinaryAttachment
+
 // ExtractBinaryAttachments returns the files embedded in the document. Invoice
 // is its own type, so the base's method does not come along and is forwarded.
-func (ui *Invoice) ExtractBinaryAttachments() []ubl.BinaryAttachment {
+func (ui *Invoice) ExtractBinaryAttachments() []BinaryAttachment {
 	return (*ubl.Invoice)(ui).ExtractBinaryAttachments()
 }
 
@@ -106,6 +110,7 @@ func (ui *Invoice) stripOIOUBL() (docExcises []exciseDuty, lineExcises map[int][
 		for _, tc := range ui.AllowanceCharge[i].TaxCategory {
 			stripTaxCategoryWire(tc)
 		}
+		stripAllowanceMultiplier(&ui.AllowanceCharge[i])
 	}
 
 	return docExcises, lineExcises, vatPercents, nil
