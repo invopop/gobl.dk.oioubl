@@ -36,4 +36,21 @@ func applyDelivery(d *ubl.Delivery, del *bill.DeliveryDetails) {
 		}
 		applyAddress(d.DeliveryLocation.Address, a)
 	}
+
+	applyDeliveryLocationScheme(d, del)
+}
+
+// applyDeliveryLocationScheme names the scheme a delivery location's identifier
+// belongs to, such as GLN. The base reads it when parsing but does not write it
+// back, and OIOUBL puts no restriction on which scheme is named here.
+func applyDeliveryLocationScheme(d *ubl.Delivery, del *bill.DeliveryDetails) {
+	if d.DeliveryLocation == nil || d.DeliveryLocation.ID == nil {
+		return
+	}
+	if d.DeliveryLocation.ID.SchemeID != nil || len(del.Identities) == 0 {
+		return
+	}
+	if id := del.Identities[0]; id != nil && id.Label != "" {
+		d.DeliveryLocation.ID.SchemeID = ptr(id.Label)
+	}
 }
