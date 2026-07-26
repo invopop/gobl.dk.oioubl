@@ -6,9 +6,9 @@ import (
 	"github.com/invopop/gobl/bill"
 )
 
-// applySchemeFlavor stamps OIOUBL's scheme/list identifiers, header fields
+// applySchemes stamps OIOUBL's scheme/list identifiers, header fields
 // the base drops, and payment channel codes.
-func (ui *Invoice) applySchemeFlavor(inv *bill.Invoice) {
+func (ui *Invoice) applySchemes(inv *bill.Invoice) {
 	ui.UBLVersionID = Version
 	ui.CustomizationID = CustomizationID
 	ui.ProfileID = newProfileID()

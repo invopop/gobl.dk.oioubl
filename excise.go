@@ -49,8 +49,8 @@ func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
 	return out
 }
 
-// collectLineExcise gathers a line's excise duties, mirrored as line-level
-// cac:TaxTotal blocks so the wire records which line each duty belongs to.
+// collectLineExcise gathers a line's excise duties. Each becomes a tax block on
+// the line itself, so it stays clear which line the duty came from.
 func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
 	var out []exciseDuty
 	typeCode := lineVATTypeCode(line)
@@ -170,4 +170,13 @@ func makeExciseTaxTotals(excises []exciseDuty, currency string) []ubl.TaxTotal {
 		})
 	}
 	return totals
+}
+
+// isExciseOnlyRate reports whether a VAT rate row is owed entirely to excise, so it gets no subtotal of its own (F-LIB404).
+func isExciseOnlyRate(cat *tax.CategoryTotal, r *tax.RateTotal, exciseBases map[cbc.Key]num.Amount) bool {
+	if cat.Code != tax.CategoryVAT || !r.Amount.IsZero() {
+		return false
+	}
+	base, ok := exciseBases[r.Key]
+	return ok && r.Base.Compare(base.Rescale(r.Base.Exp())) == 0
 }

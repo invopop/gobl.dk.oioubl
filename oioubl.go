@@ -10,7 +10,6 @@ import (
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"
 )
 
@@ -48,21 +47,16 @@ var ErrUnsupportedDocumentType = fmt.Errorf("unsupported document type")
 
 var Addons = []cbc.Key{oioubl.V2}
 
-func GetVESID(inv *bill.Invoice) string {
-	if inv.Type.In(bill.InvoiceTypeCreditNote) {
-		return VESIDCreditNote
-	}
-	return VESIDInvoice
-}
-
+// Convert turns a GOBL envelope into an OIOUBL 2.1 document.
 func Convert(env *gobl.Envelope) (any, error) {
-	out, err := convertViaOverlay(env)
+	out, err := buildInvoice(env)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
+// ConvertInvoice is Convert for callers that already know the document is an invoice.
 func ConvertInvoice(env *gobl.Envelope) (*Invoice, error) {
 	doc, err := Convert(env)
 	if err != nil {
@@ -75,14 +69,32 @@ func ConvertInvoice(env *gobl.Envelope) (*Invoice, error) {
 	return inv, nil
 }
 
-// convertViaOverlay builds the plain EN16931 base, then decorates it into OIOUBL.
-func convertViaOverlay(env *gobl.Envelope) (*Invoice, error) {
+// Bytes renders a converted document as indented XML.
+func Bytes(in any) ([]byte, error) {
+	return ubl.Bytes(in)
+}
+
+// BytesCompact renders a converted document as XML without indentation.
+func BytesCompact(in any) ([]byte, error) {
+	return ubl.BytesCompact(in)
+}
+
+// GetVESID names the schematron to validate a document against.
+func GetVESID(inv *bill.Invoice) string {
+	if inv.Type.In(bill.InvoiceTypeCreditNote) {
+		return VESIDCreditNote
+	}
+	return VESIDInvoice
+}
+
+// buildInvoice builds the plain EN16931 document, then reworks it into OIOUBL.
+func buildInvoice(env *gobl.Envelope) (*Invoice, error) {
 	inv, ok := env.Extract().(*bill.Invoice)
 	if !ok {
 		return nil, ErrUnsupportedDocumentType
 	}
-	// The EN16931 base only ensures its own addon; the flavor reads data the
-	// OIOUBL addon normalizes in (legal identities, endpoints), so apply it here.
+	// The base only ensures its own addon, and the steps below read what the
+	// OIOUBL addon adds (legal identities, endpoints), so apply it first.
 	if err := ensureOIOUBLAddon(env, inv); err != nil {
 		return nil, err
 	}
@@ -91,14 +103,14 @@ func convertViaOverlay(env *gobl.Envelope) (*Invoice, error) {
 		return nil, err
 	}
 	out := (*Invoice)(base)
-	out.applyOIOUBLFlavor(inv)
+	out.applyOIOUBL(inv)
 	return out, nil
 }
 
-// applyOIOUBLFlavor turns gobl.ubl's plain EN16931 base into OIOUBL 2.1.
-// Totals have no reusable equivalent in the base, so they are rebuilt outright.
-func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) {
-	ui.applyPartyAndAddressFlavor(inv)
+// applyOIOUBL reworks the EN16931 document into OIOUBL 2.1. The totals have no
+// reusable equivalent in the base, so they are rebuilt from scratch.
+func (ui *Invoice) applyOIOUBL(inv *bill.Invoice) {
+	ui.applyParties(inv)
 
 	// Drop the tax currency unless a StandardRated rate (%>0) carries it (F-LIB373/F-INV018).
 	if ui.TaxCurrencyCode != "" && !hasStandardRated(inv) {
@@ -110,11 +122,10 @@ func (ui *Invoice) applyOIOUBLFlavor(inv *bill.Invoice) {
 	ui.applyLines(inv)
 	ui.applyTotals()
 
-	ui.applySchemeFlavor(inv)
+	ui.applySchemes(inv)
 }
 
-// ensureOIOUBLAddon declares the OIOUBL addon on the invoice if absent and
-// recalculates the envelope so its normalizations and validations apply.
+// ensureOIOUBLAddon adds the addon and recalculates, so its normalizations run.
 func ensureOIOUBLAddon(env *gobl.Envelope, inv *bill.Invoice) error {
 	if oioubl.V2.In(inv.GetAddons()...) {
 		return nil
@@ -124,20 +135,4 @@ func ensureOIOUBLAddon(env *gobl.Envelope, inv *bill.Invoice) error {
 		return err
 	}
 	return env.Validate()
-}
-
-// formatDate renders a GOBL date in UBL's YYYY-MM-DD form.
-func formatDate(d cal.Date) string {
-	if d.IsZero() {
-		return ""
-	}
-	return d.Time().Format("2006-01-02")
-}
-
-func Bytes(in any) ([]byte, error) {
-	return ubl.Bytes(in)
-}
-
-func BytesCompact(in any) ([]byte, error) {
-	return ubl.BytesCompact(in)
 }

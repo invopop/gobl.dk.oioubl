@@ -9,9 +9,8 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// applyLines adjusts the base's already-built InvoiceLines/CreditNoteLines
-// for OIOUBL: gross line amount with no line-level allowances, no forbidden 
-// (F-INV211/F-CRN109), and the OIOUBL ClassifiedTaxCategory ID.
+// applyLines reworks the base's lines for OIOUBL: a gross line amount with the
+// allowances moved up to document level, and OIOUBL's own tax category ID.
 func (ui *Invoice) applyLines(inv *bill.Invoice) {
 	lines := ui.InvoiceLines
 	if len(ui.CreditNoteLines) > 0 {
@@ -89,8 +88,7 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []ubl.TaxTotal {
 	}
 	taxable := *line.Sum
 
-	// An excise duty is emitted as its own tax, not an AllowanceCharge, so fold
-	// it into the VAT taxable base here: VAT lands on the duty-inclusive amount (F-LIB402).
+	// VAT is charged on the amount including excise duty (F-LIB402).
 	for _, ch := range line.Charges {
 		if chargeIsExcise(ch.Key) {
 			taxable = taxable.Add(rescaleToCurrency(ch.Amount, ccy))

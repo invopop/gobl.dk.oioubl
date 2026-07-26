@@ -10,10 +10,10 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// applyPartyAndAddressFlavor adjusts the base's parties, addresses, and delivery
-// for OIOUBL. Each party is handled in two passes: first copy over the details
-// the base left out, then conform what it did build to OIOUBL's rules.
-func (ui *Invoice) applyPartyAndAddressFlavor(inv *bill.Invoice) {
+// applyParties reworks the parties, their addresses and the delivery. Each
+// party takes two passes: add the details the base left out, then bring what
+// it did build in line with OIOUBL.
+func (ui *Invoice) applyParties(inv *bill.Invoice) {
 	supplierSrc := inv.Supplier
 	if inv.Ordering != nil && inv.Ordering.Seller != nil {
 		// addOrdering already swapped AccountingSupplierParty/TaxRepresentativeParty.
@@ -53,8 +53,8 @@ func addPayeeDetails(p *ubl.Party, payee *org.Party) {
 	if p == nil || payee == nil {
 		return
 	}
-	if p.PostalAddress == nil && len(payee.Addresses) > 0 {
-		p.PostalAddress = newPostalAddress(payee.Addresses[0])
+	if p.PostalAddress == nil {
+		p.PostalAddress = newPostalAddress(payee.Addresses)
 	}
 	addPartyDetails(p, payee)
 }
@@ -115,10 +115,8 @@ func dkPrefixed(value string) string {
 	return "DK" + value
 }
 
-// applyCompanyID stamps a CompanyID's OIOUBL scheme. A scheme the party
-// already carries wins, so a person identified by CPR is never relabelled as a
-// CVR company. Otherwise a Danish party gets danishScheme, anyone else ZZZ.
-// Danish CVR and SE values also take the wire-only DK prefix (F-LIB190/196).
+// applyCompanyID picks the scheme for a company ID: one the party already has
+// wins, otherwise Danish parties get danishScheme and everyone else ZZZ.
 func applyCompanyID(id *ubl.IDType, danishScheme string, danish bool) {
 	if id == nil {
 		return
@@ -141,8 +139,9 @@ func applyCompanyID(id *ubl.IDType, danishScheme string, danish bool) {
 	id.SchemeID = &scheme
 }
 
-// conformParty rewrites an assembled party into OIOUBL 2.1 form: DK-prefixed CVR
-// endpoint (F-LIB179/180), fallback PartyName, and DK:SE/DK:CVR company-ID schemes.
+// conformParty brings a finished party in line with OIOUBL: Danish numbers get
+// their DK prefix, a missing name falls back to the registered one, and every
+// company ID gets a scheme.
 func conformParty(p *ubl.Party) {
 	if p == nil {
 		return
@@ -179,8 +178,8 @@ func conformParty(p *ubl.Party) {
 	applyPartyIdentifications(p)
 }
 
-// conformTaxRepParty drops the elements OIOUBL forbids on a cac:TaxRepresentativeParty
-// (EndpointID, PartyIdentification, PartyLegalEntity, Contact) before the standard pass.
+// conformTaxRepParty drops what OIOUBL forbids on a tax representative, then
+// treats it like any other party.
 func conformTaxRepParty(p *ubl.Party) {
 	if p == nil {
 		return

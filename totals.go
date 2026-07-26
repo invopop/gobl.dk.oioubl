@@ -13,76 +13,100 @@ import (
 	"github.com/invopop/gobl/tax"
 )
 
-// createMonetaryTotal rebuilds LegalMonetaryTotal with gross line amounts (F-INV348).
-func (ui *Invoice) createMonetaryTotal(inv *bill.Invoice, currency string) {
-	t := inv.Totals
-	exp := t.Sum.Exp()
-	grossSum := num.MakeAmount(0, exp)
-	lineDiscounts := num.MakeAmount(0, exp)
-	lineCharges := num.MakeAmount(0, exp)
-	// excise duties land in TaxInclusiveAmount as tax, not in ChargeTotalAmount.
-	excise := num.MakeAmount(0, exp)
+// lineSums are the per-line amounts the document totals are built from.
+type lineSums struct {
+	gross     num.Amount
+	discounts num.Amount
+	charges   num.Amount
+	excise    num.Amount // OIOUBL reports excise as tax, never as a charge
+}
+
+// sumLines totals the lines, and promotes their ordinary allowances and
+// charges to document level (F-INV129/F-INV130).
+func (ui *Invoice) sumLines(inv *bill.Invoice, currency string) lineSums {
+	exp := inv.Totals.Sum.Exp()
+	sums := lineSums{
+		gross:     num.MakeAmount(0, exp),
+		discounts: num.MakeAmount(0, exp),
+		charges:   num.MakeAmount(0, exp),
+		excise:    num.MakeAmount(0, exp),
+	}
 	for _, l := range inv.Lines {
 		if l.Sum != nil {
-			grossSum = grossSum.Add(*l.Sum)
+			sums.gross = sums.gross.Add(*l.Sum)
 		}
 		for _, d := range l.Discounts {
-			lineDiscounts = lineDiscounts.Add(d.Amount)
+			sums.discounts = sums.discounts.Add(d.Amount)
 		}
 		ordinary := make([]*bill.LineCharge, 0, len(l.Charges))
 		for _, c := range l.Charges {
 			if chargeIsExcise(c.Key) {
-				excise = excise.Add(rescaleToCurrency(c.Amount, currency))
+				sums.excise = sums.excise.Add(rescaleToCurrency(c.Amount, currency))
 				continue
 			}
-			lineCharges = lineCharges.Add(c.Amount)
+			sums.charges = sums.charges.Add(c.Amount)
 			ordinary = append(ordinary, c)
 		}
-		// Promote ordinary line allowances/charges to document level (F-INV129/F-INV130).
 		for _, ac := range makeLineCharges(ordinary, l.Discounts, currency, l.Sum, l.Taxes) {
 			ui.AllowanceCharge = append(ui.AllowanceCharge, *ac)
 		}
 	}
-	ui.LegalMonetaryTotal.LineExtensionAmount = ubl.Amount{Value: grossSum.String(), CurrencyID: &currency}
-	allow := lineDiscounts
+	return sums
+}
+
+// createMonetaryTotal rebuilds LegalMonetaryTotal with gross line amounts (F-INV348).
+func (ui *Invoice) createMonetaryTotal(inv *bill.Invoice, currency string) {
+	t := inv.Totals
+	sums := ui.sumLines(inv, currency)
+	amount := func(a num.Amount) *ubl.Amount {
+		return &ubl.Amount{Value: a.String(), CurrencyID: &currency}
+	}
+
+	ui.LegalMonetaryTotal.LineExtensionAmount = *amount(sums.gross)
+
+	allowances := sums.discounts
 	if t.Discount != nil {
-		allow = allow.Add(*t.Discount)
+		allowances = allowances.Add(*t.Discount)
 	}
-	if !allow.IsZero() {
-		ui.LegalMonetaryTotal.AllowanceTotalAmount = &ubl.Amount{Value: allow.String(), CurrencyID: &currency}
+	if !allowances.IsZero() {
+		ui.LegalMonetaryTotal.AllowanceTotalAmount = amount(allowances)
 	}
-	chg := lineCharges
+
+	// Document-level excise is already in t.Charge, but OIOUBL wants it as tax.
+	charges, excise := sums.charges, sums.excise
 	if t.Charge != nil {
-		chg = chg.Add(*t.Charge)
+		charges = charges.Add(*t.Charge)
 	}
 	for _, ch := range inv.Charges {
 		if chargeIsExcise(ch.Key) {
 			excise = excise.Add(ch.Amount)
-			chg = chg.Subtract(ch.Amount) // counted in t.Charge above; OIOUBL emits it as tax
+			charges = charges.Subtract(ch.Amount)
 		}
 	}
-	// A charge total left over purely from excise isn't real (excise is never
-	// promoted to an AllowanceCharge, F-INV128/130/133) -- clear it.
-	if chg.IsZero() {
+	// A charge total left over purely from excise isn't real (F-INV128/130/133).
+	if charges.IsZero() {
 		ui.LegalMonetaryTotal.ChargeTotalAmount = nil
 	} else {
-		ui.LegalMonetaryTotal.ChargeTotalAmount = &ubl.Amount{Value: chg.String(), CurrencyID: &currency}
+		ui.LegalMonetaryTotal.ChargeTotalAmount = amount(charges)
 	}
-	// Recomputed since OIOUBL regroups excise from charge to tax (F-INV128/F-INV133); GOBL's own totals have no field for that.
-	incl := grossSum.Add(t.Tax).Add(excise).Add(chg).Subtract(allow)
+
+	// Recomputed because OIOUBL counts excise as tax, not as a charge
+	// (F-INV128/F-INV133); GOBL's own totals have no field for that.
+	inclusive := sums.gross.Add(t.Tax).Add(excise).Add(charges).Subtract(allowances)
 	if t.Rounding != nil {
-		incl = incl.Add(*t.Rounding)
+		inclusive = inclusive.Add(*t.Rounding)
 	}
-	ui.LegalMonetaryTotal.TaxInclusiveAmount = ubl.Amount{Value: incl.String(), CurrencyID: &currency}
-	pay := incl
+	ui.LegalMonetaryTotal.TaxInclusiveAmount = *amount(inclusive)
+
+	payable := inclusive
 	if t.Advances != nil {
-		pay = pay.Subtract(*t.Advances)
+		payable = payable.Subtract(*t.Advances)
 	}
-	ui.LegalMonetaryTotal.PayableAmount = &ubl.Amount{Value: pay.String(), CurrencyID: &currency}
+	ui.LegalMonetaryTotal.PayableAmount = amount(payable)
 }
 
-// addPrepaidPayments emits a cac:PrepaidPayment per GOBL advance (F-INV131).
-func (ui *Invoice) addPrepaidPayments(inv *bill.Invoice, currency string) {
+// includePrepaidPayments emits a cac:PrepaidPayment per GOBL advance (F-INV131).
+func (ui *Invoice) includePrepaidPayments(inv *bill.Invoice, currency string) {
 	if inv.Payment == nil {
 		return
 	}
@@ -114,7 +138,7 @@ func (ui *Invoice) addTotals(inv *bill.Invoice) {
 	currency := inv.Currency.String()
 
 	ui.createMonetaryTotal(inv, currency)
-	ui.addPrepaidPayments(inv, currency)
+	ui.includePrepaidPayments(inv, currency)
 
 	if t.Rounding != nil {
 		ui.LegalMonetaryTotal.PayableRoundingAmount = &ubl.Amount{Value: t.Rounding.String(), CurrencyID: &currency}
@@ -150,7 +174,7 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 	}
 	exciseBases := exciseVATBases(inv)
 	for _, cat := range t.Taxes.Categories {
-		foldedBase, hasRealRate := foldedBaseByCategory(cat.Rates)
+		mergedBase, hasRealRate := basesToMergeByCategory(cat.Rates)
 		for _, r := range cat.Rates {
 			catID := taxCategoryID(r.Key)
 			if r.Percent == nil && r.Amount.IsZero() && hasRealRate[catID] {
@@ -161,7 +185,7 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 				continue
 			}
 			base := r.Base
-			if extra, ok := foldedBase[catID]; ok {
+			if extra, ok := mergedBase[catID]; ok {
 				base = base.Add(extra.Rescale(base.Exp()))
 			}
 			subtotal := buildVATSubtotal(inv, cat, r, base, accRate, rCurrency, currency)
@@ -170,8 +194,11 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 	}
 }
 
-// OIOUBL forbids the same category in two TaxSubtotal entries within one TaxTotal (G27 3.5).
-func foldedBaseByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[string]bool) {
+// basesToMergeByCategory finds the taxable amounts that have to be merged into
+// another rate's subtotal, because OIOUBL allows a category only once per
+// TaxTotal (G27 3.5). A rate that raises no tax has no subtotal of its own, so
+// its base joins the category's real rate.
+func basesToMergeByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[string]bool) {
 	hasRealRate := make(map[string]bool)
 	for _, r := range rates {
 		if r.Percent == nil && r.Amount.IsZero() {
@@ -181,7 +208,7 @@ func foldedBaseByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[st
 			hasRealRate[catID] = true
 		}
 	}
-	folded := make(map[string]num.Amount)
+	merged := make(map[string]num.Amount)
 	for _, r := range rates {
 		if r.Percent != nil || !r.Amount.IsZero() {
 			continue
@@ -190,22 +217,13 @@ func foldedBaseByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[st
 		if catID == "" || !hasRealRate[catID] {
 			continue
 		}
-		if sum, ok := folded[catID]; ok {
-			folded[catID] = sum.Add(r.Base.Rescale(sum.Exp()))
+		if sum, ok := merged[catID]; ok {
+			merged[catID] = sum.Add(r.Base.Rescale(sum.Exp()))
 		} else {
-			folded[catID] = r.Base
+			merged[catID] = r.Base
 		}
 	}
-	return folded, hasRealRate
-}
-
-// isExciseOnlyRate reports whether a VAT rate row is owed entirely to excise, so it gets no subtotal of its own (F-LIB404).
-func isExciseOnlyRate(cat *tax.CategoryTotal, r *tax.RateTotal, exciseBases map[cbc.Key]num.Amount) bool {
-	if cat.Code != tax.CategoryVAT || !r.Amount.IsZero() {
-		return false
-	}
-	base, ok := exciseBases[r.Key]
-	return ok && r.Base.Compare(base.Rescale(r.Base.Exp())) == 0
+	return merged, hasRealRate
 }
 
 // buildVATSubtotal ports gobl.ubl's own subtotal builder
