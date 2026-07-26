@@ -1,4 +1,4 @@
-package dkoioubl
+package oioubl
 
 import (
 	ubl "github.com/invopop/gobl.ubl"
@@ -18,8 +18,6 @@ const (
 
 	taxSchemeVATCode = "63" // taxschemeid-1.5 VAT (Moms)
 )
-
-// Turning GOBL tax keys into OIOUBL category and scheme identifiers.
 
 // taxCategoryID maps a GOBL VAT key to its OIOUBL taxcategoryid-1.1 code (exempt maps to ZeroRated, since OIOUBL 2.1 has no exempt category; unsupported keys return "").
 func taxCategoryID(key cbc.Key) string {
@@ -77,8 +75,6 @@ func applyTaxScheme(ts *ubl.TaxScheme) {
 	ts.Name = &name
 }
 
-// Reading the tax data back off the GOBL invoice.
-
 // findTaxNote ports gobl.ubl's own version, matching by GOBL VAT key instead of the UNTDID ext -- re-diff on version bumps.
 func findTaxNote(notes []*tax.Note, catCode cbc.Code, rate *tax.RateTotal) *tax.Note {
 	for _, n := range notes {
@@ -102,8 +98,6 @@ func hasStandardRated(inv *bill.Invoice) bool {
 	}
 	return false
 }
-
-// The second tax currency, which OIOUBL only wants in one case.
 
 // fixTaxCurrency drops the second currency unless a rate that charges tax uses
 // it, which is the only case OIOUBL states it for (F-LIB373/F-INV018).

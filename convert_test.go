@@ -1,4 +1,4 @@
-package dkoioubl_test
+package oioubl_test
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/invopop/gobl"
-	dkoioubl "github.com/invopop/gobl.dk.oioubl"
+	oioubl "github.com/invopop/gobl.dk.oioubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/num"
@@ -47,10 +47,10 @@ func TestConvertInvoice(t *testing.T) {
 		t.Run(inName, func(t *testing.T) {
 			env := loadTestEnvelope(t, example)
 
-			doc, err := dkoioubl.ConvertInvoice(env)
+			doc, err := oioubl.ConvertInvoice(env)
 			require.NoError(t, err)
 
-			data, err := dkoioubl.Bytes(doc)
+			data, err := oioubl.Bytes(doc)
 			require.NoError(t, err)
 
 			outPath := filepath.Join(getConvertPath(), "out", outName)
@@ -102,7 +102,7 @@ func TestConvertWithoutRegime(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, inv.RegimeDef(), "fixture must have no regime for this test to mean anything")
 
-	out, err := dkoioubl.Convert(env)
+	out, err := oioubl.Convert(env)
 	require.NoError(t, err)
 	assert.NotNil(t, out)
 }

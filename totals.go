@@ -1,4 +1,4 @@
-package dkoioubl
+package oioubl
 
 import (
 	"strconv"
@@ -11,6 +11,21 @@ import (
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/tax"
 )
+
+// lineSums are the per-line amounts the document totals are built from.
+type lineSums struct {
+	gross     num.Amount
+	discounts num.Amount
+	charges   num.Amount
+	excise    num.Amount // OIOUBL reports excise as tax, never as a charge
+}
+
+// categoryGroups says how a category's rates collapse into the one subtotal
+// OIOUBL allows it (G27 3.5).
+type categoryGroups struct {
+	charging  map[string]bool       // categories with a rate that charges tax
+	extraBase map[string]num.Amount // untaxed amounts riding along with it
+}
 
 func (ui *Invoice) buildTotals(inv *bill.Invoice) {
 	if inv == nil || inv.Totals == nil {
@@ -39,16 +54,6 @@ func (ui *Invoice) buildTotals(inv *bill.Invoice) {
 	// Non-VAT excise duties travel as their own cac:TaxTotal blocks (the VAT total
 	// already includes them in its base); applyTotals sums them into TaxExclusiveAmount.
 	ui.TaxTotal = append(ui.TaxTotal, makeExciseTaxTotals(collectExcise(inv, currency), currency)...)
-}
-
-// LegalMonetaryTotal: what the document adds up to.
-
-// lineSums are the per-line amounts the document totals are built from.
-type lineSums struct {
-	gross     num.Amount
-	discounts num.Amount
-	charges   num.Amount
-	excise    num.Amount // OIOUBL reports excise as tax, never as a charge
 }
 
 // createMonetaryTotal rebuilds LegalMonetaryTotal with gross line amounts (F-INV348).
@@ -160,8 +165,6 @@ func (ui *Invoice) includePrepaidPayments(inv *bill.Invoice, currency string) {
 	}
 }
 
-// TaxTotal: one subtotal per tax category.
-
 // appendVATSubtotals builds one cac:TaxSubtotal per VAT rate row onto ui.TaxTotal[0].
 func (ui *Invoice) appendVATSubtotals(inv *bill.Invoice, currency string) {
 	t := inv.Totals
@@ -195,13 +198,6 @@ func (ui *Invoice) appendVATSubtotals(inv *bill.Invoice, currency string) {
 			ui.TaxTotal[0].TaxSubtotal = append(ui.TaxTotal[0].TaxSubtotal, subtotal)
 		}
 	}
-}
-
-// categoryGroups says how a category's rates collapse into the one subtotal
-// OIOUBL allows it (G27 3.5).
-type categoryGroups struct {
-	charging  map[string]bool       // categories with a rate that charges tax
-	extraBase map[string]num.Amount // untaxed amounts riding along with it
 }
 
 // groupRatesByCategory works out that collapse: a rate charging no tax gets no
@@ -273,8 +269,6 @@ func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTota
 	subtotal.TaxCategory = taxCat
 	return subtotal
 }
-
-// Final pass over the assembled TaxTotal.
 
 // applyTotals stamps taxcategoryid attributes and re-interprets TaxExclusiveAmount as the total tax (F-INV127).
 func (ui *Invoice) applyTotals() {

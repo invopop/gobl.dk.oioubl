@@ -1,7 +1,7 @@
-package dkoioubl
+package oioubl
 
 import (
-	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
+	"github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
@@ -22,12 +22,12 @@ type exciseDuty struct {
 }
 
 func chargeIsExcise(key cbc.Key) bool {
-	return key == oioubl.ChargeKeyExcise
+	return key == addon.ChargeKeyExcise
 }
 
 // chargeDutyCode returns an excise charge's SKAT duty code (OIOUBL taxschemeid, e.g. "16").
 func chargeDutyCode(ext tax.Extensions) string {
-	return ext.Get(oioubl.ExtKeyDutyCode).String()
+	return ext.Get(addon.ExtKeyDutyCode).String()
 }
 
 func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {

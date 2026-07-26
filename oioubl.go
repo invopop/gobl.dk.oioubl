@@ -1,13 +1,13 @@
-// Package dkoioubl converts GOBL documents to OIOUBL 2.1, the Danish
+// Package oioubl converts GOBL documents to OIOUBL 2.1, the Danish
 // NemHandel profile of UBL 2.1. Generic UBL plumbing is shared with gobl.ubl;
 // OIOUBL-specifics live here alongside the dk-oioubl addon subpackage.
-package dkoioubl
+package oioubl
 
 import (
 	"fmt"
 
 	"github.com/invopop/gobl"
-	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
+	"github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
@@ -45,7 +45,7 @@ const (
 
 var ErrUnsupportedDocumentType = fmt.Errorf("unsupported document type")
 
-var Addons = []cbc.Key{oioubl.V2}
+var Addons = []cbc.Key{addon.V2}
 
 // Convert turns a GOBL envelope into an OIOUBL 2.1 document.
 func Convert(env *gobl.Envelope) (any, error) {
@@ -121,10 +121,10 @@ func (ui *Invoice) applyOIOUBL(inv *bill.Invoice) {
 
 // ensureOIOUBLAddon adds the addon and recalculates, so its normalizations run.
 func ensureOIOUBLAddon(env *gobl.Envelope, inv *bill.Invoice) error {
-	if oioubl.V2.In(inv.GetAddons()...) {
+	if addon.V2.In(inv.GetAddons()...) {
 		return nil
 	}
-	inv.SetAddons(append(inv.GetAddons(), oioubl.V2)...)
+	inv.SetAddons(append(inv.GetAddons(), addon.V2)...)
 	if err := env.Calculate(); err != nil {
 		return err
 	}

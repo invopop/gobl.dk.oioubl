@@ -1,9 +1,9 @@
-package dkoioubl
+package oioubl
 
 import (
 	"strings"
 
-	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
+	"github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
@@ -92,7 +92,7 @@ func applyPartyEndpoint(p *ubl.Party, party *org.Party) {
 // OIOUBL symbolic schemes for company identifiers (F-LIB179/189/195); the CVR
 // endpoint scheme is shared with the addon's own endpoint derivation.
 const (
-	schemeDKCVR = string(oioubl.SchemeDKCVR)
+	schemeDKCVR = string(addon.SchemeDKCVR)
 	schemeDKSE  = "DK:SE"
 	schemeDKCPR = "DK:CPR"
 	schemeZZZ   = "ZZZ"

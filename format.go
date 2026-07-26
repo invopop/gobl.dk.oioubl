@@ -1,4 +1,4 @@
-package dkoioubl
+package oioubl
 
 import (
 	"strings"
