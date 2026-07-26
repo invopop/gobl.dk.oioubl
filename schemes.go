@@ -38,12 +38,22 @@ func newProfileID() *ubl.IDType {
 	}
 }
 
-// applyOrderingRefs restores reference fields the base builder drops: the
-// order reference's issue date and the preceding documents' UUIDs.
+// applyOrderingRefs puts back details the base drops: the order and contract
+// issue dates, and the preceding documents' UUIDs.
 func (ui *Invoice) applyOrderingRefs(inv *bill.Invoice) {
 	if o := inv.Ordering; o != nil && len(o.Purchases) > 0 && ui.OrderReference != nil {
 		if d := o.Purchases[0].IssueDate; d != nil {
 			ui.OrderReference.IssueDate = formatDate(*d)
+		}
+	}
+	if o := inv.Ordering; o != nil {
+		for i, c := range o.Contracts {
+			if i >= len(ui.ContractDocumentReference) {
+				break
+			}
+			if c != nil && c.IssueDate != nil {
+				ui.ContractDocumentReference[i].IssueDate = formatDate(*c.IssueDate)
+			}
 		}
 	}
 	for i, ref := range inv.Preceding {

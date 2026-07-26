@@ -20,6 +20,9 @@ func (ui *Invoice) applyPartyAndAddressFlavor(inv *bill.Invoice) {
 	}
 	applyPartyExtras(ui.AccountingSupplierParty.Party, supplierSrc)
 	applyPartyExtras(ui.AccountingCustomerParty.Party, inv.Customer)
+	if inv.Payment != nil {
+		applyPayeeExtras(ui.PayeeParty, inv.Payment.Payee)
+	}
 
 	applyParty(ui.AccountingSupplierParty.Party)
 	applyParty(ui.AccountingCustomerParty.Party)
@@ -40,6 +43,44 @@ func applyPartyExtras(p *ubl.Party, party *org.Party) {
 	applyPartyContact(p, party)
 	applyPartyEndpoint(p, party)
 	applyPartyAddress(p, party)
+}
+
+// applyPayeeExtras puts the payee's address and endpoint back. The shared
+// base leaves the address out because EN 16931 forbids it; OIOUBL allows it.
+func applyPayeeExtras(p *ubl.Party, payee *org.Party) {
+	if p == nil || payee == nil {
+		return
+	}
+	if p.PostalAddress == nil && len(payee.Addresses) > 0 {
+		p.PostalAddress = newPostalAddress(payee.Addresses[0])
+	}
+	applyPartyExtras(p, payee)
+}
+
+// newPostalAddress fills the address fields applyAddress leaves alone.
+func newPostalAddress(a *org.Address) *ubl.PostalAddress {
+	if a == nil {
+		return nil
+	}
+	addr := new(ubl.PostalAddress)
+	if a.StreetExtra != "" {
+		l := a.LineTwo()
+		addr.AdditionalStreetName = &l
+	}
+	if a.Locality != "" {
+		addr.CityName = &a.Locality
+	}
+	if a.Region != "" {
+		addr.CountrySubentity = &a.Region
+	}
+	if a.Code != cbc.CodeEmpty {
+		code := a.Code.String()
+		addr.PostalZone = &code
+	}
+	if a.Country != "" {
+		addr.Country = &ubl.Country{IdentificationCode: string(a.Country)}
+	}
+	return addr
 }
 
 // applyPartyContact adds the mandatory cbc:ID (F-INV051), sourced from the
