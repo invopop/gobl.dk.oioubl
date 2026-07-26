@@ -21,37 +21,33 @@ type lineSums struct {
 	excise    num.Amount // OIOUBL reports excise as tax, never as a charge
 }
 
-// sumLines totals the lines, and promotes their ordinary allowances and
-// charges to document level (F-INV129/F-INV130).
-func (ui *Invoice) sumLines(inv *bill.Invoice, currency string) lineSums {
-	exp := inv.Totals.Sum.Exp()
-	sums := lineSums{
-		gross:     num.MakeAmount(0, exp),
-		discounts: num.MakeAmount(0, exp),
-		charges:   num.MakeAmount(0, exp),
-		excise:    num.MakeAmount(0, exp),
+func (ui *Invoice) buildTotals(inv *bill.Invoice) {
+	if inv == nil || inv.Totals == nil {
+		return
 	}
-	for _, l := range inv.Lines {
-		if l.Sum != nil {
-			sums.gross = sums.gross.Add(*l.Sum)
-		}
-		for _, d := range l.Discounts {
-			sums.discounts = sums.discounts.Add(d.Amount)
-		}
-		ordinary := make([]*bill.LineCharge, 0, len(l.Charges))
-		for _, c := range l.Charges {
-			if chargeIsExcise(c.Key) {
-				sums.excise = sums.excise.Add(rescaleToCurrency(c.Amount, currency))
-				continue
-			}
-			sums.charges = sums.charges.Add(c.Amount)
-			ordinary = append(ordinary, c)
-		}
-		for _, ac := range makeLineCharges(ordinary, l.Discounts, currency, l.Sum, l.Taxes) {
-			ui.AllowanceCharge = append(ui.AllowanceCharge, *ac)
-		}
+	t := inv.Totals
+	currency := inv.Currency.String()
+
+	ui.createMonetaryTotal(inv, currency)
+	ui.includePrepaidPayments(inv, currency)
+
+	if t.Rounding != nil {
+		ui.LegalMonetaryTotal.PayableRoundingAmount = &ubl.Amount{Value: t.Rounding.String(), CurrencyID: &currency}
 	}
-	return sums
+	if t.Advances != nil {
+		ui.LegalMonetaryTotal.PrepaidAmount = &ubl.Amount{Value: t.Advances.String(), CurrencyID: &currency}
+	}
+
+	ui.TaxTotal = []ubl.TaxTotal{
+		{
+			TaxAmount: ubl.Amount{Value: t.Tax.String(), CurrencyID: &currency},
+		},
+	}
+	ui.appendVATSubtotals(inv, currency)
+
+	// Non-VAT excise duties travel as their own cac:TaxTotal blocks (the VAT total
+	// already includes them in its base); applyTotals sums them into TaxExclusiveAmount.
+	ui.TaxTotal = append(ui.TaxTotal, makeExciseTaxTotals(collectExcise(inv, currency), currency)...)
 }
 
 // createMonetaryTotal rebuilds LegalMonetaryTotal with gross line amounts (F-INV348).
@@ -105,6 +101,39 @@ func (ui *Invoice) createMonetaryTotal(inv *bill.Invoice, currency string) {
 	ui.LegalMonetaryTotal.PayableAmount = amount(payable)
 }
 
+// sumLines totals the lines, and promotes their ordinary allowances and
+// charges to document level (F-INV129/F-INV130).
+func (ui *Invoice) sumLines(inv *bill.Invoice, currency string) lineSums {
+	exp := inv.Totals.Sum.Exp()
+	sums := lineSums{
+		gross:     num.MakeAmount(0, exp),
+		discounts: num.MakeAmount(0, exp),
+		charges:   num.MakeAmount(0, exp),
+		excise:    num.MakeAmount(0, exp),
+	}
+	for _, l := range inv.Lines {
+		if l.Sum != nil {
+			sums.gross = sums.gross.Add(*l.Sum)
+		}
+		for _, d := range l.Discounts {
+			sums.discounts = sums.discounts.Add(d.Amount)
+		}
+		ordinary := make([]*bill.LineCharge, 0, len(l.Charges))
+		for _, c := range l.Charges {
+			if chargeIsExcise(c.Key) {
+				sums.excise = sums.excise.Add(rescaleToCurrency(c.Amount, currency))
+				continue
+			}
+			sums.charges = sums.charges.Add(c.Amount)
+			ordinary = append(ordinary, c)
+		}
+		for _, ac := range makeLineCharges(ordinary, l.Discounts, currency, l.Sum, l.Taxes) {
+			ui.AllowanceCharge = append(ui.AllowanceCharge, *ac)
+		}
+	}
+	return sums
+}
+
 // includePrepaidPayments emits a cac:PrepaidPayment per GOBL advance (F-INV131).
 func (ui *Invoice) includePrepaidPayments(inv *bill.Invoice, currency string) {
 	if inv.Payment == nil {
@@ -130,37 +159,8 @@ func (ui *Invoice) includePrepaidPayments(inv *bill.Invoice, currency string) {
 	}
 }
 
-func (ui *Invoice) addTotals(inv *bill.Invoice) {
-	if inv == nil || inv.Totals == nil {
-		return
-	}
-	t := inv.Totals
-	currency := inv.Currency.String()
-
-	ui.createMonetaryTotal(inv, currency)
-	ui.includePrepaidPayments(inv, currency)
-
-	if t.Rounding != nil {
-		ui.LegalMonetaryTotal.PayableRoundingAmount = &ubl.Amount{Value: t.Rounding.String(), CurrencyID: &currency}
-	}
-	if t.Advances != nil {
-		ui.LegalMonetaryTotal.PrepaidAmount = &ubl.Amount{Value: t.Advances.String(), CurrencyID: &currency}
-	}
-
-	ui.TaxTotal = []ubl.TaxTotal{
-		{
-			TaxAmount: ubl.Amount{Value: t.Tax.String(), CurrencyID: &currency},
-		},
-	}
-	ui.addVATSubtotals(inv, currency)
-
-	// Non-VAT excise duties travel as their own cac:TaxTotal blocks (the VAT total
-	// already includes them in its base); applyTotals sums them into TaxExclusiveAmount.
-	ui.TaxTotal = append(ui.TaxTotal, makeExciseTaxTotals(collectExcise(inv, currency), currency)...)
-}
-
-// addVATSubtotals builds one cac:TaxSubtotal per VAT rate row onto ui.TaxTotal[0].
-func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
+// appendVATSubtotals builds one cac:TaxSubtotal per VAT rate row onto ui.TaxTotal[0].
+func (ui *Invoice) appendVATSubtotals(inv *bill.Invoice, currency string) {
 	t := inv.Totals
 	if t.Taxes == nil || len(t.Taxes.Categories) == 0 {
 		return
@@ -174,7 +174,7 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 	}
 	exciseBases := exciseVATBases(inv)
 	for _, cat := range t.Taxes.Categories {
-		mergedBase, hasRealRate := basesToMergeByCategory(cat.Rates)
+		extraBase, hasRealRate := extraBaseByCategory(cat.Rates)
 		for _, r := range cat.Rates {
 			catID := taxCategoryID(r.Key)
 			if r.Percent == nil && r.Amount.IsZero() && hasRealRate[catID] {
@@ -185,7 +185,7 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 				continue
 			}
 			base := r.Base
-			if extra, ok := mergedBase[catID]; ok {
+			if extra, ok := extraBase[catID]; ok {
 				base = base.Add(extra.Rescale(base.Exp()))
 			}
 			subtotal := buildVATSubtotal(inv, cat, r, base, accRate, rCurrency, currency)
@@ -194,11 +194,11 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 	}
 }
 
-// basesToMergeByCategory finds the taxable amounts that have to be merged into
-// another rate's subtotal, because OIOUBL allows a category only once per
-// TaxTotal (G27 3.5). A rate that raises no tax has no subtotal of its own, so
-// its base joins the category's real rate.
-func basesToMergeByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[string]bool) {
+// extraBaseByCategory returns, per category, the amount that has to be added to
+// that category's real rate. A rate charging no tax gets no line of its own, so
+// its amount rides along with the real one -- OIOUBL only allows a category to
+// appear once (G27 3.5). Also reports which categories have a real rate at all.
+func extraBaseByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[string]bool) {
 	hasRealRate := make(map[string]bool)
 	for _, r := range rates {
 		if r.Percent == nil && r.Amount.IsZero() {
@@ -208,7 +208,7 @@ func basesToMergeByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[
 			hasRealRate[catID] = true
 		}
 	}
-	merged := make(map[string]num.Amount)
+	extra := make(map[string]num.Amount)
 	for _, r := range rates {
 		if r.Percent != nil || !r.Amount.IsZero() {
 			continue
@@ -217,13 +217,13 @@ func basesToMergeByCategory(rates []*tax.RateTotal) (map[string]num.Amount, map[
 		if catID == "" || !hasRealRate[catID] {
 			continue
 		}
-		if sum, ok := merged[catID]; ok {
-			merged[catID] = sum.Add(r.Base.Rescale(sum.Exp()))
+		if sum, ok := extra[catID]; ok {
+			extra[catID] = sum.Add(r.Base.Rescale(sum.Exp()))
 		} else {
-			merged[catID] = r.Base
+			extra[catID] = r.Base
 		}
 	}
-	return merged, hasRealRate
+	return extra, hasRealRate
 }
 
 // buildVATSubtotal ports gobl.ubl's own subtotal builder
@@ -264,38 +264,6 @@ func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTota
 	return subtotal
 }
 
-// findTaxNote ports gobl.ubl's own version, matching by GOBL VAT key instead of the UNTDID ext -- re-diff on version bumps.
-func findTaxNote(notes []*tax.Note, catCode cbc.Code, rate *tax.RateTotal) *tax.Note {
-	for _, n := range notes {
-		if n.Category == catCode && n.Key == rate.Key {
-			return n
-		}
-	}
-	return nil
-}
-
-// transactionTax restates a StandardRated subtotal's tax in the tax currency (F-LIB373), or nil if there isn't one.
-func transactionTax(accRate *cur.ExchangeRate, catID string, amount num.Amount, currencyID string) *ubl.Amount {
-	if accRate == nil || catID != taxCategoryStandardRated {
-		return nil
-	}
-	return &ubl.Amount{Value: accRate.Convert(amount).String(), CurrencyID: &currencyID}
-}
-
-func hasStandardRated(inv *bill.Invoice) bool {
-	if inv.Totals == nil || inv.Totals.Taxes == nil {
-		return false
-	}
-	for _, cat := range inv.Totals.Taxes.Categories {
-		for _, r := range cat.Rates {
-			if taxCategoryID(r.Key) == taxCategoryStandardRated && r.Percent != nil {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // applyTotals stamps taxcategoryid attributes and re-interprets TaxExclusiveAmount as the total tax (F-INV127).
 func (ui *Invoice) applyTotals() {
 	for i := range ui.TaxTotal {
@@ -315,15 +283,6 @@ func (ui *Invoice) applyTotals() {
 	}
 	// TaxExclusiveAmount is the sum of all tax — VAT plus any excise (F-INV127).
 	ui.LegalMonetaryTotal.TaxExclusiveAmount = sumTaxTotalAmounts(ui.TaxTotal)
-}
-
-// normalizeNumericString preps a wire amount for num parsing: trims space, zero-pads a leading decimal point.
-func normalizeNumericString(s string) string {
-	s = strings.TrimSpace(s)
-	if strings.HasPrefix(s, ".") {
-		s = "0" + s
-	}
-	return s
 }
 
 // sumTaxTotalAmounts totals the TaxAmount of every cac:TaxTotal (VAT plus excise).
@@ -346,4 +305,13 @@ func sumTaxTotalAmounts(totals []ubl.TaxTotal) ubl.Amount {
 		sum = sum.Add(a.Rescale(sum.Exp()))
 	}
 	return ubl.Amount{Value: sum.String(), CurrencyID: totals[0].TaxAmount.CurrencyID}
+}
+
+// normalizeNumericString preps a wire amount for num parsing: trims space, zero-pads a leading decimal point.
+func normalizeNumericString(s string) string {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, ".") {
+		s = "0" + s
+	}
+	return s
 }

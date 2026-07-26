@@ -2,7 +2,10 @@ package dkoioubl
 
 import (
 	ubl "github.com/invopop/gobl.ubl"
+	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
+	cur "github.com/invopop/gobl/currency"
+	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/tax"
 )
 
@@ -70,4 +73,36 @@ func applyTaxScheme(ts *ubl.TaxScheme) {
 	}
 	name := "Moms"
 	ts.Name = &name
+}
+
+// findTaxNote ports gobl.ubl's own version, matching by GOBL VAT key instead of the UNTDID ext -- re-diff on version bumps.
+func findTaxNote(notes []*tax.Note, catCode cbc.Code, rate *tax.RateTotal) *tax.Note {
+	for _, n := range notes {
+		if n.Category == catCode && n.Key == rate.Key {
+			return n
+		}
+	}
+	return nil
+}
+
+// transactionTax restates a StandardRated subtotal's tax in the tax currency (F-LIB373), or nil if there isn't one.
+func transactionTax(accRate *cur.ExchangeRate, catID string, amount num.Amount, currencyID string) *ubl.Amount {
+	if accRate == nil || catID != taxCategoryStandardRated {
+		return nil
+	}
+	return &ubl.Amount{Value: accRate.Convert(amount).String(), CurrencyID: &currencyID}
+}
+
+func hasStandardRated(inv *bill.Invoice) bool {
+	if inv.Totals == nil || inv.Totals.Taxes == nil {
+		return false
+	}
+	for _, cat := range inv.Totals.Taxes.Categories {
+		for _, r := range cat.Rates {
+			if taxCategoryID(r.Key) == taxCategoryStandardRated && r.Percent != nil {
+				return true
+			}
+		}
+	}
+	return false
 }

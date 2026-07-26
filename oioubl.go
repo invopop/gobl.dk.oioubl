@@ -93,8 +93,6 @@ func buildInvoice(env *gobl.Envelope) (*Invoice, error) {
 	if !ok {
 		return nil, ErrUnsupportedDocumentType
 	}
-	// The base only ensures its own addon, and the steps below read what the
-	// OIOUBL addon adds (legal identities, endpoints), so apply it first.
 	if err := ensureOIOUBLAddon(env, inv); err != nil {
 		return nil, err
 	}
@@ -118,7 +116,7 @@ func (ui *Invoice) applyOIOUBL(inv *bill.Invoice) {
 	}
 	ui.applyCharges(inv)
 	ui.TaxTotal = nil
-	ui.addTotals(inv)
+	ui.buildTotals(inv)
 	ui.applyLines(inv)
 	ui.applyTotals()
 

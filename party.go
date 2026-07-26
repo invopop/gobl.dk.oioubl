@@ -14,22 +14,23 @@ import (
 // party takes two passes: add the details the base left out, then bring what
 // it did build in line with OIOUBL.
 func (ui *Invoice) applyParties(inv *bill.Invoice) {
-	supplierSrc := inv.Supplier
+	// With an ordering seller the base already swapped the two: the seller is
+	// the supplier on the wire and the real supplier is the tax representative.
+	supplier, taxRep := inv.Supplier, (*org.Party)(nil)
 	if inv.Ordering != nil && inv.Ordering.Seller != nil {
-		// addOrdering already swapped AccountingSupplierParty/TaxRepresentativeParty.
-		supplierSrc = inv.Ordering.Seller
-		addPartyDetails(ui.TaxRepresentativeParty, inv.Supplier)
+		supplier, taxRep = inv.Ordering.Seller, inv.Supplier
 	}
-	addPartyDetails(ui.AccountingSupplierParty.Party, supplierSrc)
+	addPartyDetails(ui.AccountingSupplierParty.Party, supplier)
 	addPartyDetails(ui.AccountingCustomerParty.Party, inv.Customer)
+	addPartyDetails(ui.TaxRepresentativeParty, taxRep)
 	if inv.Payment != nil {
 		addPayeeDetails(ui.PayeeParty, inv.Payment.Payee)
 	}
 
-	conformParty(ui.AccountingSupplierParty.Party)
-	conformParty(ui.AccountingCustomerParty.Party)
-	conformParty(ui.PayeeParty)
-	conformTaxRepParty(ui.TaxRepresentativeParty)
+	fixParty(ui.AccountingSupplierParty.Party)
+	fixParty(ui.AccountingCustomerParty.Party)
+	fixParty(ui.PayeeParty)
+	fixTaxRepParty(ui.TaxRepresentativeParty)
 
 	if len(ui.Delivery) > 0 {
 		applyDelivery(ui.Delivery[0], inv.Delivery)
@@ -139,10 +140,10 @@ func applyCompanyID(id *ubl.IDType, danishScheme string, danish bool) {
 	id.SchemeID = &scheme
 }
 
-// conformParty brings a finished party in line with OIOUBL: Danish numbers get
-// their DK prefix, a missing name falls back to the registered one, and every
-// company ID gets a scheme.
-func conformParty(p *ubl.Party) {
+// fixParty corrects a finished party for OIOUBL: Danish numbers get their DK
+// prefix, a missing name falls back to the registered one, and every company ID
+// gets a scheme.
+func fixParty(p *ubl.Party) {
 	if p == nil {
 		return
 	}
@@ -178,9 +179,9 @@ func conformParty(p *ubl.Party) {
 	applyPartyIdentifications(p)
 }
 
-// conformTaxRepParty drops what OIOUBL forbids on a tax representative, then
-// treats it like any other party.
-func conformTaxRepParty(p *ubl.Party) {
+// fixTaxRepParty drops what OIOUBL forbids on a tax representative, then fixes
+// it like any other party.
+func fixTaxRepParty(p *ubl.Party) {
 	if p == nil {
 		return
 	}
@@ -188,7 +189,7 @@ func conformTaxRepParty(p *ubl.Party) {
 	p.PartyIdentification = nil
 	p.PartyLegalEntity = nil
 	p.Contact = nil
-	conformParty(p)
+	fixParty(p)
 }
 
 // applyPartyIdentifications DK-prefixes DK:CVR/DK:SE PartyIdentification values

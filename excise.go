@@ -49,8 +49,8 @@ func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
 	return out
 }
 
-// collectLineExcise gathers a line's excise duties. Each becomes a tax block on
-// the line itself, so it stays clear which line the duty came from.
+// collectLineExcise gathers a line's excise duties. Each one stays on its own
+// line, so it is clear what was charged where.
 func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
 	var out []exciseDuty
 	typeCode := lineVATTypeCode(line)
@@ -97,7 +97,7 @@ func lineVATTypeCode(line *bill.Line) string {
 }
 
 // exciseVATBases sums, per VAT key, the base document-level excise charges
-// contribute to the invoice's tax totals, so addTotals can spot excise-only rows.
+// contribute to the invoice's tax totals, so buildTotals can spot excise-only rows.
 func exciseVATBases(inv *bill.Invoice) map[cbc.Key]num.Amount {
 	bases := make(map[cbc.Key]num.Amount)
 	for _, ch := range inv.Charges {
