@@ -81,11 +81,6 @@ func convertViaOverlay(env *gobl.Envelope) (*Invoice, error) {
 	if !ok {
 		return nil, ErrUnsupportedDocumentType
 	}
-	// totals.go dereferences RegimeDef() unconditionally; a regime-less
-	// invoice (e.g. an unsupported supplier country) would panic there.
-	if inv.RegimeDef() == nil {
-		return nil, fmt.Errorf("invoice requires a tax regime (usually derived from the supplier's tax ID)")
-	}
 	// The EN16931 base only ensures its own addon; the flavor reads data the
 	// OIOUBL addon normalizes in (legal identities, endpoints), so apply it here.
 	if err := ensureOIOUBLAddon(env, inv); err != nil {

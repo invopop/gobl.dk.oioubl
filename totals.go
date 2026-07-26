@@ -141,10 +141,12 @@ func (ui *Invoice) addVATSubtotals(inv *bill.Invoice, currency string) {
 	if t.Taxes == nil || len(t.Taxes.Categories) == 0 {
 		return
 	}
-	rCurrency := inv.RegimeDef().Currency.String()
+	// GetCurrency is nil-safe: an invoice whose supplier country has no GOBL
+	// regime still has to convert rather than panic.
+	rCurrency := inv.RegimeDef().GetCurrency().String()
 	var accRate *cur.ExchangeRate
-	if inv.Currency != inv.RegimeDef().Currency {
-		accRate = cur.MatchExchangeRate(inv.ExchangeRates, inv.Currency, inv.RegimeDef().Currency)
+	if inv.Currency != inv.RegimeDef().GetCurrency() {
+		accRate = cur.MatchExchangeRate(inv.ExchangeRates, inv.Currency, inv.RegimeDef().GetCurrency())
 	}
 	exciseBases := exciseVATBases(inv)
 	for _, cat := range t.Taxes.Categories {

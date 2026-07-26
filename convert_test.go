@@ -13,6 +13,7 @@ import (
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
+	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/tax"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,28 +65,44 @@ func TestConvertInvoice(t *testing.T) {
 	}
 }
 
-// A regime-less invoice reaches Convert (gobl.Envelop accepts one), and the
-// totals builder dereferences RegimeDef unconditionally, so the guard in
-// convertViaOverlay is what turns a panic into an error.
+// A supplier whose country has no GOBL regime still yields a tax identity, so
+// nothing upstream rejects the invoice and RegimeDef() is nil all the way into
+// the totals builder. It has to convert rather than panic.
 func TestConvertWithoutRegime(t *testing.T) {
+	party := func(name string) *org.Party {
+		return &org.Party{
+			Name:       name,
+			TaxID:      &tax.Identity{Country: "AF", Code: "12345674"},
+			Endpoints:  []*org.Endpoint{{URI: "DK:CVR:12345674"}},
+			Identities: []*org.Identity{{Scope: org.IdentityScopeLegal, Code: "12345674"}},
+			Addresses:  []*org.Address{{Street: "Hovedgaden", Locality: "Kabul", Code: "1000", Country: "AF"}},
+			People:     []*org.Person{{Name: &org.Name{Given: "Ali"}, Identities: []*org.Identity{{Code: "1"}}}},
+		}
+	}
 	inv := &bill.Invoice{
 		IssueDate: cal.MakeDate(2026, 1, 1),
 		Code:      "1",
 		Currency:  "DKK",
-		Supplier: &org.Party{
-			Name:  "Ukendt A/S",
-			TaxID: &tax.Identity{Country: "AF", Code: "12345674"},
-		},
-		Customer: &org.Party{Name: "Kunde A/S"},
+		Supplier:  party("Ukendt A/S"),
+		Customer:  party("Kunde A/S"),
 		Lines: []*bill.Line{{
 			Quantity: num.MakeAmount(1, 0),
 			Item:     &org.Item{Name: "vare", Price: num.NewAmount(10000, 2)},
+			Taxes:    tax.Set{{Category: "VAT", Percent: num.NewPercentage(25, 2)}},
 		}},
+		Payment: &bill.PaymentDetails{
+			Terms: &pay.Terms{Notes: "Net 30"},
+			Instructions: &pay.Instructions{
+				Key:            pay.MeansKeyDebitTransfer,
+				CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK5000400440116243", BIC: "DABADKKK"}},
+			},
+		},
 	}
 	env, err := gobl.Envelop(inv)
 	require.NoError(t, err)
 	require.Nil(t, inv.RegimeDef(), "fixture must have no regime for this test to mean anything")
 
-	_, err = dkoioubl.Convert(env)
-	assert.ErrorContains(t, err, "invoice requires a tax regime")
+	out, err := dkoioubl.Convert(env)
+	require.NoError(t, err)
+	assert.NotNil(t, out)
 }
