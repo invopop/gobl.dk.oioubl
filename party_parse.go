@@ -7,6 +7,7 @@ import (
 	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
+	"github.com/invopop/gobl/regimes/dk"
 )
 
 // stripParties reverses the wire-only DK prefix OIOUBL puts on Danish company
@@ -60,7 +61,18 @@ func addPartyContact(p *org.Party, wire *ubl.Party) {
 // markLegalIdentity marks which identity is the official company number. Only
 // CVR and CPR count: OIOUBL allows no other scheme there (F-LIB189).
 func markLegalIdentity(p *org.Party) {
-	if p == nil || hasLegalIdentity(p) {
+	if p == nil {
+		return
+	}
+	// A CPR belongs to a person, not a company, and the regime's supplier rule
+	// looks at the type rather than the scheme, so mark it wherever it appears
+	// -- including on an identity the generic parser has already scoped.
+	for _, id := range p.Identities {
+		if id != nil && id.Ext.Get(iso.ExtKeySchemeID).String() == schemeDKCPR {
+			id.Type = dk.IdentityTypeCPR
+		}
+	}
+	if hasLegalIdentity(p) {
 		return
 	}
 	for _, id := range p.Identities {
