@@ -10,8 +10,7 @@ import (
 // every outbound address (no mandatory sub-fields).
 const addressStructuredLax = "StructuredLax"
 
-// newPostalAddress fills the address fields applyAddress leaves alone. It takes
-// the slice so the "is there one?" check lives here, not at every call site.
+// newPostalAddress fills the address fields applyAddress leaves alone.
 func newPostalAddress(addresses []*org.Address) *ubl.PostalAddress {
 	if len(addresses) == 0 || addresses[0] == nil {
 		return nil
