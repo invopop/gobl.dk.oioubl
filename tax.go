@@ -79,11 +79,8 @@ func applyTaxScheme(ts *ubl.TaxScheme) {
 	ts.Name = ptr(taxSchemeVATName)
 }
 
-// applyPartyTaxScheme stamps a party's tax scheme. A party can be registered
-// for a duty as well as for VAT, each under its own number, so only VAT becomes
-// "63"/Moms and a duty keeps the code it came with. Where the document charges
-// that same duty, it is described in the document's own words; otherwise all we
-// can say is that it is a duty.
+// applyPartyTaxScheme stamps a party's tax scheme: VAT becomes "63"/Moms, and a
+// duty keeps its own code, named after the matching charge where there is one.
 func applyPartyTaxScheme(ts *ubl.TaxScheme, duties map[string]exciseDuty) {
 	if ts == nil {
 		return
