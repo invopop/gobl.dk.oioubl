@@ -10,6 +10,15 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
+// OIOUBL symbolic schemes for company identifiers (F-LIB179/189/195); the CVR
+// endpoint scheme is shared with the addon's own endpoint derivation.
+const (
+	schemeDKCVR = string(addon.SchemeDKCVR)
+	schemeDKSE  = "DK:SE"
+	schemeDKCPR = "DK:CPR"
+	schemeZZZ   = "ZZZ"
+)
+
 // applyParties reworks the parties, their addresses and the delivery: first add
 // what the base left out, then fix what it did build.
 func (ui *Invoice) applyParties(inv *bill.Invoice) {
@@ -44,7 +53,7 @@ func addPartyDetails(p *ubl.Party, party *org.Party) {
 	}
 	applyPartyContact(p, party)
 	applyPartyEndpoint(p, party)
-	applyPartyAddress(p, party)
+	applyAddress(p.PostalAddress, firstAddress(party.Addresses))
 }
 
 // addPayeeDetails puts the payee's address and endpoint back. The shared base
@@ -89,15 +98,6 @@ func applyPartyEndpoint(p *ubl.Party, party *org.Party) {
 		}
 	}
 }
-
-// OIOUBL symbolic schemes for company identifiers (F-LIB179/189/195); the CVR
-// endpoint scheme is shared with the addon's own endpoint derivation.
-const (
-	schemeDKCVR = string(addon.SchemeDKCVR)
-	schemeDKSE  = "DK:SE"
-	schemeDKCPR = "DK:CPR"
-	schemeZZZ   = "ZZZ"
-)
 
 func splitEndpointURI(uri string) (scheme, code cbc.Code, ok bool) {
 	i := strings.LastIndex(uri, ":")

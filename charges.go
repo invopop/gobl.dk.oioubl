@@ -84,24 +84,34 @@ func allowanceMultiplier(pct *num.Percentage) string {
 func makeTaxCategory(taxes tax.Set) []*ubl.TaxCategory {
 	cats := make([]*ubl.TaxCategory, 0, len(taxes))
 	for _, t := range taxes {
-		cat := &ubl.TaxCategory{
+		cats = append(cats, &ubl.TaxCategory{
+			ID:        taxCategoryCode(t),
+			Percent:   taxCategoryPercent(t),
 			TaxScheme: &ubl.TaxScheme{ID: ubl.IDType{Value: t.Category.String()}},
-		}
-		if e := t.Ext.Get(untdid.ExtKeyTaxCategory).String(); e != "" {
-			cat.ID = &ubl.IDType{Value: e}
-		}
-		if t.Percent != nil {
-			p := t.Percent.StringWithoutSymbol()
-			cat.Percent = &p
-		} else if cat.ID == nil || cat.ID.Value != "O" {
-			// Percent is required unless the category is "O" (outside scope).
-			p := "0"
-			cat.Percent = &p
-		}
-		if e := taxCategoryID(t.Key); e != "" {
-			cat.ID = &ubl.IDType{Value: e}
-		}
-		cats = append(cats, cat)
+		})
 	}
 	return cats
+}
+
+// taxCategoryCode prefers the OIOUBL code the GOBL key maps to, falling back to
+// the UNTDID category the base would have used.
+func taxCategoryCode(t *tax.Combo) *ubl.IDType {
+	for _, code := range []string{taxCategoryID(t.Key), t.Ext.Get(untdid.ExtKeyTaxCategory).String()} {
+		if code != "" {
+			return &ubl.IDType{Value: code}
+		}
+	}
+	return nil
+}
+
+// taxCategoryPercent is required on every category except UNTDID "O", which is
+// outside the scope of tax and so has no rate to state.
+func taxCategoryPercent(t *tax.Combo) *string {
+	if t.Percent != nil {
+		return ptr(t.Percent.StringWithoutSymbol())
+	}
+	if t.Ext.Get(untdid.ExtKeyTaxCategory).String() == untdidCategoryOutsideScope {
+		return nil
+	}
+	return ptr("0")
 }

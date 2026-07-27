@@ -10,48 +10,29 @@ import (
 // every outbound address (no mandatory sub-fields).
 const addressStructuredLax = "StructuredLax"
 
-// newPostalAddress fills the address fields applyAddress leaves alone.
-func newPostalAddress(addresses []*org.Address) *ubl.PostalAddress {
-	if len(addresses) == 0 || addresses[0] == nil {
+// firstAddress is the one address OIOUBL maps, since UBL has room for a single
+// postal address where GOBL allows several.
+func firstAddress(addresses []*org.Address) *org.Address {
+	if len(addresses) == 0 {
 		return nil
 	}
-	a := addresses[0]
+	return addresses[0]
+}
+
+// newPostalAddress builds an OIOUBL address from scratch, for the places the
+// base leaves one out entirely. Nil when there is nothing to build it from.
+func newPostalAddress(addresses []*org.Address) *ubl.PostalAddress {
+	a := firstAddress(addresses)
+	if a == nil {
+		return nil
+	}
 	addr := new(ubl.PostalAddress)
-	if a.StreetExtra != "" {
-		l := a.LineTwo()
-		addr.AdditionalStreetName = &l
-	}
-	if a.Locality != "" {
-		addr.CityName = &a.Locality
-	}
-	if a.Region != "" {
-		addr.CountrySubentity = &a.Region
-	}
-	if a.Code != cbc.CodeEmpty {
-		code := a.Code.String()
-		addr.PostalZone = &code
-	}
-	if a.Country != "" {
-		addr.Country = &ubl.Country{IdentificationCode: string(a.Country)}
-	}
+	applyAddress(addr, a)
 	return addr
 }
 
-// applyPartyAddress applies applyAddress to a party's postal address,
-// using the party's first GOBL address as the source.
-func applyPartyAddress(p *ubl.Party, party *org.Party) {
-	if p.PostalAddress == nil {
-		return
-	}
-	var a *org.Address
-	if len(party.Addresses) > 0 {
-		a = party.Addresses[0]
-	}
-	applyAddress(p.PostalAddress, a)
-}
-
-// applyAddress drops the forbidden LocationCoordinate (F-LIB212) and
-// stamps the mandatory AddressFormatCode (F-LIB025), among other OIOUBL fields.
+// applyAddress writes a GOBL address onto a UBL one, dropping the forbidden
+// LocationCoordinate (F-LIB212) and stamping the mandatory AddressFormatCode (F-LIB025).
 func applyAddress(addr *ubl.PostalAddress, a *org.Address) {
 	if addr == nil {
 		return
@@ -70,15 +51,29 @@ func applyAddress(addr *ubl.PostalAddress, a *org.Address) {
 	if a.PostOfficeBox != "" {
 		addr.Postbox = &a.PostOfficeBox
 	}
+	if a.StreetExtra != "" {
+		l := a.LineTwo()
+		addr.AdditionalStreetName = &l
+	}
+	if a.Locality != "" {
+		addr.CityName = &a.Locality
+	}
+	if a.Region != "" {
+		addr.CountrySubentity = &a.Region
+	}
+	if a.Code != cbc.CodeEmpty {
+		addr.PostalZone = ptr(a.Code.String())
+	}
+	if a.Country != "" {
+		addr.Country = &ubl.Country{IdentificationCode: string(a.Country)}
+	}
 }
 
 // newAddressFormatCode builds the cbc:AddressFormatCode required on every OIOUBL address (F-LIB025).
 func newAddressFormatCode(value string) *ubl.IDType {
-	listID := codelistAddressFormat
-	listAgencyID := agencyID
 	return &ubl.IDType{
-		ListID:       &listID,
-		ListAgencyID: &listAgencyID,
+		ListID:       ptr(codelistAddressFormat),
+		ListAgencyID: ptr(agencyID),
 		Value:        value,
 	}
 }

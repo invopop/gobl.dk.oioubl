@@ -25,6 +25,9 @@ const (
 	taxSchemeDutyName = "Excise"
 )
 
+// untdidCategoryOutsideScope is UNTDID 5305 "O", the one category that states no rate.
+const untdidCategoryOutsideScope = "O"
+
 // taxCategoryID maps a GOBL VAT key to its OIOUBL taxcategoryid-1.1 code (exempt maps to ZeroRated, since OIOUBL 2.1 has no exempt category; unsupported keys return "").
 func taxCategoryID(key cbc.Key) string {
 	switch key {
@@ -43,10 +46,8 @@ func stampTaxCategoryID(id *ubl.IDType) *ubl.IDType {
 	if id == nil {
 		id = &ubl.IDType{Value: taxCategoryStandardRated}
 	}
-	schemeID := schemeTaxCategory
-	schemeAgencyID := agencyID
-	id.SchemeID = &schemeID
-	id.SchemeAgencyID = &schemeAgencyID
+	id.SchemeID = ptr(schemeTaxCategory)
+	id.SchemeAgencyID = ptr(agencyID)
 	return id
 }
 
@@ -129,11 +130,6 @@ func dutiesByCode(inv *bill.Invoice) map[string]exciseDuty {
 		}
 	}
 	return out
-}
-
-// ptr is a helper for the many optional UBL string fields.
-func ptr(s string) *string {
-	return &s
 }
 
 // findTaxNote ports gobl.ubl's own version, matching by GOBL VAT key instead of the UNTDID ext -- re-diff on version bumps.

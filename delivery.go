@@ -4,7 +4,6 @@ import (
 	ubl "github.com/invopop/gobl.ubl"
 
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/org"
 )
 
 // applyDelivery adjusts the base's already-built delivery for OIOUBL (F-INV087/089/090, F-LIB187).
@@ -30,19 +29,14 @@ func applyDelivery(d *ubl.Delivery, del *bill.DeliveryDetails) {
 	}
 
 	if d.DeliveryLocation != nil && del.Receiver != nil {
-		var a *org.Address
-		if len(del.Receiver.Addresses) > 0 {
-			a = del.Receiver.Addresses[0]
-		}
-		applyAddress(d.DeliveryLocation.Address, a)
+		applyAddress(d.DeliveryLocation.Address, firstAddress(del.Receiver.Addresses))
 	}
 
 	applyDeliveryLocationScheme(d, del)
 }
 
-// applyDeliveryLocationScheme names the scheme a delivery location's identifier
-// belongs to, such as GLN. The base reads it when parsing but does not write it
-// back, and OIOUBL puts no restriction on which scheme is named here.
+// applyDeliveryLocationScheme says which scheme the location's identifier came
+// from, e.g. GLN. The base only reads the attribute; OIOUBL accepts any scheme.
 func applyDeliveryLocationScheme(d *ubl.Delivery, del *bill.DeliveryDetails) {
 	if d.DeliveryLocation == nil || d.DeliveryLocation.ID == nil {
 		return

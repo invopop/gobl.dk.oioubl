@@ -171,8 +171,6 @@ func (ui *Invoice) appendVATSubtotals(inv *bill.Invoice, currency string) {
 	if t.Taxes == nil || len(t.Taxes.Categories) == 0 {
 		return
 	}
-	// GetCurrency is nil-safe: an invoice whose supplier country has no GOBL
-	// regime still has to convert rather than panic.
 	rCurrency := inv.RegimeDef().GetCurrency().String()
 	var accRate *cur.ExchangeRate
 	if inv.Currency != inv.RegimeDef().GetCurrency() {
