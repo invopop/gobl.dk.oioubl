@@ -5,7 +5,6 @@ import (
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
-	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
 )
 
@@ -51,13 +50,15 @@ func fixGiroFIK(instr *pay.Instructions, pm *ubl.PaymentMeans) {
 }
 
 // fixDKBank corrects the bank registration number, which the base parser takes
-// for a BIC (F-LIB124/130).
+// for a BIC (F-LIB124/130). GOBL has one name to hold it, so a document that
+// also names the account loses that name: the reg. nr. is what a domestic
+// transfer cannot go out without.
 func fixDKBank(instr *pay.Instructions) {
 	if len(instr.CreditTransfer) == 0 || instr.CreditTransfer[0].BIC == "" {
 		return
 	}
 	ct := instr.CreditTransfer[0]
-	ct.Branch = &org.Address{Label: ct.BIC}
+	ct.Name = ct.BIC
 	ct.BIC = ""
 }
 

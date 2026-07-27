@@ -140,10 +140,7 @@
 		"instructions": {
 			"credit_transfer": [
 				{
-					"branch": {
-						"country": "DK",
-						"label": "1234"
-					},
+					"name": "1234",
 					"number": "1234123456"
 				}
 			],

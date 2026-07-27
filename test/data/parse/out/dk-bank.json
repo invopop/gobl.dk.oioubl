@@ -147,11 +147,7 @@
 			"credit_transfer": [
 				{
 					"number": "0440116243",
-					"name": "Danske Bank",
-					"branch": {
-						"label": "1234",
-						"country": "DK"
-					}
+					"name": "1234"
 				}
 			],
 			"ext": {

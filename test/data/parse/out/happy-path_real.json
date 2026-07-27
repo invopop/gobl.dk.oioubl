@@ -190,10 +190,7 @@
 			"credit_transfer": [
 				{
 					"number": "1234567890",
-					"branch": {
-						"label": "1234",
-						"country": "DK"
-					}
+					"name": "1234"
 				}
 			],
 			"ext": {
