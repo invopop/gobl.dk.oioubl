@@ -73,8 +73,10 @@ func paymentChannel(means string) string {
 	return ""
 }
 
-// applyRegNr replaces the base's BIC (EN16931 has no reg. nr. concept) with
-// the Danish bank reg. nr. OIOUBL wants there instead (F-LIB124/F-LIB130).
+// applyRegNr moves the Danish bank reg. nr. to the branch, where OIOUBL keeps
+// it (F-LIB124/F-LIB130). A domestic transfer carries it as the credit
+// transfer's name, which the base has already written to the account, so the
+// account name goes with it: EN 16931 has no reg. nr. of its own.
 func applyRegNr(pm *ubl.PaymentMeans, instr *pay.Instructions) {
 	if pm.PayeeFinancialAccount == nil {
 		return
@@ -83,11 +85,11 @@ func applyRegNr(pm *ubl.PaymentMeans, instr *pay.Instructions) {
 	if len(instr.CreditTransfer) == 0 {
 		return
 	}
-	branch := instr.CreditTransfer[0].Branch
-	if branch == nil || branch.Label == "" {
+	regNr := instr.CreditTransfer[0].Name
+	if regNr == "" {
 		return
 	}
-	regNr := branch.Label
+	pm.PayeeFinancialAccount.Name = nil
 	pm.PayeeFinancialAccount.FinancialInstitutionBranch = &ubl.Branch{ID: &regNr}
 }
 
