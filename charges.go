@@ -61,8 +61,7 @@ func chargeBaseAmount(pct *num.Percentage, base, fallback *num.Amount, ccy strin
 // applyAllowanceCharge stamps MultiplierFactorNumeric and taxcategoryid.
 func applyAllowanceCharge(ac *ubl.AllowanceCharge, pct *num.Percentage, taxes tax.Set) {
 	if pct != nil {
-		p := allowanceMultiplier(pct)
-		ac.MultiplierFactorNumeric = &p
+		ac.MultiplierFactorNumeric = ptr(allowanceMultiplier(pct))
 	}
 	for i, t := range taxes {
 		if i >= len(ac.TaxCategory) {

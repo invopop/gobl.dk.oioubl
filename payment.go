@@ -97,8 +97,7 @@ func applyPaymentMeans(out *Invoice) {
 		pm := &out.PaymentMeans[i]
 		stampPaymentChannel(pm)
 		if out.DueDate != "" && pm.PaymentDueDate == nil {
-			d := out.DueDate
-			pm.PaymentDueDate = &d
+			pm.PaymentDueDate = ptr(out.DueDate)
 		}
 	}
 	if len(out.PaymentMeans) > 0 && out.DueDate != "" {
@@ -113,8 +112,7 @@ func stampPaymentChannel(pm *ubl.PaymentMeans) {
 	if pm.PaymentChannelCode == nil {
 		return
 	}
-	listID := codelistPaymentChannel
-	pm.PaymentChannelCode.ListID = &listID
+	pm.PaymentChannelCode.ListID = ptr(codelistPaymentChannel)
 	if pm.PaymentChannelCode.Value != paymentChannelIBAN || pm.PayeeFinancialAccount == nil {
 		return
 	}
@@ -156,9 +154,9 @@ func applyPaymentID(pm *ubl.PaymentMeans, instr *pay.Instructions, paymentMeansC
 	}
 	ref := instr.Ref.String()
 	k := kortart(paymentMeansCode, ref)
-	pm.PaymentID = &k
+	pm.PaymentID = ptr(k)
 	pm.InstructionID = nil
 	if ref != "" && k != "01" && k != "73" {
-		pm.InstructionID = &ref
+		pm.InstructionID = ptr(ref)
 	}
 }

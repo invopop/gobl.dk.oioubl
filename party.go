@@ -82,7 +82,7 @@ func applyPartyContact(p *ubl.Party, party *org.Party) {
 	if p.Contact == nil {
 		p.Contact = &ubl.Contact{}
 	}
-	p.Contact.ID = &code
+	p.Contact.ID = ptr(code)
 }
 
 // applyPartyEndpoint overrides gobl.ubl's inbox-derived EndpointID with the
@@ -131,12 +131,11 @@ func applyCompanyID(id *ubl.IDType, danishScheme string, danish bool) {
 		}
 	}
 	if danish {
-		id.SchemeID = &danishScheme
+		id.SchemeID = ptr(danishScheme)
 		id.Value = dkPrefixed(id.Value)
 		return
 	}
-	scheme := schemeZZZ
-	id.SchemeID = &scheme
+	id.SchemeID = ptr(schemeZZZ)
 }
 
 // fixParty corrects a finished party for OIOUBL: Danish numbers get their DK

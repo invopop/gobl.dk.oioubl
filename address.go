@@ -43,23 +43,22 @@ func applyAddress(addr *ubl.PostalAddress, a *org.Address) {
 		return
 	}
 	if a.Street != "" {
-		addr.StreetName = &a.Street
+		addr.StreetName = ptr(a.Street)
 	}
 	if a.Number != "" {
-		addr.BuildingNumber = &a.Number
+		addr.BuildingNumber = ptr(a.Number)
 	}
 	if a.PostOfficeBox != "" {
-		addr.Postbox = &a.PostOfficeBox
+		addr.Postbox = ptr(a.PostOfficeBox)
 	}
 	if a.StreetExtra != "" {
-		l := a.LineTwo()
-		addr.AdditionalStreetName = &l
+		addr.AdditionalStreetName = ptr(a.LineTwo())
 	}
 	if a.Locality != "" {
-		addr.CityName = &a.Locality
+		addr.CityName = ptr(a.Locality)
 	}
 	if a.Region != "" {
-		addr.CountrySubentity = &a.Region
+		addr.CountrySubentity = ptr(a.Region)
 	}
 	if a.Code != cbc.CodeEmpty {
 		addr.PostalZone = ptr(a.Code.String())

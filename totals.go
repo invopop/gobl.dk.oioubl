@@ -154,12 +154,10 @@ func (ui *Invoice) includePrepaidPayments(inv *bill.Invoice, currency string) {
 			PaidAmount: &ubl.Amount{Value: adv.Amount.String(), CurrencyID: &currency},
 		}
 		if adv.Date != nil {
-			d := formatDate(*adv.Date)
-			pp.ReceivedDate = &d
+			pp.ReceivedDate = ptr(formatDate(*adv.Date))
 		}
 		if adv.Ref != "" {
-			ref := adv.Ref
-			pp.InstructionID = &ref
+			pp.InstructionID = ptr(adv.Ref)
 		}
 		ui.PrepaidPayment = append(ui.PrepaidPayment, pp)
 	}
@@ -247,19 +245,17 @@ func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTota
 		taxCat.ID = &ubl.IDType{Value: catID}
 	}
 	if v := r.Ext.Get(cef.ExtKeyVATEX).String(); v != "" {
-		taxCat.TaxExemptionReasonCode = &v
+		taxCat.TaxExemptionReasonCode = ptr(v)
 	}
 	if inv.Tax != nil {
 		if note := findTaxNote(inv.Tax.Notes, cat.Code, r); note != nil {
-			taxCat.TaxExemptionReason = &note.Text
+			taxCat.TaxExemptionReason = ptr(note.Text)
 		}
 	}
 	if r.Percent != nil {
-		p := r.Percent.StringWithoutSymbol()
-		taxCat.Percent = &p
+		taxCat.Percent = ptr(r.Percent.StringWithoutSymbol())
 	} else if taxCat.ID == nil || taxCat.ID.Value != "O" {
-		p := "0"
-		taxCat.Percent = &p
+		taxCat.Percent = ptr("0")
 	}
 	if cat.Code != cbc.CodeEmpty {
 		taxCat.TaxScheme = &ubl.TaxScheme{ID: ubl.IDType{Value: cat.Code.String()}}

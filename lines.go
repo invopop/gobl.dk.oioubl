@@ -111,8 +111,7 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []ubl.TaxTotal {
 		}
 
 		if t.Percent != nil {
-			p := t.Percent.StringWithoutSymbol()
-			taxCat.Percent = &p
+			taxCat.Percent = ptr(t.Percent.StringWithoutSymbol())
 			amount := t.Percent.Of(taxable).Rescale(taxable.Exp())
 			subtotal.TaxAmount = ubl.Amount{Value: amount.String(), CurrencyID: &ccy}
 			totalAmount = totalAmount.Add(amount)
@@ -146,10 +145,10 @@ func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount,
 			Amount:          ubl.Amount{Value: rescaleToCurrency(ch.Amount, ccy).String(), CurrencyID: &ccy},
 		}
 		if e := ch.Ext.Get(untdid.ExtKeyCharge).String(); e != "" {
-			ac.AllowanceChargeReasonCode = &e
+			ac.AllowanceChargeReasonCode = ptr(e)
 		}
 		if ch.Reason != "" {
-			ac.AllowanceChargeReason = &ch.Reason
+			ac.AllowanceChargeReason = ptr(ch.Reason)
 		}
 		ac.BaseAmount = chargeBaseAmount(ch.Percent, ch.Base, baseSum, ccy)
 		applyLineAllowanceCharge(ac, ch.Percent, taxes)
@@ -160,10 +159,10 @@ func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount,
 			Amount: ubl.Amount{Value: rescaleToCurrency(d.Amount, ccy).String(), CurrencyID: &ccy},
 		}
 		if e := d.Ext.Get(untdid.ExtKeyAllowance).String(); e != "" {
-			ac.AllowanceChargeReasonCode = &e
+			ac.AllowanceChargeReasonCode = ptr(e)
 		}
 		if d.Reason != "" {
-			ac.AllowanceChargeReason = &d.Reason
+			ac.AllowanceChargeReason = ptr(d.Reason)
 		}
 		ac.BaseAmount = chargeBaseAmount(d.Percent, d.Base, baseSum, ccy)
 		applyLineAllowanceCharge(ac, d.Percent, taxes)
@@ -175,8 +174,7 @@ func makeLineCharges(charges []*bill.LineCharge, discounts []*bill.LineDiscount,
 // applyLineAllowanceCharge stamps MultiplierFactorNumeric/TaxCategory.
 func applyLineAllowanceCharge(ac *ubl.AllowanceCharge, pct *num.Percentage, taxes tax.Set) {
 	if pct != nil {
-		p := allowanceMultiplier(pct)
-		ac.MultiplierFactorNumeric = &p
+		ac.MultiplierFactorNumeric = ptr(allowanceMultiplier(pct))
 	}
 	ac.TaxCategory = makeTaxCategory(taxes)
 }

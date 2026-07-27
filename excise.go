@@ -142,8 +142,7 @@ func makeExciseTaxTotals(excises []exciseDuty, currency string) []ubl.TaxTotal {
 			scheme.TaxTypeCode = &ubl.IDType{ListAgencyID: &typeAgencyID, ListID: &listID, Value: e.typeCode}
 		}
 		if e.name != "" {
-			name := e.name
-			scheme.Name = &name
+			scheme.Name = ptr(e.name)
 		}
 
 		if _, ok := subtotals[e.scheme]; !ok {

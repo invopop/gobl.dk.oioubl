@@ -72,10 +72,8 @@ func applyTypeCode(t *ubl.IDType) {
 	if t == nil {
 		return
 	}
-	listID := codelistInvoiceType
-	listAgencyID := agencyID
-	t.ListID = &listID
-	t.ListAgencyID = &listAgencyID
+	t.ListID = ptr(codelistInvoiceType)
+	t.ListAgencyID = ptr(agencyID)
 }
 
 // applyBillingReference drops the DocumentTypeCode from billing references;
