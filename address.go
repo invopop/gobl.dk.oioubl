@@ -27,13 +27,13 @@ func newPostalAddress(addresses []*org.Address) *ubl.PostalAddress {
 		return nil
 	}
 	addr := new(ubl.PostalAddress)
-	applyAddress(addr, a)
+	writeAddress(addr, a)
 	return addr
 }
 
-// applyAddress writes a GOBL address onto a UBL one, dropping the forbidden
+// writeAddress writes a GOBL address onto a UBL one, dropping the forbidden
 // LocationCoordinate (F-LIB212) and stamping the mandatory AddressFormatCode (F-LIB025).
-func applyAddress(addr *ubl.PostalAddress, a *org.Address) {
+func writeAddress(addr *ubl.PostalAddress, a *org.Address) {
 	if addr == nil {
 		return
 	}

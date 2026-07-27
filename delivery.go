@@ -29,7 +29,7 @@ func applyDelivery(d *ubl.Delivery, del *bill.DeliveryDetails) {
 	}
 
 	if d.DeliveryLocation != nil && del.Receiver != nil {
-		applyAddress(d.DeliveryLocation.Address, firstAddress(del.Receiver.Addresses))
+		writeAddress(d.DeliveryLocation.Address, firstAddress(del.Receiver.Addresses))
 	}
 
 	applyDeliveryLocationScheme(d, del)

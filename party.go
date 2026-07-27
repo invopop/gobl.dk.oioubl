@@ -51,9 +51,9 @@ func addPartyDetails(p *ubl.Party, party *org.Party) {
 	if p == nil || party == nil {
 		return
 	}
-	applyPartyContact(p, party)
-	applyPartyEndpoint(p, party)
-	applyAddress(p.PostalAddress, firstAddress(party.Addresses))
+	addContactID(p, party)
+	setPartyEndpoint(p, party)
+	writeAddress(p.PostalAddress, firstAddress(party.Addresses))
 }
 
 // addPayeeDetails puts the payee's address and endpoint back. The shared base
@@ -68,9 +68,9 @@ func addPayeeDetails(p *ubl.Party, payee *org.Party) {
 	addPartyDetails(p, payee)
 }
 
-// applyPartyContact adds the mandatory cbc:ID (F-INV051), sourced from the
+// addContactID adds the mandatory cbc:ID (F-INV051), sourced from the
 // first person's identity rather than fabricated.
-func applyPartyContact(p *ubl.Party, party *org.Party) {
+func addContactID(p *ubl.Party, party *org.Party) {
 	if len(party.People) == 0 {
 		return
 	}
@@ -85,15 +85,20 @@ func applyPartyContact(p *ubl.Party, party *org.Party) {
 	p.Contact.ID = ptr(code)
 }
 
-// applyPartyEndpoint overrides gobl.ubl's inbox-derived EndpointID with the
-// OIOUBL endpoint URI (scheme+code emitted 1:1), when the party carries one.
-func applyPartyEndpoint(p *ubl.Party, party *org.Party) {
+// setPartyEndpoint replaces the base's EndpointID with the OIOUBL endpoint URI,
+// DK-prefixing a CVR value as F-LIB180 requires.
+func setPartyEndpoint(p *ubl.Party, party *org.Party) {
 	for _, ep := range party.Endpoints {
 		if ep == nil {
 			continue
 		}
 		if scheme, value, ok := splitEndpointURI(ep.URI.String()); ok {
-			p.EndpointID = &ubl.EndpointID{SchemeID: scheme.String(), Value: value.String()}
+			code := value.String()
+			if scheme.String() == schemeDKCVR {
+				// OIOUBL CVR endpoints must carry the DK-prefixed form (F-LIB180).
+				code = dkPrefixed(code)
+			}
+			p.EndpointID = &ubl.EndpointID{SchemeID: scheme.String(), Value: code}
 			return
 		}
 	}
@@ -144,10 +149,6 @@ func applyCompanyID(id *ubl.IDType, danishScheme string, danish bool) {
 func fixParty(p *ubl.Party, duties map[string]exciseDuty) {
 	if p == nil {
 		return
-	}
-	if p.EndpointID != nil && p.EndpointID.SchemeID == schemeDKCVR {
-		// OIOUBL CVR endpoints must carry the DK-prefixed form (F-LIB180).
-		p.EndpointID.Value = dkPrefixed(p.EndpointID.Value)
 	}
 	if p.PartyName == nil && len(p.PartyIdentification) == 0 {
 		if p.PartyLegalEntity != nil && p.PartyLegalEntity.RegistrationName != nil {
