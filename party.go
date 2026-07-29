@@ -88,20 +88,20 @@ func addContactID(p *ubl.Party, party *org.Party) {
 // setPartyEndpoint replaces the base's EndpointID with the OIOUBL endpoint URI,
 // DK-prefixing a CVR value as F-LIB180 requires.
 func setPartyEndpoint(p *ubl.Party, party *org.Party) {
-	for _, ep := range party.Endpoints {
-		if ep == nil {
-			continue
-		}
-		if scheme, value, ok := splitEndpointURI(ep.URI.String()); ok {
-			code := value.String()
-			if scheme.String() == schemeDKCVR {
-				// OIOUBL CVR endpoints must carry the DK-prefixed form (F-LIB180).
-				code = dkPrefixed(code)
-			}
-			p.EndpointID = &ubl.EndpointID{SchemeID: scheme.String(), Value: code}
-			return
-		}
+	ep := party.FirstEndpoint()
+	if ep == nil {
+		return
 	}
+	scheme, value, ok := splitEndpointURI(ep.URI.String())
+	if !ok {
+		return
+	}
+	code := value.String()
+	if scheme.String() == schemeDKCVR {
+		// OIOUBL CVR endpoints must carry the DK-prefixed form (F-LIB180).
+		code = dkPrefixed(code)
+	}
+	p.EndpointID = &ubl.EndpointID{SchemeID: scheme.String(), Value: code}
 }
 
 func splitEndpointURI(uri string) (scheme, code cbc.Code, ok bool) {
@@ -143,9 +143,8 @@ func applyCompanyID(id *ubl.IDType, danishScheme string, danish bool) {
 	id.SchemeID = ptr(schemeZZZ)
 }
 
-// fixParty corrects a finished party for OIOUBL: Danish numbers get their DK
-// prefix, a missing name falls back to the registered one, and every company ID
-// gets a scheme.
+// fixParty corrects a finished party for OIOUBL: DK-prefixed Danish numbers, a
+// name falling back to the registered one, and a scheme on every company ID.
 func fixParty(p *ubl.Party, duties map[string]exciseDuty) {
 	if p == nil {
 		return
