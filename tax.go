@@ -39,9 +39,13 @@ func taxCategoryID(key cbc.Key) string {
 }
 
 // stampTaxCategoryID stamps the taxcategoryid-1.1 attributes, defaulting an absent category to StandardRated.
+// stampTaxCategoryID stamps the taxcategoryid-1.1 list attributes. A nil ID means
+// the GOBL VAT key has no OIOUBL equivalent (intra-community, export,
+// outside-scope): leave it unset rather than guess, so F-LIB074 rejects the
+// document instead of it going out mislabelled as StandardRated.
 func stampTaxCategoryID(id *ubl.IDType) *ubl.IDType {
 	if id == nil {
-		id = &ubl.IDType{Value: taxCategoryStandardRated}
+		return nil
 	}
 	id.SchemeID = ptr(schemeTaxCategory)
 	id.SchemeAgencyID = ptr(agencyID)

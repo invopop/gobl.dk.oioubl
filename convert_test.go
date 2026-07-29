@@ -2,6 +2,7 @@ package oioubl_test
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,8 +10,11 @@ import (
 
 	"github.com/invopop/gobl"
 	oioubl "github.com/invopop/gobl.dk.oioubl"
+	"github.com/invopop/gobl.dk.oioubl/addon"
+	"github.com/invopop/gobl/addons/eu/en16931"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
@@ -105,4 +109,47 @@ func TestConvertWithoutRegime(t *testing.T) {
 	out, err := oioubl.Convert(env)
 	require.NoError(t, err)
 	assert.NotNil(t, out)
+}
+
+// TestConvertUnsupportedVATKey checks that a VAT key OIOUBL cannot express is
+// left without a taxcategoryid rather than defaulting to StandardRated: the
+// document then fails F-LIB074 instead of going out as a mislabelled 0% supply.
+func TestConvertUnsupportedVATKey(t *testing.T) {
+	party := func(name, code string) *org.Party {
+		return &org.Party{
+			Name:      name,
+			TaxID:     &tax.Identity{Country: "DK", Code: cbc.Code(code)},
+			Addresses: []*org.Address{{Street: "Hovedgaden", Locality: "København", Code: "1000", Country: "DK"}},
+		}
+	}
+	for _, key := range []cbc.Key{tax.KeyOutsideScope, tax.KeyIntraCommunity, tax.KeyExport} {
+		t.Run(key.String(), func(t *testing.T) {
+			inv := &bill.Invoice{
+				Regime:    tax.WithRegime("DK"),
+				Addons:    tax.WithAddons(en16931.V2017, addon.V2),
+				IssueDate: cal.MakeDate(2026, 1, 1),
+				Type:      "standard",
+				Series:    "2026",
+				Code:      "1",
+				Currency:  "DKK",
+				Supplier:  party("Eksempel A/S", "12345674"),
+				Customer:  party("Kunde ApS", "88146328"),
+				Lines: []*bill.Line{{
+					Quantity: num.MakeAmount(1, 0),
+					Item:     &org.Item{Name: "vare", Price: num.NewAmount(10000, 2)},
+					Taxes:    tax.Set{{Category: "VAT", Key: key}},
+				}},
+			}
+			env, err := gobl.Envelop(inv)
+			require.NoError(t, err)
+			out, err := oioubl.ConvertInvoice(env)
+			require.NoError(t, err)
+			data, err := xml.MarshalIndent(out, "", " ")
+			require.NoError(t, err)
+			assert.NotContains(t, string(data), "taxcategoryid-1.1",
+				"an unsupported VAT key must not be given a taxcategoryid")
+			assert.NotContains(t, string(data), "StandardRated",
+				"and must never default to StandardRated")
+		})
+	}
 }
