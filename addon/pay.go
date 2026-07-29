@@ -1,6 +1,8 @@
 package addon
 
 import (
+	"fmt"
+
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/pay"
@@ -17,7 +19,7 @@ var validPaymentMeansCodes = []cbc.Code{
 func payInstructionsRules() *rules.Set {
 	return rules.For(new(pay.Instructions),
 		rules.Field("ext",
-			rules.AssertIfPresent("01", "OIOUBL does not support this payment means (F-LIB100)",
+			rules.AssertIfPresent("01", fmt.Sprintf("tax extension '%s' must use a payment means code OIOUBL supports (F-LIB100)", untdid.ExtKeyPaymentMeans),
 				tax.ExtensionsHasCodes(untdid.ExtKeyPaymentMeans, validPaymentMeansCodes...)),
 		),
 		// EN 16931 has no field for a bank registration number, so OIOUBL reads

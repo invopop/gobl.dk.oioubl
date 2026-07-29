@@ -1,6 +1,8 @@
 package addon
 
 import (
+	"fmt"
+
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
@@ -26,7 +28,7 @@ func billInvoiceRules() *rules.Set {
 		),
 		rules.Field("tax",
 			rules.Field("ext",
-				rules.AssertIfPresent("01", "document type must be an OIOUBL-supported code: invoice 325/380/393 or credit note 381 (F-INV011)",
+				rules.AssertIfPresent("01", fmt.Sprintf("tax extension '%s' must use a document type OIOUBL supports: 325, 380 or 393 for an invoice, 381 for a credit note (F-INV011)", untdid.ExtKeyDocumentType),
 					tax.ExtensionsHasCodes(untdid.ExtKeyDocumentType, validDocumentTypes...)),
 			),
 			rules.Field("rounding",
@@ -72,7 +74,7 @@ func billChargeRules() *rules.Set {
 					tax.SetHasCategory(tax.CategoryVAT)),
 			),
 			rules.Field("ext",
-				rules.Assert("03", "an OIOUBL excise duty charge requires the SKAT duty code extension for its tax-scheme ID",
+				rules.Assert("03", fmt.Sprintf("an excise duty charge requires the '%s' extension, which becomes the OIOUBL tax-scheme ID", ExtKeyDutyCode),
 					tax.ExtensionsRequire(ExtKeyDutyCode)),
 			),
 		),
@@ -86,7 +88,7 @@ func lineChargeRules() *rules.Set {
 				rules.Assert("01", "an OIOUBL excise duty charge requires a reason for its tax-scheme name (F-LIB066)", is.Present),
 			),
 			rules.Field("ext",
-				rules.Assert("02", "an OIOUBL excise duty charge requires the SKAT duty code extension for its tax-scheme ID",
+				rules.Assert("02", fmt.Sprintf("an excise duty charge requires the '%s' extension, which becomes the OIOUBL tax-scheme ID", ExtKeyDutyCode),
 					tax.ExtensionsRequire(ExtKeyDutyCode)),
 			),
 		),

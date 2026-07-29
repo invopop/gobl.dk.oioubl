@@ -139,7 +139,7 @@ func TestInvoiceValidation(t *testing.T) {
 			{Key: oioubl.ChargeKeyExcise, Reason: "Mineralvandsafgift", Amount: num.MakeAmount(1000, 2)},
 		}
 		require.NoError(t, inv.Calculate())
-		assert.ErrorContains(t, rules.Validate(inv), "duty code")
+		assert.ErrorContains(t, rules.Validate(inv), oioubl.ExtKeyDutyCode.String())
 	})
 
 	t.Run("document-level excise duty without a VAT tax is rejected", func(t *testing.T) {
@@ -180,7 +180,7 @@ func TestInvoiceValidation(t *testing.T) {
 			},
 		}
 		require.NoError(t, inv.Calculate())
-		assert.ErrorContains(t, rules.Validate(inv), "duty code")
+		assert.ErrorContains(t, rules.Validate(inv), oioubl.ExtKeyDutyCode.String())
 	})
 
 	t.Run("line-level excise duty does not require its own VAT tax", func(t *testing.T) {
