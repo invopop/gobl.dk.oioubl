@@ -112,7 +112,8 @@ func splitEndpointURI(uri string) (scheme, code cbc.Code, ok bool) {
 	return cbc.Code(uri[:i]), cbc.Code(uri[i+1:]), true
 }
 
-// dkPrefixed adds the "DK" prefix OIOUBL mandates on DK:CVR/DK:SE values (F-LIB180/184), if absent.
+// dkPrefixed adds the "DK" prefix OIOUBL mandates on CVR and SE values, if absent
+// (endpoints F-LIB180, company IDs F-LIB184 and F-LIB196).
 func dkPrefixed(value string) string {
 	if strings.HasPrefix(value, "DK") {
 		return value

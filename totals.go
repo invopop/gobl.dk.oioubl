@@ -51,8 +51,8 @@ func (ui *Invoice) buildTotals(inv *bill.Invoice) {
 	}
 	ui.appendVATSubtotals(inv, currency)
 
-	// Non-VAT excise duties travel as their own cac:TaxTotal blocks (the VAT total
-	// already includes them in its base); applyTotals sums them into TaxExclusiveAmount.
+	// Excise duties get their own cac:TaxTotal; the VAT total already covers them
+	// in its base, and applyTotals adds them to TaxExclusiveAmount.
 	ui.TaxTotal = append(ui.TaxTotal, makeExciseTaxTotals(collectExcise(inv, currency), currency)...)
 }
 

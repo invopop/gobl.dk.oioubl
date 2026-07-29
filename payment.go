@@ -73,10 +73,8 @@ func paymentChannel(means string) string {
 	return ""
 }
 
-// applyRegNr moves the Danish bank reg. nr. to the branch, where OIOUBL keeps
-// it (F-LIB124/F-LIB130). A domestic transfer carries it as the credit
-// transfer's name, which the base has already written to the account, so the
-// account name goes with it: EN 16931 has no reg. nr. of its own.
+// applyRegNr moves the reg. nr. from the credit transfer's name, where EN 16931
+// has to keep it, to the branch where OIOUBL wants it (F-LIB124/F-LIB130).
 func applyRegNr(pm *ubl.PaymentMeans, instr *pay.Instructions) {
 	if pm.PayeeFinancialAccount == nil {
 		return

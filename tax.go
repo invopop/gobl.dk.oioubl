@@ -25,9 +25,6 @@ const (
 	taxSchemeDutyName = "Excise"
 )
 
-// untdidCategoryOutsideScope is UNTDID 5305 "O", the one category that states no rate.
-const untdidCategoryOutsideScope = "O"
-
 // taxCategoryID maps a GOBL VAT key to its OIOUBL taxcategoryid-1.1 code (exempt maps to ZeroRated, since OIOUBL 2.1 has no exempt category; unsupported keys return "").
 func taxCategoryID(key cbc.Key) string {
 	switch key {
