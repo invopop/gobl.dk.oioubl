@@ -2,7 +2,6 @@ package oioubl
 
 import (
 	ubl "github.com/invopop/gobl.ubl"
-	"github.com/invopop/gobl/addons/eu/en16931"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/num"
@@ -104,14 +103,11 @@ func taxCategoryCode(t *tax.Combo) *ubl.IDType {
 	return nil
 }
 
-// taxCategoryPercent is required on every category except UNTDID "O", which is
-// outside the scope of tax and so has no rate to state.
+// taxCategoryPercent states a rate on every category; OIOUBL wants an explicit 0
+// rather than a missing element for zero-rated and reverse-charge.
 func taxCategoryPercent(t *tax.Combo) *string {
 	if t.Percent != nil {
 		return ptr(t.Percent.StringWithoutSymbol())
-	}
-	if t.Ext.Get(untdid.ExtKeyTaxCategory).String() == string(en16931.TaxCategoryOutsideScope) {
-		return nil
 	}
 	return ptr("0")
 }
