@@ -82,7 +82,7 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 		return nil, ErrUnsupportedDocumentType
 	}
 
-	ui.addOIOUBLDetails(inv, details)
+	ui.addGOBLDetails(inv, details)
 
 	inv.SetAddons(append(inv.GetAddons(), addon.V2)...)
 	if err := env.Calculate(); err != nil {

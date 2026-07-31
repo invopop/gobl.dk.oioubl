@@ -19,9 +19,8 @@ func (ui *Invoice) stripDelivery() {
 	}
 }
 
-// moveDeliveryPartyAddress puts a delivery party's address where EN 16931 keeps
-// the place of delivery (BG-15). OIOUBL allows it on the party, EN 16931 does
-// not (UBL-CR-394), so the base never reads it and the address would be lost.
+// moveDeliveryPartyAddress moves a delivery party's address to the location,
+// where EN 16931 keeps the place of delivery (BG-15, UBL-CR-394).
 func moveDeliveryPartyAddress(d *ubl.Delivery) {
 	if d.DeliveryParty == nil || d.DeliveryParty.PostalAddress == nil {
 		return

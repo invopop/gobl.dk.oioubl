@@ -6,9 +6,9 @@ import (
 	"github.com/invopop/gobl/uuid"
 )
 
-// addOIOUBLDetails puts back what the generic parse has no field for, reading
-// it off the original document.
-func (ui *Invoice) addOIOUBLDetails(inv *bill.Invoice, details oioublDetails) {
+// addGOBLDetails fills in the GOBL fields the generic parse leaves empty,
+// reading them off the original OIOUBL document.
+func (ui *Invoice) addGOBLDetails(inv *bill.Invoice, details oioublDetails) {
 	addExciseCharges(inv, details)
 
 	if len(ui.PaymentMeans) > 0 && inv.Payment != nil {
