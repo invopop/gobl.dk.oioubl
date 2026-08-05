@@ -6,6 +6,14 @@ Responses and Reminders are a planned follow-up, not yet implemented here.
 
 Released under the Apache 2.0 [LICENSE](https://github.com/invopop/gobl.dk.oioubl/blob/main/LICENSE), Copyright 2026 [Invopop S.L.](https://invopop.com).
 
+[![Lint](https://github.com/invopop/gobl.dk.oioubl/actions/workflows/lint.yaml/badge.svg)](https://github.com/invopop/gobl.dk.oioubl/actions/workflows/lint.yaml)
+[![Test Go](https://github.com/invopop/gobl.dk.oioubl/actions/workflows/test.yaml/badge.svg)](https://github.com/invopop/gobl.dk.oioubl/actions/workflows/test.yaml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/invopop/gobl.dk.oioubl)](https://goreportcard.com/report/github.com/invopop/gobl.dk.oioubl)
+[![codecov](https://codecov.io/gh/invopop/gobl.dk.oioubl/graph/badge.svg)](https://codecov.io/gh/invopop/gobl.dk.oioubl)
+[![GoDoc](https://godoc.org/github.com/invopop/gobl.dk.oioubl?status.svg)](https://godoc.org/github.com/invopop/gobl.dk.oioubl)
+![Latest Tag](https://img.shields.io/github/v/tag/invopop/gobl.dk.oioubl)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/invopop/gobl.dk.oioubl)
+
 This module implements the OIOUBL 2.1 profile (schematron v1.17.2) as a GOBL tax
 addon (`dk-oioubl-v2`). It `Requires` the EN 16931 addon and layers the
 OIOUBL-specific rules and extensions on top:
