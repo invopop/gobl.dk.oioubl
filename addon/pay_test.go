@@ -62,7 +62,7 @@ func TestPaymentValidation(t *testing.T) {
 				Key: pay.MeansKeyOther,
 				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
 				CreditTransfer: []*pay.CreditTransfer{
-					{Number: "0440116243", Name: "1234"},
+					{Number: "0440116243", Clearing: "1234"},
 				},
 			},
 		}
@@ -77,6 +77,21 @@ func TestPaymentValidation(t *testing.T) {
 				Key:            pay.MeansKeyOther,
 				Ext:            tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
 				CreditTransfer: []*pay.CreditTransfer{{Number: "0440116243"}},
+			},
+		}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB124")
+	})
+
+	t.Run("domestic bank transfer 42 with invalid reg. nr. fails (F-LIB124)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Payment = &bill.PaymentDetails{
+			Instructions: &pay.Instructions{
+				Key: pay.MeansKeyOther,
+				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
+				CreditTransfer: []*pay.CreditTransfer{
+					{Number: "0440116243", Clearing: "123"},
+				},
 			},
 		}
 		require.NoError(t, inv.Calculate())

@@ -22,13 +22,11 @@ func payInstructionsRules() *rules.Set {
 			rules.AssertIfPresent("01", fmt.Sprintf("tax extension '%s' must use a payment means code OIOUBL supports (F-LIB100)", untdid.ExtKeyPaymentMeans),
 				tax.ExtensionsHasCodes(untdid.ExtKeyPaymentMeans, validPaymentMeansCodes...)),
 		),
-		// EN 16931 has no field for a bank registration number, so OIOUBL reads
-		// it from the credit transfer's name.
 		rules.When(is.Func("domestic bank transfer (means 42)", isDomesticTransfer),
 			rules.Field("credit_transfer",
-				rules.Each(rules.Field("name",
-					rules.Assert("02", "a domestic transfer needs the bank registration number as the credit transfer's name (F-LIB124 / F-LIB130)",
-						is.Present),
+				rules.Each(rules.Field("clearing",
+					rules.Assert("02", "a domestic transfer needs a four-digit bank clearing code (F-LIB124 / F-LIB130)",
+						is.Present, is.Matches(`^\d{4}$`)),
 				)),
 			),
 		),

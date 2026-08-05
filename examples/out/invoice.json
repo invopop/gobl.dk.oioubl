@@ -4,7 +4,7 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "fa62d57d1761f85317e85eab1dd90169bfb53d1dbc80b73575d4c3f4a0e65bdc"
+			"val": "d19aacc0de17213e195a3c1c0ffe247670f43023f0383fb82c4c7956499f4dea"
 		},
 		"from": "DK:CVR:16356700",
 		"to": "GLN:5798009883735"
@@ -193,7 +193,7 @@
 				"credit_transfer": [
 					{
 						"number": "1234567890",
-						"name": "1234"
+						"clearing": "1234"
 					}
 				],
 				"ext": {
