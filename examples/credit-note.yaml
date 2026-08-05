@@ -1,0 +1,84 @@
+$schema: "https://gobl.org/draft-0/bill/invoice"
+$regime: "DK"
+$addons:
+  - "dk-oioubl-v2"
+uuid: "9756b53a-8815-1029-857a-e388fe63f399"
+type: "credit-note"
+currency: "DKK"
+issue_date: "2005-11-20"
+code: "A00095679"
+preceding:
+  - uuid: "9756b4d0-8815-1029-857a-e388fe63f399"
+    issue_date: "2005-11-20"
+    code: "A00095678"
+supplier:
+  name: "Tavleleverandøren"
+  alias: "Tavleverandøren"
+  tax_id:
+    country: "DK"
+    code: "16356700" # checksum-valid; real ERST demo data uses 16356706, which fails DK's mod-11 check
+  people:
+    - name:
+        given: "Hugo Jensen"
+      identities:
+        - code: "23456"
+  addresses:
+    - num: "11"
+      street: "Leverandørvej"
+      locality: "Dyssegård"
+      code: "2870"
+      country: "DK"
+  emails:
+    - addr: "Hugo@tavl.dk"
+  telephones:
+    - num: "15812337"
+customer:
+  name: "Den Lille Skole"
+  identities:
+    - scope: "legal"
+      code: "5798009811530"
+      ext:
+        iso-scheme-id: "GLN"
+  endpoints:
+    - uri: "GLN:5798009811530"
+  people:
+    - name:
+        given: "Hans Hansen"
+      identities:
+        - code: "7778"
+  addresses:
+    - num: "10"
+      street: "Fredericiavej"
+      locality: "Helsingør"
+      code: "3000"
+      country: "DK"
+  emails:
+    - addr: "Hans@dls.dk"
+  telephones:
+    - num: "26532147"
+lines:
+  - quantity: 1
+    item:
+      ref: "5712345780121"
+      name: "Hejsetavle"
+      description: "Hejsetavle"
+      price: "5000.00"
+      unit: "item"
+    taxes:
+      - cat: "VAT"
+        rate: "standard"
+  - quantity: 2
+    item:
+      ref: "5712345780111"
+      name: "Beslag"
+      description: "Beslag"
+      price: "25.00"
+      unit: "item"
+    taxes:
+      - cat: "VAT"
+        rate: "standard"
+ordering:
+  cost: "5250124502"
+  purchases:
+    - issue_date: "2005-11-01"
+      code: "5002701"
