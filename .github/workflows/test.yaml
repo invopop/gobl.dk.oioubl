@@ -41,3 +41,34 @@ jobs:
         with:
           token: ${{ env.CODECOV_TOKEN }}
           slug: invopop/gobl.dk.oioubl
+
+  # A document is correct for OIOUBL only if the schematron says so, so the
+  # converted examples are validated against the real ruleset. The phive tag is
+  # pinned because it decides which OIOUBL version ships; if a bump drops the
+  # version the converter names, the test says so instead of skipping.
+  schematron:
+    name: Schematron
+    runs-on: ubuntu-latest
+
+    services:
+      phive:
+        image: ghcr.io/invopop/phive:v0.17.0
+        ports:
+          - 9090:9090
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Install Dependencies
+        env:
+          GOPROXY: https://proxy.golang.org,direct
+        run: go mod download
+
+      - name: Validate the converted examples
+        run: go test -run TestSchematron . -args -validate

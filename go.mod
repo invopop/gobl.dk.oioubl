@@ -5,7 +5,9 @@ go 1.25.0
 require (
 	github.com/invopop/gobl v0.504.0
 	github.com/invopop/gobl.ubl v0.62.0
+	github.com/invopop/phive v0.17.0
 	github.com/stretchr/testify v1.11.1
+	google.golang.org/grpc v1.79.3
 )
 
 require (
@@ -22,6 +24,7 @@ require (
 	github.com/invopop/gobl.fr.ctc v0.0.4 // indirect
 	github.com/invopop/gobl.sa.zatca v0.0.2 // indirect
 	github.com/invopop/jsonschema v0.14.0 // indirect
+	github.com/invopop/tasks v0.1.0 // indirect
 	github.com/invopop/validation v0.8.0 // indirect
 	github.com/invopop/xmlctx v0.13.0 // indirect
 	github.com/invopop/xmldsig v0.14.0 // indirect
@@ -33,7 +36,11 @@ require (
 	github.com/russellhaering/goxmldsig v1.6.0 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
+	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.7.0 // indirect
 )
