@@ -27,9 +27,11 @@ type categoryGroups struct {
 	extraBase map[string]num.Amount // untaxed amounts riding along with it
 }
 
-func (ui *Invoice) buildTotals(inv *bill.Invoice) {
+// buildTotals rebuilds the monetary and tax totals, returning the document's
+// total tax (VAT plus excise), which OIOUBL reports as TaxExclusiveAmount.
+func (ui *Invoice) buildTotals(inv *bill.Invoice) ubl.Amount {
 	if inv == nil || inv.Totals == nil {
-		return
+		return ubl.Amount{}
 	}
 	t := inv.Totals
 	currency := inv.Currency.String()
@@ -53,7 +55,10 @@ func (ui *Invoice) buildTotals(inv *bill.Invoice) {
 
 	// Excise duties get their own cac:TaxTotal; the VAT total already covers them
 	// in its base, and applyTotals adds them to TaxExclusiveAmount.
-	ui.TaxTotal = append(ui.TaxTotal, makeExciseTaxTotals(collectExcise(inv, currency), currency)...)
+	exciseTotals, exciseTotal := makeExciseTaxTotals(collectExcise(inv, currency), currency)
+	ui.TaxTotal = append(ui.TaxTotal, exciseTotals...)
+
+	return ubl.Amount{Value: t.Tax.Add(exciseTotal.Rescale(t.Tax.Exp())).String(), CurrencyID: &currency}
 }
 
 // createMonetaryTotal rebuilds LegalMonetaryTotal with gross line amounts (F-INV348).
@@ -254,7 +259,7 @@ func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTota
 	}
 	if r.Percent != nil {
 		taxCat.Percent = ptr(r.Percent.StringWithoutSymbol())
-	} else if taxCat.ID == nil || taxCat.ID.Value != "O" {
+	} else {
 		taxCat.Percent = ptr("0")
 	}
 	if cat.Code != cbc.CodeEmpty {
@@ -265,7 +270,7 @@ func buildVATSubtotal(inv *bill.Invoice, cat *tax.CategoryTotal, r *tax.RateTota
 }
 
 // applyTotals stamps taxcategoryid attributes and re-interprets TaxExclusiveAmount as the total tax (F-INV127).
-func (ui *Invoice) applyTotals() {
+func (ui *Invoice) applyTotals(totalTax ubl.Amount) {
 	for i := range ui.TaxTotal {
 		for j := range ui.TaxTotal[i].TaxSubtotal {
 			st := &ui.TaxTotal[i].TaxSubtotal[j]
@@ -282,27 +287,5 @@ func (ui *Invoice) applyTotals() {
 		}
 	}
 	// TaxExclusiveAmount is the sum of all tax — VAT plus any excise (F-INV127).
-	ui.LegalMonetaryTotal.TaxExclusiveAmount = sumTaxTotalAmounts(ui.TaxTotal)
-}
-
-// sumTaxTotalAmounts totals the TaxAmount of every cac:TaxTotal (VAT plus excise).
-func sumTaxTotalAmounts(totals []ubl.TaxTotal) ubl.Amount {
-	if len(totals) == 0 {
-		return ubl.Amount{}
-	}
-	if len(totals) == 1 {
-		return totals[0].TaxAmount
-	}
-	sum, err := num.AmountFromString(normalizeNumericString(totals[0].TaxAmount.Value))
-	if err != nil {
-		return totals[0].TaxAmount
-	}
-	for _, tt := range totals[1:] {
-		a, err := num.AmountFromString(normalizeNumericString(tt.TaxAmount.Value))
-		if err != nil {
-			continue
-		}
-		sum = sum.Add(a.Rescale(sum.Exp()))
-	}
-	return ubl.Amount{Value: sum.String(), CurrencyID: totals[0].TaxAmount.CurrencyID}
+	ui.LegalMonetaryTotal.TaxExclusiveAmount = totalTax
 }

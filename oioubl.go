@@ -112,9 +112,9 @@ func (ui *Invoice) applyOIOUBL(inv *bill.Invoice) {
 	ui.fixTaxCurrency(inv)
 	ui.applyCharges(inv)
 	ui.TaxTotal = nil
-	ui.buildTotals(inv)
+	totalTax := ui.buildTotals(inv)
 	ui.applyLines(inv)
-	ui.applyTotals()
+	ui.applyTotals(totalTax)
 
 	ui.applySchemes(inv)
 }

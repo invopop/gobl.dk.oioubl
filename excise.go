@@ -119,8 +119,9 @@ func exciseVATBases(inv *bill.Invoice) map[cbc.Key]num.Amount {
 
 // makeExciseTaxTotals builds one cac:TaxTotal per duty scheme (code), grouping
 // same-code duties into shared TaxSubtotal entries: OIOUBL forbids the same
-// duty code from appearing in more than one TaxTotal class (G27 3.5).
-func makeExciseTaxTotals(excises []exciseDuty, currency string) []ubl.TaxTotal {
+// duty code from appearing in more than one TaxTotal class (G27 3.5). The
+// second return is the total duty across every scheme.
+func makeExciseTaxTotals(excises []exciseDuty, currency string) ([]ubl.TaxTotal, num.Amount) {
 	var order []string
 	subtotals := make(map[string][]ubl.TaxSubtotal)
 	sums := make(map[string]num.Amount)
@@ -162,13 +163,19 @@ func makeExciseTaxTotals(excises []exciseDuty, currency string) []ubl.TaxTotal {
 	}
 
 	var totals []ubl.TaxTotal
-	for _, scheme := range order {
+	var total num.Amount
+	for i, scheme := range order {
+		if i == 0 {
+			total = sums[scheme]
+		} else {
+			total = total.Add(sums[scheme].Rescale(total.Exp()))
+		}
 		totals = append(totals, ubl.TaxTotal{
 			TaxAmount:   ubl.Amount{Value: sums[scheme].String(), CurrencyID: &currency},
 			TaxSubtotal: subtotals[scheme],
 		})
 	}
-	return totals
+	return totals, total
 }
 
 // isExciseOnlyRate reports whether a VAT rate row is owed entirely to excise, so it gets no subtotal of its own (F-LIB404).

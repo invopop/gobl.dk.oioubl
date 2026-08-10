@@ -1,8 +1,6 @@
 package oioubl
 
 import (
-	"strings"
-
 	"github.com/invopop/gobl/cal"
 )
 
@@ -17,13 +15,4 @@ func formatDate(d cal.Date) string {
 		return ""
 	}
 	return d.Time().Format("2006-01-02")
-}
-
-// normalizeNumericString preps a wire amount for num parsing: trims space, zero-pads a leading decimal point.
-func normalizeNumericString(s string) string {
-	s = strings.TrimSpace(s)
-	if strings.HasPrefix(s, ".") {
-		s = "0" + s
-	}
-	return s
 }
