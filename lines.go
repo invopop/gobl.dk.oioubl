@@ -67,11 +67,6 @@ func applyLineTaxCategories(lines []ubl.InvoiceLine) {
 				applyTaxCategory(&st.TaxCategory)
 			}
 		}
-		for _, ac := range line.AllowanceCharge {
-			for _, tc := range ac.TaxCategory {
-				applyTaxCategory(tc)
-			}
-		}
 	}
 }
 
@@ -131,7 +126,8 @@ func makeLineTaxTotals(line *bill.Line, ccy string) []ubl.TaxTotal {
 
 	// Also emit line-level cac:TaxTotal/Excise blocks so the wire records which line each duty belongs to.
 	totals := []ubl.TaxTotal{taxTotal}
-	totals = append(totals, makeExciseTaxTotals(collectLineExcise(line, ccy), ccy)...)
+	exciseTotals, _ := makeExciseTaxTotals(collectLineExcise(line, ccy), ccy)
+	totals = append(totals, exciseTotals...)
 	return totals
 }
 
