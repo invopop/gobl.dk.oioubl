@@ -81,6 +81,7 @@
     <cbc:PaymentChannelCode listID="urn:oioubl:codelist:paymentchannelcode-1.1">DK:BANK</cbc:PaymentChannelCode>
     <cac:PayeeFinancialAccount>
       <cbc:ID>0440116243</cbc:ID>
+      <cbc:Name>Danske Bank</cbc:Name>
       <cac:FinancialInstitutionBranch>
         <cbc:ID>1234</cbc:ID>
       </cac:FinancialInstitutionBranch>

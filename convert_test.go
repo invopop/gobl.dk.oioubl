@@ -153,3 +153,25 @@ func TestConvertUnsupportedVATKey(t *testing.T) {
 		})
 	}
 }
+
+// The Danish bank registration number rides pay.CreditTransfer.Clearing, which
+// the addon requires for a domestic transfer, and OIOUBL wants in
+// FinancialInstitutionBranch (F-LIB124/F-LIB130). The account name is the
+// bank's own and has to survive the move.
+func TestConvertDomesticTransferClearing(t *testing.T) {
+	env := loadTestEnvelope(t, filepath.Join(getConvertPath(), "dk-bank.json"))
+	require.NoError(t, env.Calculate())
+	require.NoError(t, env.Validate(), "fixture must satisfy the addon's own rules")
+
+	doc, err := oioubl.ConvertInvoice(env)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, doc.PaymentMeans)
+	account := doc.PaymentMeans[0].PayeeFinancialAccount
+	require.NotNil(t, account)
+	require.NotNil(t, account.FinancialInstitutionBranch)
+	require.NotNil(t, account.FinancialInstitutionBranch.ID)
+	assert.Equal(t, "1234", *account.FinancialInstitutionBranch.ID)
+	require.NotNil(t, account.Name)
+	assert.Equal(t, "Danske Bank", *account.Name)
+}

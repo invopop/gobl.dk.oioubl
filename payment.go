@@ -73,8 +73,8 @@ func paymentChannel(means string) string {
 	return ""
 }
 
-// applyRegNr moves the reg. nr. from the credit transfer's name, where EN 16931
-// has to keep it, to the branch where OIOUBL wants it (F-LIB124/F-LIB130).
+// applyRegNr moves the reg. nr. from the credit transfer's clearing code to the
+// branch where OIOUBL wants it (F-LIB124/F-LIB130).
 func applyRegNr(pm *ubl.PaymentMeans, instr *pay.Instructions) {
 	if pm.PayeeFinancialAccount == nil {
 		return
@@ -83,12 +83,11 @@ func applyRegNr(pm *ubl.PaymentMeans, instr *pay.Instructions) {
 	if len(instr.CreditTransfer) == 0 {
 		return
 	}
-	regNr := instr.CreditTransfer[0].Name
-	if regNr == "" {
+	regNr := instr.CreditTransfer[0].Clearing
+	if regNr.IsEmpty() {
 		return
 	}
-	pm.PayeeFinancialAccount.Name = nil
-	pm.PayeeFinancialAccount.FinancialInstitutionBranch = &ubl.Branch{ID: &regNr}
+	pm.PayeeFinancialAccount.FinancialInstitutionBranch = &ubl.Branch{ID: ptr(regNr.String())}
 }
 
 // applyPaymentMeans stamps the payment channel and moves the document due date onto each means.
