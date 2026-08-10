@@ -33,7 +33,7 @@
         </cac:Country>
       </cac:PostalAddress>
       <cac:PartyTaxScheme>
-        <cbc:CompanyID schemeID="DK:SE">DK16356800</cbc:CompanyID>
+        <cbc:CompanyID schemeID="DK:SE">DK16356808</cbc:CompanyID>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
@@ -71,7 +71,7 @@
         </cac:Country>
       </cac:PostalAddress>
       <cac:PartyTaxScheme>
-        <cbc:CompanyID schemeID="ZZZ">SE123456789012</cbc:CompanyID>
+        <cbc:CompanyID schemeID="ZZZ">SE123456789701</cbc:CompanyID>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
@@ -79,7 +79,7 @@
       </cac:PartyTaxScheme>
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>Headoffice AB</cbc:RegistrationName>
-        <cbc:CompanyID schemeID="ZZZ">SE123456789012</cbc:CompanyID>
+        <cbc:CompanyID schemeID="ZZZ">SE123456789701</cbc:CompanyID>
       </cac:PartyLegalEntity>
       <cac:Contact>
         <cbc:ID>7778</cbc:ID>
@@ -111,6 +111,7 @@
       <cac:TaxCategory>
         <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">ReverseCharge</cbc:ID>
         <cbc:Percent>0</cbc:Percent>
+        <cbc:TaxExemptionReason>Omvendt betalingspligt</cbc:TaxExemptionReason>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>

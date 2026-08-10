@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
 		"dig": {
 			"alg": "sha256",
-			"val": "49d46b3bd708d58f449e63fdc57ab963e38b19f04a96cb4e8879e76a3f16fd6a"
+			"val": "dceb4b6b7a09c53160bbc1d48b241f3c1e9c8988e7c7dad0012ef2673439a7f1"
 		},
 		"from": "DK:CVR:12345674",
 		"to": "DK:CVR:76543216"
@@ -23,6 +23,7 @@
 		"issue_date": "2026-05-29",
 		"currency": "DKK",
 		"tax": {
+			"rounding": "currency",
 			"ext": {
 				"untdid-document-type": "380"
 			}

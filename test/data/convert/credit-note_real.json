@@ -4,7 +4,7 @@
 		"uuid": "019f6ba2-d467-72fc-990d-3f554abdaae1",
 		"dig": {
 			"alg": "sha256",
-			"val": "f118267f4aca6e4baa553d8d9179a6517c56630b381604bf44fdc456078f998e"
+			"val": "98d099b8088afc3d50e580669b87234f8d4a771986dd79334abf1a9f73da8fcd"
 		},
 		"from": "GLN:5798009811530",
 		"to": "GLN:5798009811530"
@@ -39,12 +39,12 @@
 			"alias": "Tavleverandøren",
 			"tax_id": {
 				"country": "DK",
-				"code": "16356706"
+				"code": "16356700"
 			},
 			"identities": [
 				{
 					"scope": "legal",
-					"code": "DK16356706",
+					"code": "DK16356700",
 					"ext": {
 						"iso-scheme-id": "DK:CVR"
 					}

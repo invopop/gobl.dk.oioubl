@@ -4,9 +4,9 @@
 		"uuid": "019f7e8c-1a07-7406-9802-3701b585b22d",
 		"dig": {
 			"alg": "sha256",
-			"val": "b4aa4d22ddbbb9fd18057e104f24731191a29e2937b29cd29aa1383c1c2e65ee"
+			"val": "310a69b868dae2a99a9518834dee2845e26727b1bd4c60eb3112404cd48c873f"
 		},
-		"from": "DK:CVR:16356706",
+		"from": "DK:CVR:16356700",
 		"to": "GLN:5798000416604"
 	},
 	"doc": {
@@ -32,12 +32,12 @@
 			"alias": "Tavleverandøren",
 			"tax_id": {
 				"country": "DK",
-				"code": "16356706"
+				"code": "16356700"
 			},
 			"identities": [
 				{
 					"scope": "legal",
-					"code": "DK16356706",
+					"code": "DK16356700",
 					"ext": {
 						"iso-scheme-id": "DK:CVR"
 					}
@@ -49,7 +49,7 @@
 					"code": "DK16356707"
 				},
 				{
-					"code": "16356706",
+					"code": "16356700",
 					"ext": {
 						"iso-scheme-id": "DK:CVR"
 					}
@@ -69,7 +69,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "DK:CVR:16356706"
+					"uri": "DK:CVR:16356700"
 				}
 			],
 			"addresses": [
@@ -164,6 +164,7 @@
 						"key": "excise",
 						"reason": "Chokolade- og sukkerafgift",
 						"base": "1000.00",
+						"percent": "5%",
 						"amount": "50.00",
 						"ext": {
 							"dk-oioubl-duty-code": "16"
@@ -173,6 +174,7 @@
 						"key": "excise",
 						"reason": "Chokolade- og sukkerafgift",
 						"base": "1000.00",
+						"percent": "12%",
 						"amount": "120.00",
 						"ext": {
 							"dk-oioubl-duty-code": "16"

@@ -4,7 +4,7 @@
 		"uuid": "019f7e8c-edea-75a2-b8d3-90b384903851",
 		"dig": {
 			"alg": "sha256",
-			"val": "9a35a736a37a1afea5a9ef61e0d8eab9a34d51803a96617c1d2fd460a6f6dd1c"
+			"val": "ea97e1912672a7111d3b54a75471f77d6395780b39f4d6ec271b345deab6dbc1"
 		},
 		"from": "DK:CVR:16356706",
 		"to": "GLN:5798000416604"
@@ -25,14 +25,24 @@
 			"rounding": "currency",
 			"ext": {
 				"untdid-document-type": "380"
-			}
+			},
+			"notes": [
+				{
+					"cat": "VAT",
+					"key": "reverse-charge",
+					"text": "Omvendt betalingspligt",
+					"ext": {
+						"untdid-tax-category": "AE"
+					}
+				}
+			]
 		},
 		"supplier": {
 			"name": "Tavleleverandøren",
 			"alias": "International A/S",
 			"tax_id": {
 				"country": "DK",
-				"code": "16356800"
+				"code": "16356808"
 			},
 			"identities": [
 				{
@@ -90,12 +100,12 @@
 			"name": "Headoffice AB",
 			"tax_id": {
 				"country": "SE",
-				"code": "123456789012"
+				"code": "123456789701"
 			},
 			"identities": [
 				{
 					"scope": "legal",
-					"code": "SE123456789012",
+					"code": "SE123456789701",
 					"ext": {
 						"iso-scheme-id": "ZZZ"
 					}

@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3",
 		"dig": {
 			"alg": "sha256",
-			"val": "4ec5f5f6c29105938902c7e3b1bc3e0004b27d8d6e7ba830260f2a0ab2803203"
+			"val": "e46575183b629b3f84d6fd80f522bfd3d097eac8124054a180f7b1c26d0ae3a8"
 		},
 		"from": "DK:CPR:1111111118",
 		"to": "GLN:5790001968502"
@@ -33,12 +33,14 @@
 			"identities": [
 				{
 					"scope": "legal",
+					"type": "CPR",
 					"code": "1111111118",
 					"ext": {
 						"iso-scheme-id": "DK:CPR"
 					}
 				},
 				{
+					"type": "CPR",
 					"code": "1111111118",
 					"ext": {
 						"iso-scheme-id": "DK:CPR"

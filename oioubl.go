@@ -120,13 +120,15 @@ func (ui *Invoice) applyOIOUBL(inv *bill.Invoice) {
 }
 
 // ensureOIOUBLAddon adds the addon and recalculates, so its normalizations run.
+// A document that already declares it is validated too: the converter trusts the
+// addon's rules to have run, and silently converting a document that breaks them
+// produces XML the schematron rejects for reasons that point nowhere useful.
 func ensureOIOUBLAddon(env *gobl.Envelope, inv *bill.Invoice) error {
-	if addon.V2.In(inv.GetAddons()...) {
-		return nil
-	}
-	inv.SetAddons(append(inv.GetAddons(), addon.V2)...)
-	if err := env.Calculate(); err != nil {
-		return err
+	if !addon.V2.In(inv.GetAddons()...) {
+		inv.SetAddons(append(inv.GetAddons(), addon.V2)...)
+		if err := env.Calculate(); err != nil {
+			return err
+		}
 	}
 	return env.Validate()
 }
