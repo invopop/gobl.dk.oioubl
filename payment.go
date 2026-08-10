@@ -33,7 +33,7 @@ func (ui *Invoice) applyPayment(inv *bill.Invoice) {
 		applyPaymentID(pm, instr, paymentMeansCode)
 		if paymentMeansCode == "93" && len(instr.CreditTransfer) > 0 {
 			// FIK: cac:CreditAccount/cbc:AccountID (F-LIB305), not PayeeFinancialAccount.
-			pm.CreditAccount = &ubl.CreditAccount{AccountID: instr.CreditTransfer[0].Number}
+			pm.CreditAccount = &ubl.CreditAccount{AccountID: instr.CreditTransfer[0].Number.String()}
 			pm.PayeeFinancialAccount = nil
 		}
 	case "42":
