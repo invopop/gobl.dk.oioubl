@@ -123,11 +123,11 @@ func dkPrefixed(value string) string {
 }
 
 // applyCompanyID picks the scheme for a company ID. The scheme the party
-// already carries wins where OIOUBL allows it; a Danish party that named none
-// gets the position's Danish register; anything else gets ZZZ, OIOUBL's "other"
-// register. allowed lists the schemes valid in this position, Danish register
-// first (legal entity F-LIB189, tax scheme F-LIB195).
-func applyCompanyID(id *ubl.IDType, danish bool, allowed ...string) {
+// already carries wins where OIOUBL allows it in this position; a Danish party
+// that named none gets danishScheme; anything else gets ZZZ, OIOUBL's "other"
+// register. The positions differ in what they accept: legal entity F-LIB189,
+// tax scheme F-LIB195.
+func applyCompanyID(id *ubl.IDType, danish bool, danishScheme string, alsoAllowed ...string) {
 	if id == nil {
 		return
 	}
@@ -135,9 +135,9 @@ func applyCompanyID(id *ubl.IDType, danish bool, allowed ...string) {
 	if id.SchemeID != nil {
 		scheme = *id.SchemeID
 	}
-	if !slices.Contains(allowed, scheme) {
+	if scheme != danishScheme && !slices.Contains(alsoAllowed, scheme) {
 		if scheme == "" && danish {
-			scheme = allowed[0]
+			scheme = danishScheme
 		} else {
 			scheme = schemeZZZ
 		}
