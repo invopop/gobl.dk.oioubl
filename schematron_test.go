@@ -39,7 +39,7 @@ func TestSchematron(t *testing.T) {
 	waitForRules(t, client)
 
 	for _, example := range convertCases(t) {
-		t.Run(example.src, func(t *testing.T) {
+		t.Run(example.name, func(t *testing.T) {
 			env := loadTestEnvelope(t, example.src)
 			inv, ok := env.Extract().(*bill.Invoice)
 			require.True(t, ok, "example should hold an invoice")

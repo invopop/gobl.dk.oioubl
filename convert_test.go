@@ -16,6 +16,7 @@ import (
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/l10n"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/pay"
@@ -33,6 +34,7 @@ func getConvertPath() string {
 // convertCase is a GOBL envelope to convert, with the OIOUBL XML it should
 // produce.
 type convertCase struct {
+	name   string
 	src    string
 	golden string
 }
@@ -43,9 +45,9 @@ type convertCase struct {
 // invalid OIOUBL.
 func convertCases(t *testing.T) []convertCase {
 	t.Helper()
-	dirs := []struct{ src, golden string }{
-		{getConvertPath(), filepath.Join(getConvertPath(), "out")},
-		{filepath.Join("examples", "out"), filepath.Join("examples", "out")},
+	dirs := []struct{ label, src, golden string }{
+		{"convert", getConvertPath(), filepath.Join(getConvertPath(), "out")},
+		{"examples", filepath.Join("examples", "out"), filepath.Join("examples", "out")},
 	}
 	var cases []convertCase
 	for _, dir := range dirs {
@@ -55,6 +57,7 @@ func convertCases(t *testing.T) []convertCase {
 		for _, src := range found {
 			name := strings.TrimSuffix(filepath.Base(src), ".json")
 			cases = append(cases, convertCase{
+				name:   dir.label + "/" + name,
 				src:    src,
 				golden: filepath.Join(dir.golden, name+".xml"),
 			})
@@ -73,9 +76,11 @@ func loadTestEnvelope(t *testing.T, path string) *gobl.Envelope {
 	return env
 }
 
-func TestConvertInvoice(t *testing.T) {
+// TestConvert covers every fixture and shipped example, invoices and credit
+// notes alike.
+func TestConvert(t *testing.T) {
 	for _, example := range convertCases(t) {
-		t.Run(example.src, func(t *testing.T) {
+		t.Run(example.name, func(t *testing.T) {
 			env := loadTestEnvelope(t, example.src)
 
 			doc, err := oioubl.ConvertInvoice(env)
@@ -188,6 +193,7 @@ func TestConvertUnsupportedVATKey(t *testing.T) {
 func TestConvertCompanyIDScheme(t *testing.T) {
 	tests := []struct {
 		name       string
+		country    l10n.ISOCountryCode
 		scheme     cbc.Code
 		code       cbc.Code
 		wantScheme string
@@ -198,9 +204,14 @@ func TestConvertCompanyIDScheme(t *testing.T) {
 		{name: "CPR keeps its scheme unprefixed", scheme: "DK:CPR", code: "1111111118", wantScheme: "DK:CPR", wantCode: "1111111118"},
 		{name: "GLN falls back to ZZZ unprefixed", scheme: "GLN", code: "5798009883735", wantScheme: "ZZZ", wantCode: "5798009883735"},
 		{name: "SE on the legal entity falls back to ZZZ", scheme: "DK:SE", code: "88146328", wantScheme: "ZZZ", wantCode: "88146328"},
+		{name: "a foreign party with no scheme gets ZZZ unprefixed", country: "SE", code: "5566778899", wantScheme: "ZZZ", wantCode: "5566778899"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			country := test.country
+			if country == "" {
+				country = "DK"
+			}
 			id := &org.Identity{Scope: org.IdentityScopeLegal, Code: test.code}
 			if test.scheme != "" {
 				id.Ext = tax.ExtensionsOf(cbc.CodeMap{iso.ExtKeySchemeID: test.scheme})
@@ -222,7 +233,7 @@ func TestConvertCompanyIDScheme(t *testing.T) {
 					Name:       "Den Lille Skole",
 					Identities: []*org.Identity{id},
 					Endpoints:  []*org.Endpoint{{URI: "GLN:5798009883735"}},
-					Addresses:  []*org.Address{{Street: "Fredericiavej", Locality: "Helsingør", Code: "3000", Country: "DK"}},
+					Addresses:  []*org.Address{{Street: "Fredericiavej", Locality: "Helsingør", Code: "3000", Country: country}},
 				},
 				Lines: []*bill.Line{{
 					Quantity: num.MakeAmount(1, 0),
