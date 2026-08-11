@@ -16,15 +16,15 @@
 		}
 	},
 	"supplier": {
-		"name": "Worksome Aps",
+		"name": "Sample Supplier ApS",
 		"tax_id": {
 			"country": "DK",
-			"code": "37990485"
+			"code": "10000009"
 		},
 		"identities": [
 			{
 				"scope": "legal",
-				"code": "37990485",
+				"code": "10000009",
 				"ext": {
 					"iso-scheme-id": "DK:CVR"
 				}
@@ -32,13 +32,13 @@
 		],
 		"endpoints": [
 			{
-				"uri": "DK:CVR:37990485"
+				"uri": "DK:CVR:10000009"
 			}
 		],
 		"addresses": [
 			{
 				"num": "7-9",
-				"street": "Dampfærgevej",
+				"street": "Eksempelvej",
 				"locality": "København Ø",
 				"code": "2100",
 				"country": "DK"
@@ -46,15 +46,15 @@
 		]
 	},
 	"customer": {
-		"name": "Lego System A/S",
+		"name": "Sample Customer A/S",
 		"tax_id": {
 			"country": "DK",
-			"code": "47458714"
+			"code": "10000017"
 		},
 		"identities": [
 			{
 				"scope": "legal",
-				"code": "47458714",
+				"code": "10000017",
 				"ext": {
 					"iso-scheme-id": "DK:CVR"
 				}
@@ -74,13 +74,13 @@
 		],
 		"endpoints": [
 			{
-				"uri": "DK:CVR:47458714"
+				"uri": "DK:CVR:10000017"
 			}
 		],
 		"addresses": [
 			{
 				"num": "1",
-				"street": "Aastvej",
+				"street": "Prøvevej",
 				"locality": "Billund",
 				"code": "7190",
 				"country": "DK"
@@ -110,7 +110,7 @@
 			"i": 2,
 			"quantity": "1",
 			"item": {
-				"name": "Worksome service fee",
+				"name": "Sample service fee",
 				"price": "1267.04",
 				"unit": "one"
 			},

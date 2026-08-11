@@ -13,13 +13,13 @@
   </cac:OrderReference>
   <cac:AccountingSupplierParty>
     <cac:Party>
-      <cbc:EndpointID schemeID="DK:CVR">DK37990485</cbc:EndpointID>
+      <cbc:EndpointID schemeID="DK:CVR">DK10000009</cbc:EndpointID>
       <cac:PartyName>
-        <cbc:Name>Worksome Aps</cbc:Name>
+        <cbc:Name>Sample Supplier ApS</cbc:Name>
       </cac:PartyName>
       <cac:PostalAddress>
         <cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
-        <cbc:StreetName>Dampfærgevej</cbc:StreetName>
+        <cbc:StreetName>Eksempelvej</cbc:StreetName>
         <cbc:BuildingNumber>7-9</cbc:BuildingNumber>
         <cbc:CityName>København Ø</cbc:CityName>
         <cbc:PostalZone>2100</cbc:PostalZone>
@@ -28,27 +28,27 @@
         </cac:Country>
       </cac:PostalAddress>
       <cac:PartyTaxScheme>
-        <cbc:CompanyID schemeID="DK:SE">DK37990485</cbc:CompanyID>
+        <cbc:CompanyID schemeID="DK:SE">DK10000009</cbc:CompanyID>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.2">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
         </cac:TaxScheme>
       </cac:PartyTaxScheme>
       <cac:PartyLegalEntity>
-        <cbc:RegistrationName>Worksome Aps</cbc:RegistrationName>
-        <cbc:CompanyID schemeID="DK:CVR">DK37990485</cbc:CompanyID>
+        <cbc:RegistrationName>Sample Supplier ApS</cbc:RegistrationName>
+        <cbc:CompanyID schemeID="DK:CVR">DK10000009</cbc:CompanyID>
       </cac:PartyLegalEntity>
     </cac:Party>
   </cac:AccountingSupplierParty>
   <cac:AccountingCustomerParty>
     <cac:Party>
-      <cbc:EndpointID schemeID="DK:CVR">DK47458714</cbc:EndpointID>
+      <cbc:EndpointID schemeID="DK:CVR">DK10000017</cbc:EndpointID>
       <cac:PartyName>
-        <cbc:Name>Lego System A/S</cbc:Name>
+        <cbc:Name>Sample Customer A/S</cbc:Name>
       </cac:PartyName>
       <cac:PostalAddress>
         <cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredDK</cbc:AddressFormatCode>
-        <cbc:StreetName>Aastvej</cbc:StreetName>
+        <cbc:StreetName>Prøvevej</cbc:StreetName>
         <cbc:BuildingNumber>1</cbc:BuildingNumber>
         <cbc:CityName>Billund</cbc:CityName>
         <cbc:PostalZone>7190</cbc:PostalZone>
@@ -57,15 +57,15 @@
         </cac:Country>
       </cac:PostalAddress>
       <cac:PartyTaxScheme>
-        <cbc:CompanyID schemeID="DK:SE">DK47458714</cbc:CompanyID>
+        <cbc:CompanyID schemeID="DK:SE">DK10000017</cbc:CompanyID>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.2">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
         </cac:TaxScheme>
       </cac:PartyTaxScheme>
       <cac:PartyLegalEntity>
-        <cbc:RegistrationName>Lego System A/S</cbc:RegistrationName>
-        <cbc:CompanyID schemeID="DK:CVR">DK47458714</cbc:CompanyID>
+        <cbc:RegistrationName>Sample Customer A/S</cbc:RegistrationName>
+        <cbc:CompanyID schemeID="DK:CVR">DK10000017</cbc:CompanyID>
       </cac:PartyLegalEntity>
       <cac:Contact>
         <cbc:ID>C-001</cbc:ID>
@@ -79,7 +79,7 @@
     <cbc:PaymentChannelCode listID="urn:oioubl:codelist:paymentchannelcode-1.1">IBAN</cbc:PaymentChannelCode>
     <cbc:PaymentID>SAMPLE-001</cbc:PaymentID>
     <cac:PayeeFinancialAccount>
-      <cbc:ID>DK5000400440116243</cbc:ID>
+      <cbc:ID>DK1100409876543210</cbc:ID>
       <cbc:Name>Danske Bank</cbc:Name>
       <cac:FinancialInstitutionBranch>
         <cac:FinancialInstitution>
@@ -163,7 +163,7 @@
       </cac:TaxSubtotal>
     </cac:TaxTotal>
     <cac:Item>
-      <cbc:Name>Worksome service fee</cbc:Name>
+      <cbc:Name>Sample service fee</cbc:Name>
       <cac:ClassifiedTaxCategory>
         <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
         <cbc:Percent>25</cbc:Percent>

@@ -22,9 +22,9 @@ Faktura med registreringsafgift samt rabat.
 
 	<cac:AccountingSupplierParty>
 		<cac:Party>
-			<cbc:EndpointID schemeID="DK:CVR">DK37990485</cbc:EndpointID>
+			<cbc:EndpointID schemeID="DK:CVR">DK10000025</cbc:EndpointID>
 			<cac:PartyIdentification>
-				<cbc:ID schemeID="DK:CVR">DK37990485</cbc:ID>
+				<cbc:ID schemeID="DK:CVR">DK10000025</cbc:ID>
 			</cac:PartyIdentification>
 			<cac:PartyName>
 				<cbc:Name>Super Biler</cbc:Name>
@@ -40,7 +40,7 @@ Faktura med registreringsafgift samt rabat.
 				</cac:Country>
 			</cac:PostalAddress>
 			<cac:PartyTaxScheme>
-				<cbc:CompanyID schemeID="DK:SE">DK37990485</cbc:CompanyID>
+				<cbc:CompanyID schemeID="DK:SE">DK10000025</cbc:CompanyID>
 				<cac:TaxScheme>
 					<cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.1">63</cbc:ID>
 					<cbc:Name>Moms</cbc:Name>
@@ -48,7 +48,7 @@ Faktura med registreringsafgift samt rabat.
 			</cac:PartyTaxScheme>
 			<cac:PartyLegalEntity>
 				<cbc:RegistrationName>Super Biler</cbc:RegistrationName>
-				<cbc:CompanyID schemeID="DK:CVR">DK37990485</cbc:CompanyID>
+				<cbc:CompanyID schemeID="DK:CVR">DK10000025</cbc:CompanyID>
 			</cac:PartyLegalEntity>
 			<cac:Contact>
 				<cbc:ID>xyz@superbiler.dk</cbc:ID>

@@ -171,19 +171,19 @@
 		],
 		"endpoints": [
 			{
-				"uri": "DK:CVR:37990485"
+				"uri": "DK:CVR:10000025"
 			}
 		],
 		"identities": [
 			{
-				"code": "37990485",
+				"code": "10000025",
 				"ext": {
 					"iso-scheme-id": "DK:CVR"
 				},
 				"scope": "legal"
 			},
 			{
-				"code": "37990485",
+				"code": "10000025",
 				"ext": {
 					"iso-scheme-id": "DK:CVR"
 				}
@@ -191,7 +191,7 @@
 		],
 		"name": "Super Biler",
 		"tax_id": {
-			"code": "37990485",
+			"code": "10000025",
 			"country": "DK"
 		}
 	},
