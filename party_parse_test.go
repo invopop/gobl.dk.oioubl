@@ -8,6 +8,7 @@ import (
 
 	oioubl "github.com/invopop/gobl.dk.oioubl"
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -81,4 +82,38 @@ func TestParsePayeeContactID(t *testing.T) {
 	require.Len(t, inv.Payment.Payee.People, 1)
 	require.Len(t, inv.Payment.Payee.People[0].Identities, 1)
 	assert.Equal(t, cbc.Code("9000000005"), inv.Payment.Payee.People[0].Identities[0].Code)
+}
+
+func TestParseRecoversZZZScheme(t *testing.T) {
+	// OIOUBL cannot name a GLN on the legal entity, so a sender writes ZZZ and
+	// leaves the register on the endpoint; the identity should come back as GLN.
+	doc := strings.NewReplacer(
+		`<cbc:EndpointID schemeID="DK:CVR">DK10000017</cbc:EndpointID>`,
+		`<cbc:EndpointID schemeID="GLN">5790001968502</cbc:EndpointID>`,
+		`<cbc:CompanyID schemeID="DK:CVR">DK10000017</cbc:CompanyID>`,
+		`<cbc:CompanyID schemeID="ZZZ">5790001968502</cbc:CompanyID>`,
+	).Replace(bareInvoice(t))
+
+	inv, err := convertString(t, doc)
+	require.NoError(t, err)
+	require.NotNil(t, inv.Customer)
+	require.NotEmpty(t, inv.Customer.Identities)
+	assert.Equal(t, "GLN", inv.Customer.Identities[0].Ext.Get(iso.ExtKeySchemeID).String())
+}
+
+func TestParseKeepsZZZWhenNothingNamesIt(t *testing.T) {
+	// The endpoint names a register for a different value, so it says nothing
+	// about this identity and ZZZ has to stand.
+	doc := strings.NewReplacer(
+		`<cbc:EndpointID schemeID="DK:CVR">DK10000017</cbc:EndpointID>`,
+		`<cbc:EndpointID schemeID="GLN">5790001968502</cbc:EndpointID>`,
+		`<cbc:CompanyID schemeID="DK:CVR">DK10000017</cbc:CompanyID>`,
+		`<cbc:CompanyID schemeID="ZZZ">9999999999</cbc:CompanyID>`,
+	).Replace(bareInvoice(t))
+
+	inv, err := convertString(t, doc)
+	require.NoError(t, err)
+	require.NotNil(t, inv.Customer)
+	require.NotEmpty(t, inv.Customer.Identities)
+	assert.Equal(t, "ZZZ", inv.Customer.Identities[0].Ext.Get(iso.ExtKeySchemeID).String())
 }

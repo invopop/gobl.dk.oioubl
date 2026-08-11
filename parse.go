@@ -26,6 +26,8 @@ func (ui *Invoice) addGOBLDetails(inv *bill.Invoice, details oioublDetails) {
 	if inv.Payment != nil {
 		addPartyContact(inv.Payment.Payee, ui.PayeeParty)
 	}
+	recoverIdentityScheme(inv.Supplier, ui.AccountingSupplierParty.Party)
+	recoverIdentityScheme(inv.Customer, ui.AccountingCustomerParty.Party)
 	markLegalIdentity(inv.Supplier)
 	markLegalIdentity(inv.Customer)
 

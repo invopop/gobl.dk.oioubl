@@ -73,6 +73,31 @@ func addPartyContact(p *org.Party, wire *ubl.Party) {
 	p.People[0].Identities = []*org.Identity{{Code: cbc.Code(code)}}
 }
 
+// recoverIdentityScheme puts back the register a ZZZ company id came from.
+// OIOUBL's code list for PartyLegalEntity/CompanyID has no entry for schemes
+// like GLN (F-LIB189), so a sender writes ZZZ there and names the real register
+// on EndpointID instead. Only an endpoint carrying the very same value says
+// anything about the identity, so nothing else disturbs ZZZ.
+func recoverIdentityScheme(p *org.Party, wire *ubl.Party) {
+	if p == nil || wire == nil || wire.EndpointID == nil {
+		return
+	}
+	scheme := wire.EndpointID.SchemeID
+	if scheme == "" || scheme == schemeZZZ {
+		return
+	}
+	for _, id := range p.Identities {
+		if id == nil || id.Ext.Get(iso.ExtKeySchemeID).String() != schemeZZZ {
+			continue
+		}
+		// stripParties has already unprefixed the endpoint, as it did the identity.
+		if id.Code.String() != wire.EndpointID.Value {
+			continue
+		}
+		id.Ext = id.Ext.Set(iso.ExtKeySchemeID, cbc.Code(scheme))
+	}
+}
+
 // markLegalIdentity marks which identity is the official company number. Only
 // CVR and CPR count: OIOUBL allows no other scheme there (F-LIB189).
 func markLegalIdentity(p *org.Party) {
