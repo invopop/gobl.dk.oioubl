@@ -2,6 +2,7 @@ package oioubl
 
 import (
 	ubl "github.com/invopop/gobl.ubl"
+	"github.com/invopop/gobl/num"
 )
 
 // stripLines pulls each line's excise duties out, keyed by line number, and
@@ -45,20 +46,52 @@ func (ui *Invoice) stripLines(vatPercents map[string]string) (map[int][]exciseDu
 // synthesizeClassifiedTaxCategory covers a line that states its VAT only in a
 // tax total, which is not where the generic parser looks.
 func synthesizeClassifiedTaxCategory(line *ubl.InvoiceLine) {
+	var first, wholeLine *ubl.TaxCategory
 	for _, tt := range line.TaxTotal {
 		for i := range tt.TaxSubtotal {
-			tc := &tt.TaxSubtotal[i].TaxCategory
-			if tc.ID == nil || tc.TaxScheme == nil {
+			st := &tt.TaxSubtotal[i]
+			if st.TaxCategory.ID == nil || st.TaxCategory.TaxScheme == nil {
 				continue
 			}
-			line.Item.ClassifiedTaxCategory = &ubl.ClassifiedTaxCategory{
-				ID:        tc.ID,
-				Percent:   tc.Percent,
-				TaxScheme: tc.TaxScheme,
+			if first == nil {
+				first = &st.TaxCategory
 			}
-			return
+			// A line may state more than one category, the others covering its
+			// duties; the line's own is the one levied on the whole line.
+			if wholeLine == nil && sameWireAmount(st.TaxableAmount.Value, line.LineExtensionAmount.Value) {
+				wholeLine = &st.TaxCategory
+			}
 		}
 	}
+	tc := wholeLine
+	if tc == nil {
+		tc = first
+	}
+	if tc == nil {
+		return
+	}
+	line.Item.ClassifiedTaxCategory = &ubl.ClassifiedTaxCategory{
+		ID:        tc.ID,
+		Percent:   tc.Percent,
+		TaxScheme: tc.TaxScheme,
+	}
+}
+
+// sameWireAmount reports whether two wire amounts are numerically equal, so
+// "200000" and "200000.00" match.
+func sameWireAmount(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	x, err := num.AmountFromString(normalizeNumericString(a))
+	if err != nil {
+		return false
+	}
+	y, err := num.AmountFromString(normalizeNumericString(b))
+	if err != nil {
+		return false
+	}
+	return x.Compare(y) == 0
 }
 
 // stripLineAllowanceCharges turns a line's allowances into a note rather than

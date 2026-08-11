@@ -100,23 +100,27 @@ func collectVATPercents(totals []ubl.TaxTotal, percents map[string]string) {
 	}
 }
 
-// addExciseCharges puts each duty back on its line, then adds the document-level
-// ones, skipping any that merely repeat a line's duty.
+// addExciseCharges adds every duty exactly once. When both levels describe the
+// same duty the document-level one wins, because only it can state the VAT type
+// the duty is levied at -- bill.LineCharge has no taxes of its own and would
+// inherit the line's rate.
 func addExciseCharges(inv *bill.Invoice, details oioublDetails) {
-	mirrors := make(map[string]bool)
+	restated := make(map[string]bool)
+	for _, d := range details.docDuties {
+		restated[exciseMirrorKey(d)] = true
+	}
 	for i, duties := range details.lineDuties {
 		if i >= len(inv.Lines) {
 			continue
 		}
 		for _, d := range duties {
+			if restated[exciseMirrorKey(d)] {
+				continue
+			}
 			inv.Lines[i].Charges = append(inv.Lines[i].Charges, dutyToLineCharge(d))
-			mirrors[exciseMirrorKey(d)] = true
 		}
 	}
 	for _, d := range details.docDuties {
-		if mirrors[exciseMirrorKey(d)] {
-			continue
-		}
 		inv.Charges = append(inv.Charges, dutyToCharge(d, details.vatPercents))
 	}
 }
