@@ -2,6 +2,7 @@ package oioubl
 
 import (
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/uuid"
 )
 
@@ -36,6 +37,24 @@ func (ui *Invoice) addGOBLDetails(inv *bill.Invoice, details oioublDetails) {
 	}
 
 	ui.addOrderingDetails(inv)
+	ui.addPayableRounding(inv)
+}
+
+// addPayableRounding carries OIOUBL's afrundingsbeløb, which the generic parse
+// never reads. Calculate leaves Rounding alone precisely so it can be supplied.
+func (ui *Invoice) addPayableRounding(inv *bill.Invoice) {
+	wire := ui.LegalMonetaryTotal.PayableRoundingAmount
+	if wire == nil {
+		return
+	}
+	amount, err := num.AmountFromString(normalizeNumericString(wire.Value))
+	if err != nil || amount.IsZero() {
+		return
+	}
+	if inv.Totals == nil {
+		inv.Totals = new(bill.Totals)
+	}
+	inv.Totals.Rounding = &amount
 }
 
 // addOrderingDetails restores the ordering fields the generic parse skips: the
