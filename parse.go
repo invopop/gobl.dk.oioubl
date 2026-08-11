@@ -2,7 +2,6 @@ package oioubl
 
 import (
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/uuid"
 )
 
@@ -40,14 +39,8 @@ func (ui *Invoice) addGOBLDetails(inv *bill.Invoice, details oioublDetails) {
 }
 
 // addOrderingDetails restores the ordering fields the generic parse skips: the
-// accounting cost, the order's issue date and the preceding documents' UUIDs.
+// order's issue date and the preceding documents' UUIDs.
 func (ui *Invoice) addOrderingDetails(inv *bill.Invoice) {
-	if ui.AccountingCost != "" {
-		if inv.Ordering == nil {
-			inv.Ordering = new(bill.Ordering)
-		}
-		inv.Ordering.Cost = cbc.Code(ui.AccountingCost)
-	}
 	if ui.OrderReference != nil && ui.OrderReference.IssueDate != "" &&
 		inv.Ordering != nil && len(inv.Ordering.Purchases) > 0 {
 		if d, err := parseWireDate(ui.OrderReference.IssueDate); err == nil {
