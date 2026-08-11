@@ -30,7 +30,7 @@
         </cac:Country>
       </cac:PostalAddress>
       <cac:PartyTaxScheme>
-        <cbc:CompanyID schemeID="DK:SE">DK37990485</cbc:CompanyID>
+        <cbc:CompanyID schemeID="DK:SE">DK10000009</cbc:CompanyID>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
@@ -38,7 +38,7 @@
       </cac:PartyTaxScheme>
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>Provide One GmbH</cbc:RegistrationName>
-        <cbc:CompanyID schemeID="DK:CVR">DK37990485</cbc:CompanyID>
+        <cbc:CompanyID schemeID="DK:CVR">DK10000009</cbc:CompanyID>
       </cac:PartyLegalEntity>
       <cac:Contact>
         <cbc:ElectronicMail>billing@example.com</cbc:ElectronicMail>
@@ -62,7 +62,7 @@
         </cac:Country>
       </cac:PostalAddress>
       <cac:PartyTaxScheme>
-        <cbc:CompanyID schemeID="DK:SE">DK47458714</cbc:CompanyID>
+        <cbc:CompanyID schemeID="DK:SE">DK10000017</cbc:CompanyID>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
@@ -70,7 +70,7 @@
       </cac:PartyTaxScheme>
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>Sample Consumer</cbc:RegistrationName>
-        <cbc:CompanyID schemeID="DK:CVR">DK47458714</cbc:CompanyID>
+        <cbc:CompanyID schemeID="DK:CVR">DK10000017</cbc:CompanyID>
       </cac:PartyLegalEntity>
       <cac:Contact>
         <cbc:ID>C-001</cbc:ID>

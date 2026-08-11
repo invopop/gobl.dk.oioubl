@@ -80,7 +80,7 @@
     <cbc:PaymentMeansCode name="Bankoverførsel">42</cbc:PaymentMeansCode>
     <cbc:PaymentChannelCode listID="urn:oioubl:codelist:paymentchannelcode-1.1">DK:BANK</cbc:PaymentChannelCode>
     <cac:PayeeFinancialAccount>
-      <cbc:ID>0440116243</cbc:ID>
+      <cbc:ID>9876543210</cbc:ID>
       <cbc:Name>Danske Bank</cbc:Name>
       <cac:FinancialInstitutionBranch>
         <cbc:ID>1234</cbc:ID>

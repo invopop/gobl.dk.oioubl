@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
 		"dig": {
 			"alg": "sha256",
-			"val": "964242708e596f0d670216493435735938e62998d4e73c8a33777aee5d405d89"
+			"val": "59e4a8bace527354a0089c091db48019fbb8e68c7b47c28a1f085a9fa2c71479"
 		},
 		"from": "DK:CVR:12345674",
 		"to": "DK:CVR:76543216"
@@ -133,7 +133,7 @@
 				"detail": "Bankoverførsel",
 				"credit_transfer": [
 					{
-						"number": "0440116243",
+						"number": "9876543210",
 						"clearing": "1234",
 						"name": "Danske Bank"
 					}
