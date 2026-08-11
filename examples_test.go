@@ -1,4 +1,4 @@
-package dkoioubl
+package oioubl_test
 
 import (
 	"flag"
