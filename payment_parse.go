@@ -45,20 +45,19 @@ func fixGiroFIK(instr *pay.Instructions, pm *ubl.PaymentMeans) {
 		instr.Ref = cbc.Code(cleanString(*pm.InstructionID))
 	}
 	if pm.CreditAccount != nil && pm.CreditAccount.AccountID != "" {
-		instr.CreditTransfer = []*pay.CreditTransfer{{Number: pm.CreditAccount.AccountID}}
+		instr.CreditTransfer = []*pay.CreditTransfer{{Number: cbc.Code(pm.CreditAccount.AccountID)}}
 	}
 }
 
-// fixDKBank corrects the bank registration number, which the base parser takes
-// for a BIC (F-LIB124/130). GOBL has one name to hold it, so a document that
-// also names the account loses that name: the reg. nr. is what a domestic
-// transfer cannot go out without.
+// fixDKBank moves the bank registration number off the BIC, where the base
+// parser puts whatever the branch carries. On a Danish domestic transfer that
+// element is the reg. nr. (F-LIB124/130), which belongs in the clearing code.
 func fixDKBank(instr *pay.Instructions) {
-	if len(instr.CreditTransfer) == 0 || instr.CreditTransfer[0].BIC == "" {
+	if len(instr.CreditTransfer) == 0 || instr.CreditTransfer[0].BIC.IsEmpty() {
 		return
 	}
 	ct := instr.CreditTransfer[0]
-	ct.Name = ct.BIC
+	ct.Clearing = ct.BIC
 	ct.BIC = ""
 }
 
@@ -76,5 +75,5 @@ func fixIBAN(instr *pay.Instructions, pm *ubl.PaymentMeans) {
 	if branch.FinancialInstitution == nil || branch.FinancialInstitution.ID == nil {
 		return
 	}
-	instr.CreditTransfer[0].BIC = cleanString(*branch.FinancialInstitution.ID)
+	instr.CreditTransfer[0].BIC = cbc.Code(cleanString(*branch.FinancialInstitution.ID))
 }

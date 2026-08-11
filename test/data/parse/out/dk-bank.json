@@ -147,7 +147,8 @@
 			"credit_transfer": [
 				{
 					"number": "0440116243",
-					"name": "1234"
+					"clearing": "1234",
+					"name": "Danske Bank"
 				}
 			],
 			"ext": {

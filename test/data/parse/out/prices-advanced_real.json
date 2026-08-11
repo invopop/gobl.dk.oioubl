@@ -252,7 +252,7 @@
 			"credit_transfer": [
 				{
 					"number": "1234567890",
-					"name": "1234"
+					"clearing": "1234"
 				}
 			],
 			"ext": {

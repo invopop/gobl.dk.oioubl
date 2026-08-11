@@ -140,7 +140,7 @@
 		"instructions": {
 			"credit_transfer": [
 				{
-					"name": "1234",
+					"clearing": "1234",
 					"number": "1234123456"
 				}
 			],
