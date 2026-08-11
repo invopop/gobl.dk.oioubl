@@ -23,6 +23,7 @@ func stripParty(p *ubl.Party) {
 	if p == nil {
 		return
 	}
+	stripBlankContact(p.Contact)
 	if p.EndpointID != nil {
 		p.EndpointID.Value = dkUnprefixed(&p.EndpointID.SchemeID, p.EndpointID.Value)
 	}
@@ -42,6 +43,20 @@ func stripParty(p *ubl.Party) {
 	}
 	if le := p.PartyLegalEntity; le != nil && le.CompanyID != nil {
 		le.CompanyID.Value = dkUnprefixed(le.CompanyID.SchemeID, le.CompanyID.Value)
+	}
+}
+
+// stripBlankContact drops contact fields that hold only whitespace. OIOUBL
+// senders write empty elements freely, and the generic parser reads one as a
+// present-but-blank phone or email, which then fails validation.
+func stripBlankContact(c *ubl.Contact) {
+	if c == nil {
+		return
+	}
+	for _, field := range []**string{&c.ID, &c.Name, &c.Telephone, &c.ElectronicMail} {
+		if *field != nil && strings.TrimSpace(**field) == "" {
+			*field = nil
+		}
 	}
 }
 
