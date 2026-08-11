@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -21,9 +20,10 @@ const phiveAddr = "127.0.0.1:9090"
 
 var validate = flag.Bool("validate", false, "validate converted documents against the OIOUBL schematron via phive")
 
-// TestSchematron converts every example and validates it against the real
-// OIOUBL schematron, which is the only definition of correctness the format
-// has: unit tests and golden files only pin what the converter already does.
+// TestSchematron converts every fixture and shipped example and validates each
+// against the real OIOUBL schematron, which is the only definition of
+// correctness the format has: unit tests and golden files only pin what the
+// converter already does.
 //
 // Off by default, since it needs a phive service. Run it with -validate and
 // phive listening on phiveAddr; CI does that with a service container.
@@ -38,13 +38,9 @@ func TestSchematron(t *testing.T) {
 	client := phive.NewValidationServiceClient(conn)
 	waitForRules(t, client)
 
-	examples, err := filepath.Glob(filepath.Join(getConvertPath(), jsonPattern))
-	require.NoError(t, err)
-	require.NotEmpty(t, examples, "no invoice examples found")
-
-	for _, example := range examples {
-		t.Run(filepath.Base(example), func(t *testing.T) {
-			env := loadTestEnvelope(t, example)
+	for _, example := range convertCases(t) {
+		t.Run(example.name, func(t *testing.T) {
+			env := loadTestEnvelope(t, example.src)
 			inv, ok := env.Extract().(*bill.Invoice)
 			require.True(t, ok, "example should hold an invoice")
 
