@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/invopop/gobl"
@@ -14,10 +15,11 @@ import (
 
 const (
 	rootNameCreditNote = "CreditNote"
-
-	// Matches "OIOUBL-2.1", "OIOUBL-2.01", "OIOUBL-2.02", etc.
-	customizationIDPrefix = "OIOUBL-2"
 )
+
+// supportedCustomizationIDs are the OIOUBL 2.1 profile ids in use. A prefix test
+// would also pass unrelated ids straight into the destructive strip pass.
+var supportedCustomizationIDs = []string{"OIOUBL-2.01", "OIOUBL-2.02", "OIOUBL-2.1"}
 
 // BinaryAttachment is the base's type, re-exported so callers do not have to
 // import gobl.ubl just to read what ExtractBinaryAttachments hands back.
@@ -66,8 +68,8 @@ func (ui *Invoice) ExtractBinaryAttachments() []BinaryAttachment {
 // Convert strips the document back to plain EN16931, runs the generic parse,
 // then adds the OIOUBL details the base has no field for.
 func (ui *Invoice) Convert() (*gobl.Envelope, error) {
-	if !strings.HasPrefix(ui.CustomizationID, customizationIDPrefix) {
-		return nil, fmt.Errorf("unsupported customization id %q, expected an %q document", ui.CustomizationID, customizationIDPrefix)
+	if !slices.Contains(supportedCustomizationIDs, ui.CustomizationID) {
+		return nil, fmt.Errorf("unsupported customization id %q, expected one of %v", ui.CustomizationID, supportedCustomizationIDs)
 	}
 
 	// Stripping rewrites the document, so work on a copy: the caller keeps a

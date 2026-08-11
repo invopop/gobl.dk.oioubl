@@ -29,12 +29,6 @@ func normalizeNumericString(s string) string {
 	return s
 }
 
-// cleanString drops the Unicode replacement character, which would otherwise
-// break canonical JSON serialization.
-func cleanString(s string) string {
-	return strings.ReplaceAll(s, "�", "")
-}
-
 // parseWireDate reads a UBL YYYY-MM-DD date.
 func parseWireDate(s string) (cal.Date, error) {
 	t, err := time.Parse("2006-01-02", s)

@@ -48,7 +48,7 @@ func addPaymentDetails(payment *bill.PaymentDetails, pm *ubl.PaymentMeans) {
 func fixGiroFIK(instr *pay.Instructions, pm *ubl.PaymentMeans) {
 	instr.Ref = ""
 	if pm.InstructionID != nil {
-		instr.Ref = cbc.Code(cleanString(*pm.InstructionID))
+		instr.Ref = cbc.Code(*pm.InstructionID)
 	}
 	if pm.CreditAccount != nil && pm.CreditAccount.AccountID != "" {
 		instr.CreditTransfer = []*pay.CreditTransfer{{Number: cbc.Code(pm.CreditAccount.AccountID)}}
@@ -81,5 +81,5 @@ func fixIBAN(instr *pay.Instructions, pm *ubl.PaymentMeans) {
 	if branch.FinancialInstitution == nil || branch.FinancialInstitution.ID == nil {
 		return
 	}
-	instr.CreditTransfer[0].BIC = cbc.Code(cleanString(*branch.FinancialInstitution.ID))
+	instr.CreditTransfer[0].BIC = cbc.Code(*branch.FinancialInstitution.ID)
 }

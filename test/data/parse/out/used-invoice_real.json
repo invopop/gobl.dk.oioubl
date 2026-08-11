@@ -256,7 +256,12 @@
 				{
 					"name": {
 						"given": "Hans Hansen"
-					}
+					},
+					"identities": [
+						{
+							"code": "9000000005"
+						}
+					]
 				}
 			],
 			"endpoints": [

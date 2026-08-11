@@ -66,7 +66,7 @@ func addPartyContact(p *org.Party, wire *ubl.Party) {
 	if p == nil || wire == nil || wire.Contact == nil || wire.Contact.ID == nil || len(p.People) == 0 {
 		return
 	}
-	code := cleanString(*wire.Contact.ID)
+	code := *wire.Contact.ID
 	if code == "" {
 		return
 	}

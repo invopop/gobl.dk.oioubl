@@ -8,6 +8,7 @@ import (
 
 	oioubl "github.com/invopop/gobl.dk.oioubl"
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/cbc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -61,4 +62,23 @@ func TestParseBlankContactKeepsRealValues(t *testing.T) {
 	require.NotNil(t, inv.Customer)
 	require.Len(t, inv.Customer.Emails, 1)
 	assert.Equal(t, "kontakt@example.dk", inv.Customer.Emails[0].Address)
+}
+
+func TestParsePayeeContactID(t *testing.T) {
+	// The payee is stripped like the other parties, so its contact id has to
+	// come back too or a round trip drops it (F-INV051).
+	data, err := os.ReadFile(filepath.Join(getParsePath(), "used-invoice_real.xml"))
+	require.NoError(t, err)
+	in, err := oioubl.ParseInvoice(data)
+	require.NoError(t, err)
+	env, err := in.Convert()
+	require.NoError(t, err)
+	inv, ok := env.Extract().(*bill.Invoice)
+	require.True(t, ok)
+
+	require.NotNil(t, inv.Payment)
+	require.NotNil(t, inv.Payment.Payee)
+	require.Len(t, inv.Payment.Payee.People, 1)
+	require.Len(t, inv.Payment.Payee.People[0].Identities, 1)
+	assert.Equal(t, cbc.Code("9000000005"), inv.Payment.Payee.People[0].Identities[0].Code)
 }

@@ -19,6 +19,17 @@ func TestConvertRejectsNonOIOUBL(t *testing.T) {
 	assert.Contains(t, err.Error(), "customization id")
 }
 
+func TestConvertRejectsNearMissCustomizationID(t *testing.T) {
+	// A prefix test would let these through and then strip them as Danish.
+	for _, id := range []string{"OIOUBL-20", "OIOUBL-2anything", "OIOUBL-2"} {
+		doc := strings.Replace(bareInvoice(t), "OIOUBL-2.1", id, 1)
+		in, err := oioubl.ParseInvoice([]byte(doc))
+		require.NoError(t, err)
+		_, err = in.Convert()
+		assert.Error(t, err, "customization id %q is not an OIOUBL profile", id)
+	}
+}
+
 func TestParseAllowanceMultiplier(t *testing.T) {
 	// OIOUBL writes the factor (F-LIB228), GOBL wants the percentage.
 	allowance := `<cac:AllowanceCharge>
