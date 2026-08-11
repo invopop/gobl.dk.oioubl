@@ -1,6 +1,8 @@
 package oioubl
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"strings"
 
@@ -68,12 +70,19 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 		return nil, fmt.Errorf("unsupported customization id %q, expected an %q document", ui.CustomizationID, customizationIDPrefix)
 	}
 
-	details, err := ui.stripOIOUBL()
+	// Stripping rewrites the document, so work on a copy: the caller keeps a
+	// usable document and a second Convert does not see a half-stripped one.
+	work, err := ui.clone()
 	if err != nil {
 		return nil, err
 	}
 
-	env, err := (*ubl.Invoice)(ui).Convert(ubl.WithContext(ubl.ContextEN16931))
+	details, err := work.stripOIOUBL()
+	if err != nil {
+		return nil, err
+	}
+
+	env, err := (*ubl.Invoice)(work).Convert(ubl.WithContext(ubl.ContextEN16931))
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +91,7 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 		return nil, ErrUnsupportedDocumentType
 	}
 
-	ui.addGOBLDetails(inv, details)
+	work.addGOBLDetails(inv, details)
 
 	inv.SetAddons(append(inv.GetAddons(), addon.V2)...)
 	if err := env.Calculate(); err != nil {
@@ -92,6 +101,19 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 		return nil, err
 	}
 	return env, nil
+}
+
+// clone deep-copies the document so stripping cannot reach the caller's own.
+func (ui *Invoice) clone() (*Invoice, error) {
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode((*ubl.Invoice)(ui)); err != nil {
+		return nil, err
+	}
+	out := new(ubl.Invoice)
+	if err := gob.NewDecoder(&buf).Decode(out); err != nil {
+		return nil, err
+	}
+	return (*Invoice)(out), nil
 }
 
 // stripOIOUBL rewrites the document in place into something the generic parser
