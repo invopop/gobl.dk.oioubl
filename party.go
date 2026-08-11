@@ -1,6 +1,7 @@
 package oioubl
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/invopop/gobl.dk.oioubl/addon"
@@ -121,27 +122,30 @@ func dkPrefixed(value string) string {
 	return "DK" + value
 }
 
-// applyCompanyID picks the scheme for a company ID: one the party already has
-// wins, otherwise Danish parties get danishScheme and everyone else ZZZ.
-func applyCompanyID(id *ubl.IDType, danishScheme string, danish bool) {
+// applyCompanyID picks the scheme for a company ID. The scheme the party
+// already carries wins where OIOUBL allows it; a Danish party that named none
+// gets the position's Danish register; anything else gets ZZZ, OIOUBL's "other"
+// register. allowed lists the schemes valid in this position, Danish register
+// first (legal entity F-LIB189, tax scheme F-LIB195).
+func applyCompanyID(id *ubl.IDType, danish bool, allowed ...string) {
 	if id == nil {
 		return
 	}
+	scheme := ""
 	if id.SchemeID != nil {
-		switch *id.SchemeID {
-		case schemeDKCVR, schemeDKSE:
-			id.Value = dkPrefixed(id.Value)
-			return
-		case schemeDKCPR, schemeZZZ:
-			return
+		scheme = *id.SchemeID
+	}
+	if !slices.Contains(allowed, scheme) {
+		if scheme == "" && danish {
+			scheme = allowed[0]
+		} else {
+			scheme = schemeZZZ
 		}
 	}
-	if danish {
-		id.SchemeID = ptr(danishScheme)
+	id.SchemeID = ptr(scheme)
+	if scheme == schemeDKCVR || scheme == schemeDKSE {
 		id.Value = dkPrefixed(id.Value)
-		return
 	}
-	id.SchemeID = ptr(schemeZZZ)
 }
 
 // fixParty corrects a finished party for OIOUBL: DK-prefixed Danish numbers, a
@@ -164,7 +168,7 @@ func fixParty(p *ubl.Party, duties map[string]exciseDuty) {
 	danish := partyIsDanish(p)
 	for i := range p.PartyTaxScheme {
 		pts := &p.PartyTaxScheme[i]
-		applyCompanyID(pts.CompanyID, schemeDKSE, danish)
+		applyCompanyID(pts.CompanyID, danish, schemeDKSE, schemeZZZ)
 		applyPartyTaxScheme(pts.TaxScheme, duties)
 	}
 	if p.PartyLegalEntity != nil {
@@ -172,7 +176,7 @@ func fixParty(p *ubl.Party, duties map[string]exciseDuty) {
 			// OIOUBL requires CompanyID whenever PartyLegalEntity is present (F-LIB187/189); drop the element rather than leave it incomplete.
 			p.PartyLegalEntity = nil
 		} else {
-			applyCompanyID(p.PartyLegalEntity.CompanyID, schemeDKCVR, danish)
+			applyCompanyID(p.PartyLegalEntity.CompanyID, danish, schemeDKCVR, schemeDKCPR, schemeZZZ)
 		}
 	}
 	applyPartyIdentifications(p)
