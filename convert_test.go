@@ -30,6 +30,39 @@ func getConvertPath() string {
 	return filepath.Join("test", "data", "convert")
 }
 
+// convertCase is a GOBL envelope to convert, with the OIOUBL XML it should
+// produce.
+type convertCase struct {
+	src    string
+	golden string
+}
+
+// convertCases lists the fixtures under test/data/convert plus the shipped
+// examples. The examples are here because TestExamples only checks GOBL-to-GOBL
+// normalisation: without this nothing converts them, and an example can ship as
+// invalid OIOUBL.
+func convertCases(t *testing.T) []convertCase {
+	t.Helper()
+	dirs := []struct{ src, golden string }{
+		{getConvertPath(), filepath.Join(getConvertPath(), "out")},
+		{filepath.Join("examples", "out"), filepath.Join("examples", "out")},
+	}
+	var cases []convertCase
+	for _, dir := range dirs {
+		found, err := filepath.Glob(filepath.Join(dir.src, jsonPattern))
+		require.NoError(t, err)
+		require.NotEmpty(t, found, "no envelopes found in %s", dir.src)
+		for _, src := range found {
+			name := strings.TrimSuffix(filepath.Base(src), ".json")
+			cases = append(cases, convertCase{
+				src:    src,
+				golden: filepath.Join(dir.golden, name+".xml"),
+			})
+		}
+	}
+	return cases
+}
+
 // loadTestEnvelope loads a GOBL envelope from a JSON file path.
 func loadTestEnvelope(t *testing.T, path string) *gobl.Envelope {
 	t.Helper()
@@ -41,16 +74,9 @@ func loadTestEnvelope(t *testing.T, path string) *gobl.Envelope {
 }
 
 func TestConvertInvoice(t *testing.T) {
-	examples, err := filepath.Glob(filepath.Join(getConvertPath(), jsonPattern))
-	require.NoError(t, err)
-	require.NotEmpty(t, examples, "no invoice examples found")
-
-	for _, example := range examples {
-		inName := filepath.Base(example)
-		outName := strings.Replace(inName, ".json", ".xml", 1)
-
-		t.Run(inName, func(t *testing.T) {
-			env := loadTestEnvelope(t, example)
+	for _, example := range convertCases(t) {
+		t.Run(example.src, func(t *testing.T) {
+			env := loadTestEnvelope(t, example.src)
 
 			doc, err := oioubl.ConvertInvoice(env)
 			require.NoError(t, err)
@@ -58,12 +84,11 @@ func TestConvertInvoice(t *testing.T) {
 			data, err := oioubl.Bytes(doc)
 			require.NoError(t, err)
 
-			outPath := filepath.Join(getConvertPath(), "out", outName)
 			if *update {
-				require.NoError(t, os.WriteFile(outPath, data, 0644))
+				require.NoError(t, os.WriteFile(example.golden, data, 0644))
 			}
 
-			output, err := os.ReadFile(outPath)
+			output, err := os.ReadFile(example.golden)
 			assert.NoError(t, err)
 			assert.Equal(t, string(output), string(data), "Output should match the expected XML. Update with --update flag.")
 		})
