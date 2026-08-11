@@ -18,7 +18,7 @@ func (ui *Invoice) stripPaymentDueDate() {
 }
 
 func addPaymentDetails(payment *bill.PaymentDetails, pm *ubl.PaymentMeans) {
-	if payment == nil || payment.Instructions == nil || pm.PaymentChannelCode == nil {
+	if payment == nil || payment.Instructions == nil {
 		return
 	}
 	instr := payment.Instructions
@@ -26,6 +26,12 @@ func addPaymentDetails(payment *bill.PaymentDetails, pm *ubl.PaymentMeans) {
 	// The base parse's own Calculate already re-derived Ext from Key once
 	// (e.g. UBL "42" -> MeansKeyDebitTransfer -> en16931's canonical "31"); reassert the real wire code.
 	instr.Ext = instr.Ext.Set(untdid.ExtKeyPaymentMeans, cbc.Code(pm.PaymentMeansCode.Value))
+
+	// The channel is optional, and OIOUBL's own samples omit it; the wire means
+	// code above is worth keeping either way.
+	if pm.PaymentChannelCode == nil {
+		return
+	}
 
 	switch pm.PaymentChannelCode.Value {
 	case paymentChannelGiro, paymentChannelFIK:
