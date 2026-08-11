@@ -18,9 +18,15 @@ func getParsePath() string {
 
 // Fixtures that genuinely fail Convert() for reasons unrelated to a bug here
 // (bad sample data, a gobl.ubl gap); see PR description.
-var knownInvalid = map[string]string{
-	"negative-rounding_real.xml": "GOBL-TAX-COMBO-04",
-	"used-invoice_real.xml":      "GOBL-CBC-KEY-02",
+// negative-rounding_real.xml states a 0% VAT on a StandardRated discount and
+// gives that discount no reason, neither of which GOBL can represent; the
+// sender would have to correct the document.
+var knownInvalid = map[string][]string{
+	"negative-rounding_real.xml": {
+		"GOBL-TAX-COMBO-04",
+		"GOBL-BILL-DISCOUNT-01",
+		"GOBL-EU-EN16931-BILL-DISCOUNT-02",
+	},
 }
 
 // normalizeJSONField overwrites a top-level JSON field with a fixed
@@ -54,8 +60,11 @@ func TestParseInvoice(t *testing.T) {
 			require.NoError(t, err)
 
 			env, err := doc.Convert()
-			if wantErr, ok := knownInvalid[inName]; ok {
-				assert.ErrorContains(t, err, wantErr)
+			if wantErrs, ok := knownInvalid[inName]; ok {
+				require.Error(t, err)
+				for _, wantErr := range wantErrs {
+					assert.ErrorContains(t, err, wantErr)
+				}
 				return
 			}
 			require.NoError(t, err)

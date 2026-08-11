@@ -103,6 +103,16 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 	return env, nil
 }
 
+// stripDocumentTypes lowercases OIOUBL's CamelCase cbc:DocumentType, which the
+// generic parser casts straight into a GOBL key and which no key pattern allows.
+func (ui *Invoice) stripDocumentTypes() {
+	for _, refs := range [][]ubl.Reference{ui.ContractDocumentReference, ui.AdditionalDocumentReference} {
+		for i := range refs {
+			refs[i].DocumentType = strings.ToLower(refs[i].DocumentType)
+		}
+	}
+}
+
 // clone deep-copies the document so stripping cannot reach the caller's own.
 func (ui *Invoice) clone() (*Invoice, error) {
 	var buf bytes.Buffer
@@ -120,6 +130,7 @@ func (ui *Invoice) clone() (*Invoice, error) {
 // reads correctly, handing back the excise duties it has no field for.
 func (ui *Invoice) stripOIOUBL() (oioublDetails, error) {
 	ui.stripParties()
+	ui.stripDocumentTypes()
 	ui.stripPaymentDueDate()
 	ui.stripDelivery()
 
