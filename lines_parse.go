@@ -1,6 +1,8 @@
 package oioubl
 
 import (
+	"fmt"
+
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/num"
 )
@@ -17,9 +19,20 @@ func (ui *Invoice) stripLines(vatPercents map[string]string) (map[int][]exciseDu
 	for i := range lines {
 		line := &lines[i]
 
+		// The generic parser silently drops a line with no price, losing its
+		// amount and shifting every later line's duties, which are keyed by
+		// index here. Refusing is the honest failure.
+		if line.Price == nil {
+			return nil, fmt.Errorf("line %d has no price", i+1)
+		}
+
+		if err := foldOrderableUnitFactor(line.Price); err != nil {
+			return nil, fmt.Errorf("line %d: %w", i+1, err)
+		}
+
 		vat, excises, err := splitExciseTaxTotals(line.TaxTotal)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("line %d: %w", i+1, err)
 		}
 		line.TaxTotal = vat
 		if len(excises) > 0 {
@@ -41,6 +54,34 @@ func (ui *Invoice) stripLines(vatPercents map[string]string) (map[int][]exciseDu
 		stripLineAllowanceCharges(line)
 	}
 	return lineExcises, nil
+}
+
+// foldOrderableUnitFactor rewrites an OIOUBL price as the plain per-unit price
+// the generic parser expects. OIOUBL prices the invoiced unit as PriceAmount *
+// OrderableUnitFactorRate -- the factor already absorbs the base quantity, per
+// G25's own reduction of PriceAmount / BaseQuantity * (BaseQuantity * factor)
+// -- so the generic parser's division by BaseQuantity would count it twice. A
+// crate invoiced at 1 CS, priced 60.00 per bottle with a factor of 12, is a
+// 720.00 line; without the fold it converts as a 60.00 one.
+func foldOrderableUnitFactor(price *ubl.Price) error {
+	price.BaseQuantity = nil
+	if price.OrderableUnitFactorRate == nil {
+		return nil
+	}
+	factor, err := num.AmountFromString(normalizeNumericString(*price.OrderableUnitFactorRate))
+	if err != nil {
+		return fmt.Errorf("orderable unit factor %q: %w", *price.OrderableUnitFactorRate, err)
+	}
+	price.OrderableUnitFactorRate = nil
+	if factor.IsZero() || factor.Compare(num.MakeAmount(1, 0)) == 0 {
+		return nil
+	}
+	amount, err := num.AmountFromString(normalizeNumericString(price.PriceAmount.Value))
+	if err != nil {
+		return fmt.Errorf("price amount %q: %w", price.PriceAmount.Value, err)
+	}
+	price.PriceAmount.Value = amount.Multiply(factor).String()
+	return nil
 }
 
 // synthesizeClassifiedTaxCategory covers a line that states its VAT only in a

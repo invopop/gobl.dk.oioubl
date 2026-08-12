@@ -151,10 +151,10 @@
 				"ref": "5712345780121",
 				"name": "Husets vin",
 				"description": "Husets vin",
-				"price": "60.000",
+				"price": "120.00",
 				"unit": "BO"
 			},
-			"sum": "360.00",
+			"sum": "720.00",
 			"taxes": [
 				{
 					"cat": "VAT",
@@ -162,7 +162,7 @@
 					"percent": "25%"
 				}
 			],
-			"total": "360.00"
+			"total": "720.00"
 		},
 		{
 			"i": 3,
@@ -172,10 +172,10 @@
 				"ref": "5712345780121",
 				"name": "Husets vin",
 				"description": "Husets vin",
-				"price": "60.00",
+				"price": "720.00",
 				"unit": "CS"
 			},
-			"sum": "60.00",
+			"sum": "720.00",
 			"taxes": [
 				{
 					"cat": "VAT",
@@ -183,7 +183,7 @@
 					"percent": "25%"
 				}
 			],
-			"total": "60.00"
+			"total": "720.00"
 		},
 		{
 			"i": 4,
@@ -193,10 +193,10 @@
 				"ref": "5712345780121",
 				"name": "Husets vin",
 				"description": "Husets vin",
-				"price": "60.000",
+				"price": "720.00",
 				"unit": "CS"
 			},
-			"sum": "60.00",
+			"sum": "720.00",
 			"taxes": [
 				{
 					"cat": "VAT",
@@ -204,7 +204,7 @@
 					"percent": "25%"
 				}
 			],
-			"total": "60.00"
+			"total": "720.00"
 		},
 		{
 			"i": 5,
@@ -214,10 +214,10 @@
 				"ref": "5712345780121",
 				"name": "Husets vin",
 				"description": "Husets vin",
-				"price": "9.6000",
+				"price": "720.00",
 				"unit": "BLL"
 			},
-			"sum": "9.60",
+			"sum": "720.00",
 			"taxes": [
 				{
 					"cat": "VAT",
@@ -225,7 +225,7 @@
 					"percent": "25%"
 				}
 			],
-			"total": "9.60"
+			"total": "720.00"
 		}
 	],
 	"ordering": {
@@ -242,7 +242,7 @@
 			"due_dates": [
 				{
 					"date": "2005-11-25",
-					"amount": "1512.00",
+					"amount": "4500.00",
 					"percent": "100%"
 				}
 			]
@@ -264,8 +264,8 @@
 		"date": "2005-11-15"
 	},
 	"totals": {
-		"sum": "1209.60",
-		"total": "1209.60",
+		"sum": "3600.00",
+		"total": "3600.00",
 		"taxes": {
 			"categories": [
 				{
@@ -273,18 +273,18 @@
 					"rates": [
 						{
 							"key": "standard",
-							"base": "1209.60",
+							"base": "3600.00",
 							"percent": "25%",
-							"amount": "302.40"
+							"amount": "900.00"
 						}
 					],
-					"amount": "302.40"
+					"amount": "900.00"
 				}
 			],
-			"sum": "302.40"
+			"sum": "900.00"
 		},
-		"tax": "302.40",
-		"total_with_tax": "1512.00",
-		"payable": "1512.00"
+		"tax": "900.00",
+		"total_with_tax": "4500.00",
+		"payable": "4500.00"
 	}
 }
