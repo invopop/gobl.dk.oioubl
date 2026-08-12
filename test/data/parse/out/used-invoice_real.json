@@ -219,6 +219,7 @@
 		},
 		"contracts": [
 			{
+				"uuid": "6e09886b-dc6e-439f-82d1-7ccac7f4e3b1",
 				"type": "contract",
 				"issue_date": "2007-02-20",
 				"code": "234"

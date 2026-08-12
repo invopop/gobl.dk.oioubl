@@ -3,6 +3,7 @@ package oioubl
 import (
 	"fmt"
 
+	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/uuid"
@@ -65,7 +66,7 @@ func (ui *Invoice) addPayableRounding(inv *bill.Invoice) {
 }
 
 // addOrderingDetails restores the ordering fields the generic parse skips: the
-// order's issue date and the preceding documents' UUIDs.
+// order's issue date and the preceding and contract documents' UUIDs.
 func (ui *Invoice) addOrderingDetails(inv *bill.Invoice) {
 	if ui.OrderReference != nil && ui.OrderReference.IssueDate != "" &&
 		inv.Ordering != nil && len(inv.Ordering.Purchases) > 0 {
@@ -73,24 +74,56 @@ func (ui *Invoice) addOrderingDetails(inv *bill.Invoice) {
 			inv.Ordering.Purchases[0].IssueDate = &d
 		}
 	}
-	for i, ref := range ui.BillingReference {
-		if i >= len(inv.Preceding) || ref == nil {
+	// Pair by document code, not by index: the generic parser skips a billing
+	// reference it cannot resolve, and after one skip every index is off by one
+	// and each UUID lands on the wrong document.
+	for _, ref := range ui.BillingReference {
+		if ref == nil {
 			continue
 		}
-		var uuidStr string
-		switch {
-		case ref.InvoiceDocumentReference != nil:
-			uuidStr = ref.InvoiceDocumentReference.UUID
-		case ref.CreditNoteDocumentReference != nil:
-			uuidStr = ref.CreditNoteDocumentReference.UUID
-		}
-		if uuidStr == "" {
+		wire := billingDocumentReference(ref)
+		if wire == nil || wire.UUID == "" {
 			continue
 		}
-		if u, err := uuid.Parse(uuidStr); err == nil {
-			inv.Preceding[i].UUID = u
+		u, err := uuid.Parse(wire.UUID)
+		if err != nil {
+			continue
+		}
+		for _, p := range inv.Preceding {
+			if p != nil && p.UUID.IsZero() && p.Code.String() == wire.ID.Value {
+				p.UUID = u
+				break
+			}
 		}
 	}
+	// Contract references are never skipped by the generic parser, so here the
+	// index does identify the document.
+	if inv.Ordering != nil {
+		for i := range ui.ContractDocumentReference {
+			if i >= len(inv.Ordering.Contracts) {
+				break
+			}
+			if u, err := uuid.Parse(ui.ContractDocumentReference[i].UUID); err == nil {
+				inv.Ordering.Contracts[i].UUID = u
+			}
+		}
+	}
+}
+
+// billingDocumentReference returns whichever document reference a billing
+// reference carries, mirroring the generic parser's resolution order.
+func billingDocumentReference(ref *ubl.BillingReference) *ubl.Reference {
+	switch {
+	case ref.InvoiceDocumentReference != nil:
+		return ref.InvoiceDocumentReference
+	case ref.SelfBilledInvoiceDocumentReference != nil:
+		return ref.SelfBilledInvoiceDocumentReference
+	case ref.CreditNoteDocumentReference != nil:
+		return ref.CreditNoteDocumentReference
+	case ref.AdditionalDocumentReference != nil:
+		return ref.AdditionalDocumentReference
+	}
+	return nil
 }
 
 // checkStatedPayable refuses a conversion whose bottom line differs from what
