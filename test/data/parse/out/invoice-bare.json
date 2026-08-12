@@ -125,13 +125,6 @@
 			"total": "1267.04"
 		}
 	],
-	"ordering": {
-		"purchases": [
-			{
-				"code": "NA"
-			}
-		]
-	},
 	"payment": {
 		"terms": {
 			"due_dates": [

@@ -123,13 +123,6 @@
 			"total": "100.00"
 		}
 	],
-	"ordering": {
-		"purchases": [
-			{
-				"code": "NA"
-			}
-		]
-	},
 	"payment": {
 		"terms": {
 			"notes": "Netto 30 dage"
