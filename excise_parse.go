@@ -1,6 +1,7 @@
 package oioubl
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/invopop/gobl.dk.oioubl/addon"
@@ -49,13 +50,13 @@ func parseExciseSubtotal(st *ubl.TaxSubtotal) (exciseDuty, error) {
 	var d exciseDuty
 	amount, err := num.AmountFromString(normalizeNumericString(st.TaxAmount.Value))
 	if err != nil {
-		return d, err
+		return d, fmt.Errorf("excise duty tax amount %q: %w", st.TaxAmount.Value, err)
 	}
 	d.amount = amount
 	if st.TaxableAmount.Value != "" {
 		base, err := num.AmountFromString(normalizeNumericString(st.TaxableAmount.Value))
 		if err != nil {
-			return d, err
+			return d, fmt.Errorf("excise duty taxable amount %q: %w", st.TaxableAmount.Value, err)
 		}
 		d.base = &base
 	}
@@ -105,16 +106,12 @@ func collectVATPercents(totals []ubl.TaxTotal, percents map[string]string) {
 // the duty is levied at -- bill.LineCharge has no taxes of its own and would
 // inherit the line's rate.
 func addExciseCharges(inv *bill.Invoice, details oioublDetails) {
-	restated := make(map[string]bool)
-	for _, d := range details.docDuties {
-		restated[exciseMirrorKey(d)] = true
-	}
 	for i, duties := range details.lineDuties {
 		if i >= len(inv.Lines) {
 			continue
 		}
 		for _, d := range duties {
-			if restated[exciseMirrorKey(d)] {
+			if dutyRestated(details.docDuties, d) {
 				continue
 			}
 			inv.Lines[i].Charges = append(inv.Lines[i].Charges, dutyToLineCharge(d))
@@ -123,6 +120,25 @@ func addExciseCharges(inv *bill.Invoice, details oioublDetails) {
 	for _, d := range details.docDuties {
 		inv.Charges = append(inv.Charges, dutyToCharge(d, details.vatPercents))
 	}
+}
+
+// dutyRestated reports whether a line duty appears among the document-level
+// ones. Amounts compare numerically, so a mirror written "50000.0" still
+// matches its line's "50000.00".
+func dutyRestated(docDuties []exciseDuty, d exciseDuty) bool {
+	for _, doc := range docDuties {
+		if doc.scheme == d.scheme && doc.amount.Compare(d.amount) == 0 && sameDutyBase(doc.base, d.base) {
+			return true
+		}
+	}
+	return false
+}
+
+func sameDutyBase(a, b *num.Amount) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Compare(*b) == 0
 }
 
 // No Base here: bill.LineCharge.Base only means something alongside Percent,
@@ -166,12 +182,3 @@ func dutyCodeExt(scheme string) tax.Extensions {
 	return tax.ExtensionsOf(cbc.CodeMap{addon.ExtKeyDutyCode: cbc.Code(scheme)})
 }
 
-// exciseMirrorKey identifies a duty, so a document-level copy of one already
-// counted on a line can be told from a genuine document-level duty.
-func exciseMirrorKey(d exciseDuty) string {
-	base := ""
-	if d.base != nil {
-		base = d.base.String()
-	}
-	return d.scheme + "|" + d.amount.String() + "|" + base
-}

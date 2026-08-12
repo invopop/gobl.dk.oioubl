@@ -146,7 +146,7 @@ func (ui *Invoice) stripOIOUBL() (oioublDetails, error) {
 
 	ui.TaxTotal, details.docDuties, err = splitExciseTaxTotals(ui.TaxTotal)
 	if err != nil {
-		return details, err
+		return details, fmt.Errorf("document tax totals: %w", err)
 	}
 	collectVATPercents(ui.TaxTotal, details.vatPercents)
 	for i := range ui.TaxTotal {

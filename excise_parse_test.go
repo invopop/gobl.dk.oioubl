@@ -3,6 +3,7 @@ package oioubl_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	oioubl "github.com/invopop/gobl.dk.oioubl"
@@ -16,6 +17,29 @@ import (
 // appears on the line and again in the document total. Only the document-level
 // charge can state the VAT the duty is levied at, so that is the one to keep --
 // charging it on the line instead taxes the duty at the line's own rate.
+func TestParseExciseMirrorMatchesNumerically(t *testing.T) {
+	// A document-level restatement written with fewer decimals is still the
+	// same duty; a string comparison would double-count it.
+	data, err := os.ReadFile(filepath.Join(getParsePath(), "excise-line-and-document.xml"))
+	require.NoError(t, err)
+	// The document-level duty block is the one-tab-indented one; the line's
+	// own copy is nested deeper and stays as written.
+	doc := strings.Replace(string(data),
+		"\t<cac:TaxTotal>\n\t\t<cbc:TaxAmount currencyID=\"DKK\">100000.00</cbc:TaxAmount>\n\t\t<cac:TaxSubtotal>\n\t\t\t<cbc:TaxableAmount currencyID=\"DKK\">200000.00</cbc:TaxableAmount>\n\t\t\t<cbc:TaxAmount currencyID =\"DKK\">100000.00</cbc:TaxAmount>",
+		"\t<cac:TaxTotal>\n\t\t<cbc:TaxAmount currencyID=\"DKK\">100000.0</cbc:TaxAmount>\n\t\t<cac:TaxSubtotal>\n\t\t\t<cbc:TaxableAmount currencyID=\"DKK\">200000.0</cbc:TaxableAmount>\n\t\t\t<cbc:TaxAmount currencyID =\"DKK\">100000.0</cbc:TaxAmount>", 1)
+	require.NotEqual(t, string(data), doc, "the fixture's document-level duty should have been rewritten")
+
+	in, err := oioubl.ParseInvoice([]byte(doc))
+	require.NoError(t, err)
+	env, err := in.Convert()
+	require.NoError(t, err)
+	inv, ok := env.Extract().(*bill.Invoice)
+	require.True(t, ok)
+
+	require.Len(t, inv.Charges, 1, "the reformatted mirror is still the same duty")
+	assert.Empty(t, inv.Lines[0].Charges)
+}
+
 func TestParseExciseRestatedAtBothLevels(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join(getParsePath(), "excise-line-and-document.xml"))
 	require.NoError(t, err)
