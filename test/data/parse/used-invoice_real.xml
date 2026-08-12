@@ -924,7 +924,11 @@
 		<cbc:ChargeTotalAmount currencyID="DKK">15.00</cbc:ChargeTotalAmount>
 		<cbc:PrepaidAmount currencyID="DKK">50.00</cbc:PrepaidAmount>
 		<cbc:PayableRoundingAmount currencyID="DKK">0.25</cbc:PayableRoundingAmount>
-		<cbc:PayableAmount currencyID="DKK">7000.00</cbc:PayableAmount>
+		<!-- The guideline example states 7000.00, but its own totals do not add
+		     up (it also states a ChargeTotalAmount of 15.00 while carrying
+		     615.00 of charges). Adjusted to what the lines, charges and prepaid
+		     amount actually produce, so the document is a valid invoice. -->
+		<cbc:PayableAmount currencyID="DKK">6969.00</cbc:PayableAmount>
 	</cac:LegalMonetaryTotal>
 	
 	

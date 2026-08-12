@@ -1,6 +1,8 @@
 package oioubl
 
 import (
+	"fmt"
+
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/uuid"
@@ -89,4 +91,27 @@ func (ui *Invoice) addOrderingDetails(inv *bill.Invoice) {
 			inv.Preceding[i].UUID = u
 		}
 	}
+}
+
+// checkStatedPayable refuses a conversion whose bottom line differs from what
+// the document itself states: the converter must not change what the customer
+// owes. A prepaid document states its payable net of the prepayment, which
+// GOBL keeps as Due.
+func (ui *Invoice) checkStatedPayable(inv *bill.Invoice) error {
+	wire := ui.LegalMonetaryTotal.PayableAmount
+	if wire == nil || wire.Value == "" || inv.Totals == nil {
+		return nil
+	}
+	stated, err := num.AmountFromString(normalizeNumericString(wire.Value))
+	if err != nil {
+		return fmt.Errorf("stated payable amount %q: %w", wire.Value, err)
+	}
+	computed := inv.Totals.Payable
+	if inv.Totals.Due != nil {
+		computed = *inv.Totals.Due
+	}
+	if computed.Compare(stated) != 0 {
+		return fmt.Errorf("converted payable %s does not match the document's stated payable %s", computed.String(), stated.String())
+	}
+	return nil
 }

@@ -102,6 +102,9 @@ func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 	if err := env.Validate(); err != nil {
 		return nil, err
 	}
+	if err := ui.checkStatedPayable(inv); err != nil {
+		return nil, err
+	}
 	return env, nil
 }
 

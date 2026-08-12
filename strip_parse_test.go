@@ -49,6 +49,11 @@ func TestParseAllowanceMultiplier(t *testing.T) {
   </cac:AllowanceCharge>
   <cac:TaxTotal>`
 	doc := strings.Replace(bareInvoice(t), "<cac:TaxTotal>", allowance, 1)
+	// The injected discount lowers the total by 125.00 (100.00 plus its VAT);
+	// restate the payable so the document stays arithmetically consistent.
+	doc = strings.Replace(doc,
+		`<cbc:PayableAmount currencyID="DKK">41178.80</cbc:PayableAmount>`,
+		`<cbc:PayableAmount currencyID="DKK">41053.80</cbc:PayableAmount>`, 1)
 
 	inv, err := convertString(t, doc)
 	require.NoError(t, err)
