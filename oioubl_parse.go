@@ -2,6 +2,7 @@ package oioubl
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/gob"
 	"fmt"
 	"slices"
@@ -59,11 +60,45 @@ func ParseInvoice(data []byte) (*Invoice, error) {
 	return inv, nil
 }
 
-// ExtractBinaryAttachments returns the files embedded in the document. Invoice
-// is its own type, so the base's method does not come along and is forwarded.
+// ExtractBinaryAttachments returns the files embedded in the document: the
+// base's, which scans AdditionalDocumentReference, plus any embedded under
+// ContractDocumentReference, where OIOUBL's own samples attach the contract.
 func (ui *Invoice) ExtractBinaryAttachments() []BinaryAttachment {
-	return (*ubl.Invoice)(ui).ExtractBinaryAttachments()
+	atts := (*ubl.Invoice)(ui).ExtractBinaryAttachments()
+	for _, ref := range ui.ContractDocumentReference {
+		if ref.Attachment == nil || ref.Attachment.EmbeddedDocumentBinaryObject == nil {
+			continue
+		}
+		bo := ref.Attachment.EmbeddedDocumentBinaryObject
+		data, err := base64.StdEncoding.DecodeString(spaceStripper.Replace(bo.Value))
+		if err != nil {
+			// An undecodable object is skipped, as the base does for its own.
+			continue
+		}
+		att := BinaryAttachment{
+			ID:          ref.ID.Value,
+			Description: ref.DocumentDescription,
+			Data:        data,
+		}
+		if bo.MimeCode != nil {
+			att.MimeCode = *bo.MimeCode
+		}
+		if bo.Filename != nil {
+			att.Filename = *bo.Filename
+		}
+		if bo.CharacterSetCode != nil {
+			att.CharacterSetCode = *bo.CharacterSetCode
+		}
+		if bo.URI != nil {
+			att.URI = *bo.URI
+		}
+		atts = append(atts, att)
+	}
+	return atts
 }
+
+// spaceStripper undoes the whitespace XML formatting adds inside base64 data.
+var spaceStripper = strings.NewReplacer(" ", "", "\t", "", "\n", "", "\r", "")
 
 // Convert strips the document back to plain EN16931, runs the generic parse,
 // then adds the OIOUBL details the base has no field for.
