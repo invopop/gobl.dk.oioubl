@@ -1,0 +1,290 @@
+{
+	"$regime": "DK",
+	"$addons": [
+		"eu-en16931-v2017",
+		"dk-oioubl-v2"
+	],
+	"uuid": "9756b4d0-8815-1029-857a-e388fe63f399",
+	"type": "standard",
+	"code": "A00095678",
+	"issue_date": "2005-11-20",
+	"currency": "DKK",
+	"tax": {
+		"rounding": "currency",
+		"ext": {
+			"untdid-document-type": "380"
+		}
+	},
+	"supplier": {
+		"name": "Tavleleverandøren",
+		"alias": "Tavleverandøren",
+		"tax_id": {
+			"country": "DK",
+			"code": "16356700"
+		},
+		"identities": [
+			{
+				"scope": "legal",
+				"code": "16356700",
+				"ext": {
+					"iso-scheme-id": "DK:CVR"
+				}
+			},
+			{
+				"code": "16356700",
+				"ext": {
+					"iso-scheme-id": "DK:CVR"
+				}
+			}
+		],
+		"people": [
+			{
+				"name": {
+					"given": "Hugo Jensen"
+				},
+				"identities": [
+					{
+						"code": "23456"
+					}
+				]
+			}
+		],
+		"endpoints": [
+			{
+				"uri": "DK:CVR:16356700"
+			}
+		],
+		"addresses": [
+			{
+				"num": "11",
+				"street": "Leverandørvej",
+				"locality": "Dyssegård",
+				"code": "2870",
+				"country": "DK"
+			}
+		],
+		"emails": [
+			{
+				"addr": "Hugo@tavl.dk"
+			}
+		],
+		"telephones": [
+			{
+				"num": "15812337"
+			}
+		]
+	},
+	"customer": {
+		"name": "Den Lille Skole",
+		"identities": [
+			{
+				"code": "5798000416604",
+				"ext": {
+					"iso-scheme-id": "GLN"
+				}
+			}
+		],
+		"people": [
+			{
+				"name": {
+					"given": "Hans Hansen"
+				},
+				"identities": [
+					{
+						"code": "7778"
+					}
+				]
+			}
+		],
+		"endpoints": [
+			{
+				"uri": "GLN:5798000416604"
+			}
+		],
+		"addresses": [
+			{
+				"num": "10",
+				"street": "Fredericiavej",
+				"locality": "Helsingør",
+				"code": "3000",
+				"country": "DK"
+			}
+		],
+		"emails": [
+			{
+				"addr": "Hans@dls.dk"
+			}
+		],
+		"telephones": [
+			{
+				"num": "26532147"
+			}
+		]
+	},
+	"lines": [
+		{
+			"i": 1,
+			"quantity": "12.00",
+			"order": "1",
+			"item": {
+				"ref": "5712345780121",
+				"name": "Husets vin",
+				"description": "Husets vin",
+				"price": "60.00",
+				"unit": "BO"
+			},
+			"sum": "720.00",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "standard",
+					"percent": "25%"
+				}
+			],
+			"total": "720.00"
+		},
+		{
+			"i": 2,
+			"quantity": "6.00",
+			"order": "2",
+			"item": {
+				"ref": "5712345780121",
+				"name": "Husets vin",
+				"description": "Husets vin",
+				"price": "120.00",
+				"unit": "BO"
+			},
+			"sum": "720.00",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "standard",
+					"percent": "25%"
+				}
+			],
+			"total": "720.00"
+		},
+		{
+			"i": 3,
+			"quantity": "1.00",
+			"order": "3",
+			"item": {
+				"ref": "5712345780121",
+				"name": "Husets vin",
+				"description": "Husets vin",
+				"price": "720.00",
+				"unit": "CS"
+			},
+			"sum": "720.00",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "standard",
+					"percent": "25%"
+				}
+			],
+			"total": "720.00"
+		},
+		{
+			"i": 4,
+			"quantity": "1.00",
+			"order": "4",
+			"item": {
+				"ref": "5712345780121",
+				"name": "Husets vin",
+				"description": "Husets vin",
+				"price": "720.00",
+				"unit": "CS"
+			},
+			"sum": "720.00",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "standard",
+					"percent": "25%"
+				}
+			],
+			"total": "720.00"
+		},
+		{
+			"i": 5,
+			"quantity": "1.00",
+			"order": "5",
+			"item": {
+				"ref": "5712345780121",
+				"name": "Husets vin",
+				"description": "Husets vin",
+				"price": "720.00",
+				"unit": "BLL"
+			},
+			"sum": "720.00",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "standard",
+					"percent": "25%"
+				}
+			],
+			"total": "720.00"
+		}
+	],
+	"ordering": {
+		"cost": "5250124502",
+		"purchases": [
+			{
+				"issue_date": "2005-11-01",
+				"code": "5002701"
+			}
+		]
+	},
+	"payment": {
+		"terms": {
+			"due_dates": [
+				{
+					"date": "2005-11-25",
+					"amount": "4500.00",
+					"percent": "100%"
+				}
+			]
+		},
+		"instructions": {
+			"key": "other",
+			"credit_transfer": [
+				{
+					"number": "1234567890",
+					"clearing": "1234"
+				}
+			],
+			"ext": {
+				"untdid-payment-means": "42"
+			}
+		}
+	},
+	"delivery": {
+		"date": "2005-11-15"
+	},
+	"totals": {
+		"sum": "3600.00",
+		"total": "3600.00",
+		"taxes": {
+			"categories": [
+				{
+					"code": "VAT",
+					"rates": [
+						{
+							"key": "standard",
+							"base": "3600.00",
+							"percent": "25%",
+							"amount": "900.00"
+						}
+					],
+					"amount": "900.00"
+				}
+			],
+			"sum": "900.00"
+		},
+		"tax": "900.00",
+		"total_with_tax": "4500.00",
+		"payable": "4500.00"
+	}
+}

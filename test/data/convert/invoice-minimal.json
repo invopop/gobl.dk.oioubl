@@ -4,7 +4,7 @@
 		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
 		"dig": {
 			"alg": "sha256",
-			"val": "6675b63e26fa430b500c6d0ad00aed531e213280c5e90b54dd960ea7f5fd7ad9"
+			"val": "79a8e8ce710a44ddfb816562c5fcf5e04931b0e1ae3d9ac55bb84fd76c35bf81"
 		}
 	},
 	"doc": {
@@ -36,7 +36,7 @@
 			"alias": "Provide One GmbH",
 			"tax_id": {
 				"country": "DK",
-				"code": "37990485"
+				"code": "10000009"
 			},
 			"inboxes": [
 				{
@@ -64,7 +64,7 @@
 			"alias": "Sample Consumer",
 			"tax_id": {
 				"country": "DK",
-				"code": "47458714"
+				"code": "10000017"
 			},
 			"people": [
 				{

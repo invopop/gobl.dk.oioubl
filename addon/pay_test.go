@@ -21,7 +21,7 @@ func bankPayment() *bill.PaymentDetails {
 			// MeansKeyDebitTransfer maps to UNTDID code 31, the only OIOUBL-valid
 			// bank-transfer code; MeansKeyCreditTransfer (code 30) is rejected.
 			Key:            pay.MeansKeyDebitTransfer,
-			CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK5000400440116243", BIC: "DABADKKK"}},
+			CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK1100409876543210", BIC: "DABADKKK"}},
 		},
 	}
 }
@@ -34,7 +34,7 @@ func TestPaymentValidation(t *testing.T) {
 				Key: pay.MeansKeyOther,
 				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "31"}),
 				CreditTransfer: []*pay.CreditTransfer{
-					{IBAN: "DK5000400440116243", BIC: "DABADKKK"},
+					{IBAN: "DK1100409876543210", BIC: "DABADKKK"},
 				},
 			},
 		}
@@ -48,7 +48,7 @@ func TestPaymentValidation(t *testing.T) {
 			Instructions: &pay.Instructions{
 				Key:            pay.MeansKeyOther,
 				Ext:            tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "30"}),
-				CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK5000400440116243", BIC: "DABADKKK"}},
+				CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK1100409876543210", BIC: "DABADKKK"}},
 			},
 		}
 		require.NoError(t, inv.Calculate())
@@ -62,7 +62,7 @@ func TestPaymentValidation(t *testing.T) {
 				Key: pay.MeansKeyOther,
 				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
 				CreditTransfer: []*pay.CreditTransfer{
-					{Number: "0440116243", Clearing: "1234"},
+					{Number: "9876543210", Clearing: "1234"},
 				},
 			},
 		}
@@ -76,7 +76,7 @@ func TestPaymentValidation(t *testing.T) {
 			Instructions: &pay.Instructions{
 				Key:            pay.MeansKeyOther,
 				Ext:            tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
-				CreditTransfer: []*pay.CreditTransfer{{Number: "0440116243"}},
+				CreditTransfer: []*pay.CreditTransfer{{Number: "9876543210"}},
 			},
 		}
 		require.NoError(t, inv.Calculate())
@@ -90,7 +90,7 @@ func TestPaymentValidation(t *testing.T) {
 				Key: pay.MeansKeyOther,
 				Ext: tax.ExtensionsOf(cbc.CodeMap{untdid.ExtKeyPaymentMeans: "42"}),
 				CreditTransfer: []*pay.CreditTransfer{
-					{Number: "0440116243", Clearing: "123"},
+					{Number: "9876543210", Clearing: "123"},
 				},
 			},
 		}

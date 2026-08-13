@@ -129,7 +129,7 @@ func TestConvertWithoutRegime(t *testing.T) {
 			Terms: &pay.Terms{Notes: "Net 30"},
 			Instructions: &pay.Instructions{
 				Key:            pay.MeansKeyDebitTransfer,
-				CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK5000400440116243", BIC: "DABADKKK"}},
+				CreditTransfer: []*pay.CreditTransfer{{IBAN: "DK1100409876543210", BIC: "DABADKKK"}},
 			},
 		},
 	}

@@ -159,6 +159,7 @@
       <cbc:TaxAmount currencyID="DKK">50.00</cbc:TaxAmount>
       <cac:TaxCategory>
         <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">Excise</cbc:ID>
+        <cbc:Percent>5</cbc:Percent>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">16</cbc:ID>
           <cbc:Name>Chokolade- og sukkerafgift</cbc:Name>
@@ -171,6 +172,7 @@
       <cbc:TaxAmount currencyID="DKK">120.00</cbc:TaxAmount>
       <cac:TaxCategory>
         <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">Excise</cbc:ID>
+        <cbc:Percent>12</cbc:Percent>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">16</cbc:ID>
           <cbc:Name>Chokolade- og sukkerafgift</cbc:Name>
@@ -216,6 +218,7 @@
         <cbc:TaxAmount currencyID="DKK">50.00</cbc:TaxAmount>
         <cac:TaxCategory>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">Excise</cbc:ID>
+          <cbc:Percent>5</cbc:Percent>
           <cac:TaxScheme>
             <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">16</cbc:ID>
             <cbc:Name>Chokolade- og sukkerafgift</cbc:Name>
@@ -228,6 +231,7 @@
         <cbc:TaxAmount currencyID="DKK">120.00</cbc:TaxAmount>
         <cac:TaxCategory>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">Excise</cbc:ID>
+          <cbc:Percent>12</cbc:Percent>
           <cac:TaxScheme>
             <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">16</cbc:ID>
             <cbc:Name>Chokolade- og sukkerafgift</cbc:Name>

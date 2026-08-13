@@ -3,9 +3,9 @@
   <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
   <cbc:CustomizationID>OIOUBL-2.1</cbc:CustomizationID>
   <cbc:ProfileID schemeAgencyID="320" schemeID="urn:oioubl:id:profileid-1.2">urn:www.nesubl.eu:profiles:profile5:ver2.0</cbc:ProfileID>
-  <cbc:ID>FINAL-BANK01</cbc:ID>
-  <cbc:UUID>0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2</cbc:UUID>
-  <cbc:IssueDate>2026-05-29</cbc:IssueDate>
+  <cbc:ID>SAMPLE-002</cbc:ID>
+  <cbc:UUID>0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3</cbc:UUID>
+  <cbc:IssueDate>2024-05-15</cbc:IssueDate>
   <cbc:InvoiceTypeCode listAgencyID="320" listID="urn:oioubl:codelist:invoicetypecode-1.1">380</cbc:InvoiceTypeCode>
   <cbc:DocumentCurrencyCode>DKK</cbc:DocumentCurrencyCode>
   <cac:OrderReference>
@@ -13,92 +13,82 @@
   </cac:OrderReference>
   <cac:AccountingSupplierParty>
     <cac:Party>
-      <cbc:EndpointID schemeID="DK:CVR">DK12345674</cbc:EndpointID>
+      <cbc:EndpointID schemeID="DK:CPR">1111111118</cbc:EndpointID>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="DK:CPR">1111111118</cbc:ID>
+      </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name>Eksempel Software ApS</cbc:Name>
+        <cbc:Name>afsender</cbc:Name>
       </cac:PartyName>
       <cac:PostalAddress>
         <cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredLax</cbc:AddressFormatCode>
-        <cbc:StreetName>Kongevejen</cbc:StreetName>
+        <cbc:StreetName>afsendervej</cbc:StreetName>
         <cbc:BuildingNumber>12</cbc:BuildingNumber>
-        <cbc:CityName>København</cbc:CityName>
-        <cbc:PostalZone>2100</cbc:PostalZone>
+        <cbc:CityName>AfsenderBy</cbc:CityName>
+        <cbc:PostalZone>1111</cbc:PostalZone>
         <cac:Country>
           <cbc:IdentificationCode>DK</cbc:IdentificationCode>
         </cac:Country>
       </cac:PostalAddress>
-      <cac:PartyTaxScheme>
-        <cbc:CompanyID schemeID="DK:SE">DK12345674</cbc:CompanyID>
-        <cac:TaxScheme>
-          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
-          <cbc:Name>Moms</cbc:Name>
-        </cac:TaxScheme>
-      </cac:PartyTaxScheme>
       <cac:PartyLegalEntity>
-        <cbc:RegistrationName>Eksempel Software ApS</cbc:RegistrationName>
-        <cbc:CompanyID schemeID="DK:CVR">DK12345674</cbc:CompanyID>
+        <cbc:RegistrationName>afsender</cbc:RegistrationName>
+        <cbc:CompanyID schemeID="DK:CPR">1111111118</cbc:CompanyID>
       </cac:PartyLegalEntity>
       <cac:Contact>
-        <cbc:Name>Jens Hansen</cbc:Name>
+        <cbc:ID>support@nemhandel.dk</cbc:ID>
+        <cbc:Name>afsender</cbc:Name>
       </cac:Contact>
     </cac:Party>
   </cac:AccountingSupplierParty>
   <cac:AccountingCustomerParty>
     <cac:Party>
-      <cbc:EndpointID schemeID="DK:CVR">DK76543216</cbc:EndpointID>
+      <cbc:EndpointID schemeID="GLN">5790001968502</cbc:EndpointID>
       <cac:PartyName>
-        <cbc:Name>Modtager Handel A/S</cbc:Name>
+        <cbc:Name>Test-mod</cbc:Name>
       </cac:PartyName>
       <cac:PostalAddress>
         <cbc:AddressFormatCode listAgencyID="320" listID="urn:oioubl:codelist:addressformatcode-1.1">StructuredLax</cbc:AddressFormatCode>
-        <cbc:StreetName>Vestergade</cbc:StreetName>
-        <cbc:BuildingNumber>45</cbc:BuildingNumber>
-        <cbc:CityName>Aarhus</cbc:CityName>
-        <cbc:PostalZone>8000</cbc:PostalZone>
+        <cbc:StreetName>mod-vej</cbc:StreetName>
+        <cbc:BuildingNumber>7</cbc:BuildingNumber>
+        <cbc:CityName>modtagerBy</cbc:CityName>
+        <cbc:PostalZone>9999</cbc:PostalZone>
         <cac:Country>
           <cbc:IdentificationCode>DK</cbc:IdentificationCode>
         </cac:Country>
       </cac:PostalAddress>
       <cac:PartyTaxScheme>
-        <cbc:CompanyID schemeID="DK:SE">DK76543216</cbc:CompanyID>
+        <cbc:CompanyID schemeID="DK:SE">DK13585628</cbc:CompanyID>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
         </cac:TaxScheme>
       </cac:PartyTaxScheme>
       <cac:PartyLegalEntity>
-        <cbc:RegistrationName>Modtager Handel A/S</cbc:RegistrationName>
-        <cbc:CompanyID schemeID="DK:CVR">DK76543216</cbc:CompanyID>
+        <cbc:RegistrationName>Test-mod</cbc:RegistrationName>
+        <cbc:CompanyID schemeID="DK:CVR">DK13585628</cbc:CompanyID>
       </cac:PartyLegalEntity>
       <cac:Contact>
-        <cbc:ID>C-001</cbc:ID>
-        <cbc:Name>Mette Sørensen</cbc:Name>
+        <cbc:ID>nejTak</cbc:ID>
+        <cbc:Name>nejTak</cbc:Name>
       </cac:Contact>
     </cac:Party>
   </cac:AccountingCustomerParty>
   <cac:PaymentMeans>
-    <cbc:PaymentMeansCode name="Bankoverførsel">42</cbc:PaymentMeansCode>
-    <cbc:PaymentChannelCode listID="urn:oioubl:codelist:paymentchannelcode-1.1">DK:BANK</cbc:PaymentChannelCode>
-    <cac:PayeeFinancialAccount>
-      <cbc:ID>9876543210</cbc:ID>
-      <cbc:Name>Danske Bank</cbc:Name>
-      <cac:FinancialInstitutionBranch>
-        <cbc:ID>1234</cbc:ID>
-      </cac:FinancialInstitutionBranch>
-    </cac:PayeeFinancialAccount>
+    <cbc:PaymentMeansCode name="NemKonto udbetaling">97</cbc:PaymentMeansCode>
+    <cbc:PaymentChannelCode listID="urn:oioubl:codelist:paymentchannelcode-1.1">DK:NEMKONTO</cbc:PaymentChannelCode>
   </cac:PaymentMeans>
   <cac:PaymentTerms>
     <cbc:Note>Netto 30 dage</cbc:Note>
-    <cbc:Amount currencyID="DKK">2500.00</cbc:Amount>
+    <cbc:Amount currencyID="DKK">100.00</cbc:Amount>
   </cac:PaymentTerms>
   <cac:TaxTotal>
-    <cbc:TaxAmount currencyID="DKK">500.00</cbc:TaxAmount>
+    <cbc:TaxAmount currencyID="DKK">0.00</cbc:TaxAmount>
     <cac:TaxSubtotal>
-      <cbc:TaxableAmount currencyID="DKK">2000.00</cbc:TaxableAmount>
-      <cbc:TaxAmount currencyID="DKK">500.00</cbc:TaxAmount>
+      <cbc:TaxableAmount currencyID="DKK">100.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="DKK">0.00</cbc:TaxAmount>
       <cac:TaxCategory>
-        <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
-        <cbc:Percent>25</cbc:Percent>
+        <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">ZeroRated</cbc:ID>
+        <cbc:Percent>0</cbc:Percent>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
@@ -107,23 +97,23 @@
     </cac:TaxSubtotal>
   </cac:TaxTotal>
   <cac:LegalMonetaryTotal>
-    <cbc:LineExtensionAmount currencyID="DKK">2000.00</cbc:LineExtensionAmount>
-    <cbc:TaxExclusiveAmount currencyID="DKK">500.00</cbc:TaxExclusiveAmount>
-    <cbc:TaxInclusiveAmount currencyID="DKK">2500.00</cbc:TaxInclusiveAmount>
-    <cbc:PayableAmount currencyID="DKK">2500.00</cbc:PayableAmount>
+    <cbc:LineExtensionAmount currencyID="DKK">100.00</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="DKK">0.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="DKK">100.00</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="DKK">100.00</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
   <cac:InvoiceLine>
     <cbc:ID>1</cbc:ID>
-    <cbc:InvoicedQuantity unitCode="HUR">2</cbc:InvoicedQuantity>
-    <cbc:LineExtensionAmount currencyID="DKK">2000.00</cbc:LineExtensionAmount>
+    <cbc:InvoicedQuantity unitCode="C62">1.00</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="DKK">100.00</cbc:LineExtensionAmount>
     <cac:TaxTotal>
-      <cbc:TaxAmount currencyID="DKK">500.00</cbc:TaxAmount>
+      <cbc:TaxAmount currencyID="DKK">0.00</cbc:TaxAmount>
       <cac:TaxSubtotal>
-        <cbc:TaxableAmount currencyID="DKK">2000.00</cbc:TaxableAmount>
-        <cbc:TaxAmount currencyID="DKK">500.00</cbc:TaxAmount>
+        <cbc:TaxableAmount currencyID="DKK">100.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="DKK">0.00</cbc:TaxAmount>
         <cac:TaxCategory>
-          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
-          <cbc:Percent>25</cbc:Percent>
+          <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">ZeroRated</cbc:ID>
+          <cbc:Percent>0</cbc:Percent>
           <cac:TaxScheme>
             <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
             <cbc:Name>Moms</cbc:Name>
@@ -132,10 +122,10 @@
       </cac:TaxSubtotal>
     </cac:TaxTotal>
     <cac:Item>
-      <cbc:Name>Konsulent timer</cbc:Name>
+      <cbc:Name>Ydelse</cbc:Name>
       <cac:ClassifiedTaxCategory>
-        <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">StandardRated</cbc:ID>
-        <cbc:Percent>25</cbc:Percent>
+        <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxcategoryid-1.1">ZeroRated</cbc:ID>
+        <cbc:Percent>0</cbc:Percent>
         <cac:TaxScheme>
           <cbc:ID schemeAgencyID="320" schemeID="urn:oioubl:id:taxschemeid-1.5">63</cbc:ID>
           <cbc:Name>Moms</cbc:Name>
@@ -143,7 +133,7 @@
       </cac:ClassifiedTaxCategory>
     </cac:Item>
     <cac:Price>
-      <cbc:PriceAmount currencyID="DKK">1000.00</cbc:PriceAmount>
+      <cbc:PriceAmount currencyID="DKK">100.00</cbc:PriceAmount>
     </cac:Price>
   </cac:InvoiceLine>
 </Invoice>

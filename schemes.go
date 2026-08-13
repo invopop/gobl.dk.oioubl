@@ -51,8 +51,14 @@ func (ui *Invoice) applyOrderingRefs(inv *bill.Invoice) {
 			if i >= len(ui.ContractDocumentReference) {
 				break
 			}
-			if c != nil && c.IssueDate != nil {
+			if c == nil {
+				continue
+			}
+			if c.IssueDate != nil {
 				ui.ContractDocumentReference[i].IssueDate = formatDate(*c.IssueDate)
+			}
+			if !c.UUID.IsZero() {
+				ui.ContractDocumentReference[i].UUID = c.UUID.String()
 			}
 		}
 	}

@@ -1,0 +1,169 @@
+{
+	"$regime": "DK",
+	"$addons": [
+		"eu-en16931-v2017",
+		"dk-oioubl-v2"
+	],
+	"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+	"type": "standard",
+	"code": "NEMKONTO-001",
+	"issue_date": "2024-05-15",
+	"currency": "DKK",
+	"tax": {
+		"rounding": "currency",
+		"ext": {
+			"untdid-document-type": "380"
+		}
+	},
+	"supplier": {
+		"name": "Sample Supplier ApS",
+		"tax_id": {
+			"country": "DK",
+			"code": "10000009"
+		},
+		"identities": [
+			{
+				"scope": "legal",
+				"code": "10000009",
+				"ext": {
+					"iso-scheme-id": "DK:CVR"
+				}
+			}
+		],
+		"endpoints": [
+			{
+				"uri": "DK:CVR:10000009"
+			}
+		],
+		"addresses": [
+			{
+				"num": "7-9",
+				"street": "Eksempelvej",
+				"locality": "København Ø",
+				"code": "2100",
+				"country": "DK"
+			}
+		]
+	},
+	"customer": {
+		"name": "Sample Customer A/S",
+		"tax_id": {
+			"country": "DK",
+			"code": "10000017"
+		},
+		"identities": [
+			{
+				"scope": "legal",
+				"code": "10000017",
+				"ext": {
+					"iso-scheme-id": "DK:CVR"
+				}
+			}
+		],
+		"people": [
+			{
+				"name": {
+					"given": "Kontakt Ansvarlig"
+				},
+				"identities": [
+					{
+						"code": "C-001"
+					}
+				]
+			}
+		],
+		"endpoints": [
+			{
+				"uri": "DK:CVR:10000017"
+			}
+		],
+		"addresses": [
+			{
+				"num": "1",
+				"street": "Prøvevej",
+				"locality": "Billund",
+				"code": "7190",
+				"country": "DK"
+			}
+		]
+	},
+	"lines": [
+		{
+			"i": 1,
+			"quantity": "1",
+			"item": {
+				"name": "Booking Fee (Fixed Rate)",
+				"price": "31676.00",
+				"unit": "one"
+			},
+			"sum": "31676.00",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "standard",
+					"percent": "25%"
+				}
+			],
+			"total": "31676.00"
+		},
+		{
+			"i": 2,
+			"quantity": "1",
+			"item": {
+				"name": "Sample service fee",
+				"price": "1267.04",
+				"unit": "one"
+			},
+			"sum": "1267.04",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "standard",
+					"percent": "25%"
+				}
+			],
+			"total": "1267.04"
+		}
+	],
+	"payment": {
+		"terms": {
+			"due_dates": [
+				{
+					"date": "2024-06-15",
+					"amount": "41178.80",
+					"percent": "100%"
+				}
+			]
+		},
+		"instructions": {
+			"key": "other",
+			"ext": {
+				"untdid-payment-means": "97"
+			}
+		}
+	},
+	"totals": {
+		"sum": "32943.04",
+		"total": "32943.04",
+		"taxes": {
+			"categories": [
+				{
+					"code": "VAT",
+					"rates": [
+						{
+							"key": "standard",
+							"base": "32943.04",
+							"percent": "25%",
+							"amount": "8235.76"
+						}
+					],
+					"amount": "8235.76"
+				}
+			],
+			"sum": "8235.76"
+		},
+		"tax": "8235.76",
+		"total_with_tax": "41178.80",
+		"payable": "41178.80"
+	}
+}
