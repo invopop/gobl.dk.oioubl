@@ -924,10 +924,14 @@
 		<cbc:ChargeTotalAmount currencyID="DKK">15.00</cbc:ChargeTotalAmount>
 		<cbc:PrepaidAmount currencyID="DKK">50.00</cbc:PrepaidAmount>
 		<cbc:PayableRoundingAmount currencyID="DKK">0.25</cbc:PayableRoundingAmount>
-		<!-- The guideline example states 7000.00, but its own totals do not add
-		     up (it also states a ChargeTotalAmount of 15.00 while carrying
-		     615.00 of charges). Adjusted to what the lines, charges and prepaid
-		     amount actually produce, so the document is a valid invoice. -->
+		<!-- The official sample (Eksempler/Used/Used_Invoice_v2p1.xml) states
+		     7000.00, but the official validator rejects the whole document with
+		     24 rule errors, its payable arithmetic among them (F-INV133). It is
+		     a field-coverage demo, not a conformant invoice, which is also why
+		     it sits outside the conformance corpus. The payable is aligned to
+		     what its lines, charges and prepaid amount produce so the
+		     stated-payable check does not mask the coverage the fixture is
+		     actually here for. -->
 		<cbc:PayableAmount currencyID="DKK">6969.00</cbc:PayableAmount>
 	</cac:LegalMonetaryTotal>
 	
