@@ -8,8 +8,8 @@ import (
 )
 
 // stripLines pulls each line's excise duties out, keyed by line number, and
-// notes the ordinary VAT rates it saw along the way.
-func (ui *Invoice) stripLines(vatPercents map[string]string) (map[int][]exciseDuty, error) {
+// notes the ordinary VAT rates and each line's own VAT category along the way.
+func (ui *Invoice) stripLines(details *oioublDetails) error {
 	lines := ui.InvoiceLines
 	if len(ui.CreditNoteLines) > 0 {
 		lines = ui.CreditNoteLines
@@ -23,22 +23,22 @@ func (ui *Invoice) stripLines(vatPercents map[string]string) (map[int][]exciseDu
 		// amount and shifting every later line's duties, which are keyed by
 		// index here. Refusing is the honest failure.
 		if line.Price == nil {
-			return nil, fmt.Errorf("line %d has no price", i+1)
+			return fmt.Errorf("line %d has no price", i+1)
 		}
 
 		if err := foldOrderableUnitFactor(line.Price); err != nil {
-			return nil, fmt.Errorf("line %d: %w", i+1, err)
+			return fmt.Errorf("line %d: %w", i+1, err)
 		}
 
 		vat, excises, err := splitExciseTaxTotals(line.TaxTotal)
 		if err != nil {
-			return nil, fmt.Errorf("line %d: %w", i+1, err)
+			return fmt.Errorf("line %d: %w", i+1, err)
 		}
 		line.TaxTotal = vat
 		if len(excises) > 0 {
 			lineExcises[i] = excises
 		}
-		collectVATPercents(line.TaxTotal, vatPercents)
+		collectVATPercents(line.TaxTotal, details.vatPercents)
 		for j := range line.TaxTotal {
 			stripTaxTotalCategories(&line.TaxTotal[j])
 		}
@@ -49,11 +49,16 @@ func (ui *Invoice) stripLines(vatPercents map[string]string) (map[int][]exciseDu
 			} else {
 				synthesizeClassifiedTaxCategory(line)
 			}
+			// Both branches leave the category in UNCL form ("S", "Z", "AE").
+			if tc := line.Item.ClassifiedTaxCategory; tc != nil && tc.ID != nil {
+				details.lineVATCodes[i] = tc.ID.Value
+			}
 		}
 
 		stripLineAllowanceCharges(line)
 	}
-	return lineExcises, nil
+	details.lineDuties = lineExcises
+	return nil
 }
 
 // foldOrderableUnitFactor rewrites an OIOUBL price as the plain per-unit price

@@ -32,6 +32,10 @@ type oioublDetails struct {
 	docDuties   []exciseDuty
 	lineDuties  map[int][]exciseDuty
 	vatPercents map[string]string
+	// lineVATCodes holds each line's own VAT category in UNCL form ("S", "Z",
+	// "AE"), so a document-level duty restatement can be told apart from a
+	// duty that genuinely needs its own VAT type.
+	lineVATCodes map[int]string
 }
 
 // Parse reads an OIOUBL document off the wire.
@@ -174,14 +178,16 @@ func (ui *Invoice) stripOIOUBL() (oioublDetails, error) {
 	ui.stripPaymentDueDate()
 	ui.stripDelivery()
 
-	details := oioublDetails{vatPercents: make(map[string]string)}
+	details := oioublDetails{
+		vatPercents:  make(map[string]string),
+		lineVATCodes: make(map[int]string),
+	}
 
-	lineDuties, err := ui.stripLines(details.vatPercents)
-	if err != nil {
+	if err := ui.stripLines(&details); err != nil {
 		return details, err
 	}
-	details.lineDuties = lineDuties
 
+	var err error
 	ui.TaxTotal, details.docDuties, err = splitExciseTaxTotals(ui.TaxTotal)
 	if err != nil {
 		return details, fmt.Errorf("document tax totals: %w", err)

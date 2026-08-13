@@ -14,6 +14,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestParseExciseRestatementKeepsLineDuty covers the mirror whose stated VAT
+// type is the one the line already implies: a pure restatement, so the duty
+// stays on its line and the linkage survives. Only a differing VAT type moves
+// the duty to document level (TestParseExciseRestatedAtBothLevels).
+func TestParseExciseRestatementKeepsLineDuty(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join(getParsePath(), "excise-line-and-document.xml"))
+	require.NoError(t, err)
+	doc := string(data)
+	// Levy the duty at the line's own standard rate, at both levels, and
+	// restate the totals VAT now reaches: 200000 + 100000 duty + 25% VAT.
+	doc = strings.ReplaceAll(doc, `>ZeroRated</cbc:TaxTypeCode>`, `>StandardRated</cbc:TaxTypeCode>`)
+	doc = strings.Replace(doc, `<cbc:TaxInclusiveAmount currencyID ="DKK">350000.00</cbc:TaxInclusiveAmount>`,
+		`<cbc:TaxInclusiveAmount currencyID ="DKK">375000.00</cbc:TaxInclusiveAmount>`, 1)
+	doc = strings.Replace(doc, `<cbc:PayableAmount currencyID ="DKK">350000.00</cbc:PayableAmount>`,
+		`<cbc:PayableAmount currencyID ="DKK">375000.00</cbc:PayableAmount>`, 1)
+	require.NotEqual(t, string(data), doc)
+
+	in, err := oioubl.ParseInvoice([]byte(doc))
+	require.NoError(t, err)
+	env, err := in.Convert()
+	require.NoError(t, err)
+	inv, ok := env.Extract().(*bill.Invoice)
+	require.True(t, ok)
+
+	assert.Empty(t, inv.Charges, "a pure restatement leaves no document-level duty")
+	require.Len(t, inv.Lines, 1)
+	require.Len(t, inv.Lines[0].Charges, 1)
+	assert.Equal(t, "100000.00", inv.Lines[0].Charges[0].Amount.String())
+	assert.Equal(t, "375000.00", inv.Totals.Payable.String(), "the duty is taxed at the line's rate")
+}
+
 // TestExciseBaseSurvivesRoundTrip pins the taxable base of a flat-rate duty
 // across XML -> GOBL -> XML -> GOBL. The document-level charge keeps base and
 // percent only because they reproduce the amount exactly; a progressive duty

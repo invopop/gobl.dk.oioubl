@@ -106,37 +106,46 @@ func collectVATPercents(totals []ubl.TaxTotal, percents map[string]string) {
 	}
 }
 
-// addExciseCharges adds every duty exactly once. When both levels describe the
-// same duty the document-level one wins, because only it can state the VAT type
-// the duty is levied at -- bill.LineCharge has no taxes of its own and would
-// inherit the line's rate.
+// addExciseCharges adds every duty exactly once. A document-level entry that
+// mirrors a line's duty and states the VAT type the line already implies is a
+// pure restatement: the line keeps its duty, and with it the record of which
+// line the duty belongs to. Only when the stated VAT type differs from the
+// line's own rate does the document level win, because a line charge has no
+// taxes of its own and would inherit the line's rate.
 func addExciseCharges(inv *bill.Invoice, details oioublDetails) {
-	for i, duties := range details.lineDuties {
-		if i >= len(inv.Lines) {
-			continue
-		}
-		for _, d := range duties {
-			if dutyRestated(details.docDuties, d) {
+	consumed := make([]bool, len(details.docDuties))
+	for i := range inv.Lines {
+		for _, d := range details.lineDuties[i] {
+			j := matchingDocDuty(details.docDuties, consumed, d)
+			if j >= 0 && unclTaxCategoryCode(details.docDuties[j].typeCode) == details.lineVATCodes[i] {
+				consumed[j] = true
+				inv.Lines[i].Charges = append(inv.Lines[i].Charges, dutyToLineCharge(d))
+				continue
+			}
+			if j >= 0 {
 				continue
 			}
 			inv.Lines[i].Charges = append(inv.Lines[i].Charges, dutyToLineCharge(d))
 		}
 	}
-	for _, d := range details.docDuties {
+	for j, d := range details.docDuties {
+		if consumed[j] {
+			continue
+		}
 		inv.Charges = append(inv.Charges, dutyToCharge(d, details.vatPercents))
 	}
 }
 
-// dutyRestated reports whether a line duty appears among the document-level
-// ones. Amounts compare numerically, so a mirror written "50000.0" still
-// matches its line's "50000.00".
-func dutyRestated(docDuties []exciseDuty, d exciseDuty) bool {
-	for _, doc := range docDuties {
-		if doc.scheme == d.scheme && doc.amount.Compare(d.amount) == 0 && sameDutyBase(doc.base, d.base) {
-			return true
+// matchingDocDuty finds a document-level entry restating a line duty. Amounts
+// compare numerically, so a mirror written "50000.0" still matches its line's
+// "50000.00".
+func matchingDocDuty(docDuties []exciseDuty, consumed []bool, d exciseDuty) int {
+	for j, doc := range docDuties {
+		if !consumed[j] && doc.scheme == d.scheme && doc.amount.Compare(d.amount) == 0 && sameDutyBase(doc.base, d.base) {
+			return j
 		}
 	}
-	return false
+	return -1
 }
 
 func sameDutyBase(a, b *num.Amount) bool {
@@ -146,15 +155,20 @@ func sameDutyBase(a, b *num.Amount) bool {
 	return a.Compare(*b) == 0
 }
 
-// No Base here: bill.LineCharge.Base only means something alongside Percent,
-// and an excise duty is always a fixed Amount.
 func dutyToLineCharge(d exciseDuty) *bill.LineCharge {
-	return &bill.LineCharge{
+	lc := &bill.LineCharge{
 		Key:    addon.ChargeKeyExcise,
 		Ext:    dutyCodeExt(d.scheme),
 		Reason: d.name,
 		Amount: d.amount,
 	}
+	// Same rule as dutyToCharge: the taxable base can only be kept for a flat
+	// rate, since GOBL demands a percent with it and recomputes the amount.
+	if d.base != nil && d.percent != nil && d.percent.Of(*d.base).Compare(d.amount) == 0 {
+		lc.Base = d.base
+		lc.Percent = d.percent
+	}
+	return lc
 }
 
 // dutyToCharge builds a document-level duty, which unlike a line-level one has

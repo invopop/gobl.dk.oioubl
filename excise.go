@@ -68,6 +68,7 @@ func collectLineExcise(line *bill.Line, currency string) []exciseDuty {
 				name:     ch.Reason,
 				amount:   rescaleToCurrency(ch.Amount, currency),
 				base:     base,
+				percent:  ch.Percent,
 				typeCode: typeCode,
 			})
 		}
