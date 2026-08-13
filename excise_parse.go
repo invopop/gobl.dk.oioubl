@@ -60,6 +60,11 @@ func parseExciseSubtotal(st *ubl.TaxSubtotal) (exciseDuty, error) {
 		}
 		d.base = &base
 	}
+	if p := st.TaxCategory.Percent; p != nil {
+		if percent, err := num.PercentageFromString(normalizeNumericString(*p) + "%"); err == nil {
+			d.percent = &percent
+		}
+	}
 	if ts := st.TaxCategory.TaxScheme; ts != nil {
 		d.scheme = ts.ID.Value
 		if ts.Name != nil {
@@ -160,6 +165,14 @@ func dutyToCharge(d exciseDuty, percents map[string]string) *bill.Charge {
 		Ext:    dutyCodeExt(d.scheme),
 		Reason: d.name,
 		Amount: d.amount,
+	}
+	// The taxable base can only be kept when the duty is a flat rate: GOBL
+	// requires a percent alongside a base and recomputes the amount from them,
+	// so a progressive duty like registreringsafgift, whose base and amount
+	// relate by no percentage, keeps its amount alone.
+	if d.base != nil && d.percent != nil && d.percent.Of(*d.base).Compare(d.amount) == 0 {
+		ch.Base = d.base
+		ch.Percent = d.percent
 	}
 	key := oioublVATKey(d.typeCode)
 	if key == "" {

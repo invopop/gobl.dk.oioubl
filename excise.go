@@ -18,6 +18,7 @@ type exciseDuty struct {
 	name     string
 	amount   num.Amount
 	base     *num.Amount
+	percent  *num.Percentage
 	typeCode string
 }
 
@@ -39,6 +40,7 @@ func collectExcise(inv *bill.Invoice, currency string) []exciseDuty {
 				name:     ch.Reason,
 				amount:   ch.Amount,
 				base:     ch.Base,
+				percent:  ch.Percent,
 				typeCode: chargeVATTypeCode(ch),
 			})
 		}
@@ -152,13 +154,17 @@ func makeExciseTaxTotals(excises []exciseDuty, currency string) ([]ubl.TaxTotal,
 		} else {
 			sums[e.scheme] = sums[e.scheme].Add(e.amount.Rescale(sums[e.scheme].Exp()))
 		}
+		cat := ubl.TaxCategory{
+			ID:        stampTaxCategoryID(&ubl.IDType{Value: taxCategoryExcise}),
+			TaxScheme: scheme,
+		}
+		if e.percent != nil {
+			cat.Percent = ptr(e.percent.StringWithoutSymbol())
+		}
 		subtotals[e.scheme] = append(subtotals[e.scheme], ubl.TaxSubtotal{
 			TaxableAmount: taxable,
 			TaxAmount:     amt,
-			TaxCategory: ubl.TaxCategory{
-				ID:        stampTaxCategoryID(&ubl.IDType{Value: taxCategoryExcise}),
-				TaxScheme: scheme,
-			},
+			TaxCategory:   cat,
 		})
 	}
 

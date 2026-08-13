@@ -162,6 +162,8 @@
 			"i": 1,
 			"key": "excise",
 			"reason": "Registreringsafgift",
+			"base": "200000.00",
+			"percent": "50%",
 			"amount": "100000.00",
 			"taxes": [
 				{

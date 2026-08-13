@@ -198,6 +198,8 @@
 			"i": 2,
 			"key": "excise",
 			"reason": "Bæreposer",
+			"base": "5000.00",
+			"percent": "12%",
 			"amount": "600.00",
 			"taxes": [
 				{
