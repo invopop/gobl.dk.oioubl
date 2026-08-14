@@ -48,11 +48,14 @@ func Parse(data []byte) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	in, ok := doc.(*ubl.Invoice)
-	if !ok {
+	switch in := doc.(type) {
+	case *ubl.Invoice:
+		return (*Invoice)(in), nil
+	case *ubl.ApplicationResponse:
+		return (*ApplicationResponse)(in), nil
+	default:
 		return nil, ErrUnknownDocumentType
 	}
-	return (*Invoice)(in), nil
 }
 
 // ParseInvoice is Parse for callers that already know it is an invoice.
