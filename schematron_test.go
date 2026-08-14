@@ -41,15 +41,21 @@ func TestSchematron(t *testing.T) {
 	for _, example := range convertCases(t) {
 		t.Run(example.name, func(t *testing.T) {
 			env := loadTestEnvelope(t, example.src)
-			inv, ok := env.Extract().(*bill.Invoice)
-			require.True(t, ok, "example should hold an invoice")
 
-			doc, err := oioubl.ConvertInvoice(env)
+			doc, err := oioubl.Convert(env)
 			require.NoError(t, err)
 			data, err := oioubl.Bytes(doc)
 			require.NoError(t, err)
 
-			vesid := oioubl.GetVESID(inv)
+			var vesid string
+			switch doc := env.Extract().(type) {
+			case *bill.Invoice:
+				vesid = oioubl.GetVESID(doc)
+			case *bill.Status:
+				vesid = oioubl.VESIDApplicationResponse
+			default:
+				t.Fatalf("no VESID for %T", doc)
+			}
 			resp, err := client.ValidateXml(context.Background(), &phive.ValidateXmlRequest{
 				Vesid:      vesid,
 				XmlContent: data,

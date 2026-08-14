@@ -1,0 +1,26 @@
+$schema: "https://gobl.org/draft-0/bill/status"
+$regime: "DK"
+$addons:
+  - "dk-oioubl-v2"
+uuid: "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3"
+type: "response"
+code: "RESP001"
+issue_date: "2026-01-15"
+# The response answers an invoice, so the parties keep their original roles:
+# the customer refuses, the supplier is told.
+supplier:
+  name: "Eksempel A/S"
+  tax_id:
+    country: "DK"
+    code: "12345674"
+customer:
+  name: "Kunde ApS"
+  tax_id:
+    country: "DK"
+    code: "88146328"
+lines:
+  - key: "rejected"
+    description: "Vi har ikke fået de aftalte 800 kr. i rabat"
+    doc:
+      code: "INV1000"
+      issue_date: "2026-01-10"

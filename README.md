@@ -1,8 +1,9 @@
 # GOBL ⬅️➡️ Danish OIOUBL 2.1
 
 Danish OIOUBL 2.1 support for [GOBL](https://github.com/invopop/gobl), for
-invoices and credit notes exchanged over the NemHandel network. Invoice
-Responses and Reminders are a planned follow-up, not yet implemented here.
+invoices, credit notes and Invoice Responses (`ApplicationResponse`) exchanged
+over the NemHandel network. Reminders are a planned follow-up, not yet
+implemented here.
 
 Released under the Apache 2.0 [LICENSE](https://github.com/invopop/gobl.dk.oioubl/blob/main/LICENSE), Copyright 2026 [Invopop S.L.](https://invopop.com).
 

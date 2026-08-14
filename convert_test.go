@@ -76,14 +76,14 @@ func loadTestEnvelope(t *testing.T, path string) *gobl.Envelope {
 	return env
 }
 
-// TestConvert covers every fixture and shipped example, invoices and credit
-// notes alike.
+// TestConvert covers every fixture and shipped example: invoices, credit notes
+// and responses alike.
 func TestConvert(t *testing.T) {
 	for _, example := range convertCases(t) {
 		t.Run(example.name, func(t *testing.T) {
 			env := loadTestEnvelope(t, example.src)
 
-			doc, err := oioubl.ConvertInvoice(env)
+			doc, err := oioubl.Convert(env)
 			require.NoError(t, err)
 
 			data, err := oioubl.Bytes(doc)
