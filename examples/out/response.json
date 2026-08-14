@@ -1,0 +1,71 @@
+{
+	"$schema": "https://gobl.org/draft-0/envelope",
+	"head": {
+		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
+		"dig": {
+			"alg": "sha256",
+			"val": "c5816ceafdd79a672aba7d93b4941568922fe4fb9fd5c2607864e6f1523a7692"
+		},
+		"from": "DK:CVR:88146328",
+		"to": "DK:CVR:12345674"
+	},
+	"doc": {
+		"$schema": "https://gobl.org/draft-0/bill/status",
+		"$regime": "DK",
+		"$addons": [
+			"eu-en16931-v2017",
+			"dk-oioubl-v2"
+		],
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a3",
+		"type": "response",
+		"issue_date": "2026-01-15",
+		"code": "RESP001",
+		"supplier": {
+			"name": "Eksempel A/S",
+			"tax_id": {
+				"country": "DK",
+				"code": "12345674"
+			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "12345674"
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "DK:CVR:12345674"
+				}
+			]
+		},
+		"customer": {
+			"name": "Kunde ApS",
+			"tax_id": {
+				"country": "DK",
+				"code": "88146328"
+			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "88146328"
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "DK:CVR:88146328"
+				}
+			]
+		},
+		"lines": [
+			{
+				"index": 1,
+				"key": "rejected",
+				"doc": {
+					"issue_date": "2026-01-10",
+					"code": "INV1000"
+				},
+				"description": "Vi har ikke fået de aftalte 800 kr. i rabat"
+			}
+		]
+	}
+}

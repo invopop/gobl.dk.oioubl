@@ -25,8 +25,17 @@ const (
 )
 
 const (
-	VESIDInvoice    = "dk.oioubl:invoice:1.17.2"
-	VESIDCreditNote = "dk.oioubl:credit-note:1.17.2"
+	VESIDInvoice             = "dk.oioubl:invoice:1.17.2"
+	VESIDCreditNote          = "dk.oioubl:credit-note:1.17.2"
+	VESIDApplicationResponse = "dk.oioubl:application-response:1.17.2"
+)
+
+// Profiles a response may name in place of the invoices' ProfileID: no profile
+// for a technical or profile rejection (F-APR004), the technical-response
+// profile for a TechnicalAccept (F-APR057 / F-APR058).
+const (
+	profileNone   = "NONE"
+	profileTecRes = "Procurement-TecRes-1.0"
 )
 
 // OIOUBL code-list and scheme identifiers the schematron expects (agency 320 throughout).
@@ -37,10 +46,12 @@ const (
 	schemeTaxScheme   = "urn:oioubl:id:taxschemeid-1.5"
 	schemeProfileV12  = "urn:oioubl:id:profileid-1.2"
 
-	codelistInvoiceType    = "urn:oioubl:codelist:invoicetypecode-1.1"
-	codelistPaymentChannel = "urn:oioubl:codelist:paymentchannelcode-1.1"
-	codelistAddressFormat  = "urn:oioubl:codelist:addressformatcode-1.1"
-	codelistTaxType        = "urn:oioubl:codelist:taxtypecode-1.1"
+	codelistInvoiceType     = "urn:oioubl:codelist:invoicetypecode-1.1"
+	codelistPaymentChannel  = "urn:oioubl:codelist:paymentchannelcode-1.1"
+	codelistAddressFormat   = "urn:oioubl:codelist:addressformatcode-1.1"
+	codelistTaxType         = "urn:oioubl:codelist:taxtypecode-1.1"
+	codelistResponseCode    = "urn:oioubl:codelist:responsecode-1.1"
+	codelistResponseDocType = "urn:oioubl:codelist:responsedocumenttypecode-1.1"
 )
 
 var ErrUnsupportedDocumentType = fmt.Errorf("unsupported document type")
@@ -49,11 +60,14 @@ var Addons = []cbc.Key{addon.V2}
 
 // Convert turns a GOBL envelope into an OIOUBL 2.1 document.
 func Convert(env *gobl.Envelope) (any, error) {
-	out, err := buildInvoice(env)
-	if err != nil {
-		return nil, err
+	switch env.Extract().(type) {
+	case *bill.Invoice:
+		return buildInvoice(env)
+	case *bill.Status:
+		return buildStatus(env)
+	default:
+		return nil, ErrUnsupportedDocumentType
 	}
-	return out, nil
 }
 
 // ConvertInvoice is Convert for callers that already know the document is an invoice.
