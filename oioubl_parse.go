@@ -26,6 +26,10 @@ var supportedCustomizationIDs = []string{"OIOUBL-2.01", "OIOUBL-2.02", "OIOUBL-2
 // import gobl.ubl just to read what ExtractBinaryAttachments hands back.
 type BinaryAttachment = ubl.BinaryAttachment
 
+// ErrUnknownDocumentType is the base's error, re-exported so callers can match
+// what Parse returns without importing gobl.ubl.
+var ErrUnknownDocumentType = ubl.ErrUnknownDocumentType
+
 // oioublDetails is what the strip pass takes out of the document, held over so
 // the add pass can put it back into GOBL.
 type oioublDetails struct {
@@ -46,7 +50,7 @@ func Parse(data []byte) (any, error) {
 	}
 	in, ok := doc.(*ubl.Invoice)
 	if !ok {
-		return nil, ubl.ErrUnknownDocumentType
+		return nil, ErrUnknownDocumentType
 	}
 	return (*Invoice)(in), nil
 }
