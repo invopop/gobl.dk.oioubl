@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/invopop/gobl v0.504.0
-	github.com/invopop/gobl.ubl v0.64.0
+	github.com/invopop/gobl.ubl v0.65.0
 	github.com/invopop/phive v0.17.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.82.1
