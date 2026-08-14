@@ -50,10 +50,8 @@ func convertStatus(t *testing.T, st *bill.Status) *oioubl.ApplicationResponse {
 	t.Helper()
 	env, err := gobl.Envelop(st)
 	require.NoError(t, err)
-	doc, err := oioubl.Convert(env)
+	ar, err := oioubl.ConvertApplicationResponse(env)
 	require.NoError(t, err)
-	ar, ok := doc.(*oioubl.ApplicationResponse)
-	require.True(t, ok, "expected an application response, got %T", doc)
 	return ar
 }
 
@@ -84,11 +82,127 @@ func TestConvertStatus(t *testing.T) {
 	assert.Equal(t, "BusinessReject", dr.Response.ResponseCode.Value)
 	require.NotNil(t, dr.Response.ResponseCode.ListID)
 	assert.Equal(t, "urn:oioubl:codelist:responsecode-1.1", *dr.Response.ResponseCode.ListID)
+	require.NotNil(t, dr.Response.ResponseCode.ListAgencyID)
+	assert.Equal(t, "320", *dr.Response.ResponseCode.ListAgencyID)
 	assert.Equal(t, "1", dr.Response.ReferenceID)
 	require.NotNil(t, dr.DocumentReference)
 	assert.Equal(t, "INV1000", dr.DocumentReference.ID)
 	require.NotNil(t, dr.DocumentReference.DocumentTypeCode)
 	assert.Equal(t, "Invoice", dr.DocumentReference.DocumentTypeCode.Value)
+	require.NotNil(t, dr.DocumentReference.DocumentTypeCode.ListID)
+	assert.Equal(t, "urn:oioubl:codelist:responsedocumenttypecode-1.1", *dr.DocumentReference.DocumentTypeCode.ListID)
+	require.NotNil(t, dr.DocumentReference.DocumentTypeCode.ListAgencyID)
+	assert.Equal(t, "320", *dr.DocumentReference.DocumentTypeCode.ListAgencyID)
+}
+
+// TestConvertStatusCreditNote names the referenced document a CreditNote.
+func TestConvertStatusCreditNote(t *testing.T) {
+	st := testStatus()
+	st.Lines[0].Doc.Type = bill.InvoiceTypeCreditNote
+	ar := convertStatus(t, st)
+	require.Len(t, ar.DocumentResponse, 1)
+	require.NotNil(t, ar.DocumentResponse[0].DocumentReference)
+	require.NotNil(t, ar.DocumentResponse[0].DocumentReference.DocumentTypeCode)
+	assert.Equal(t, "CreditNote", ar.DocumentResponse[0].DocumentReference.DocumentTypeCode.Value)
+}
+
+// TestConvertStatusAddsAddon converts a status that never declared the addon:
+// Convert adds it, so its normalizations and rules still run.
+func TestConvertStatusAddsAddon(t *testing.T) {
+	st := testStatus()
+	st.Addons = tax.Addons{}
+	ar := convertStatus(t, st)
+	require.Len(t, ar.DocumentResponse, 1)
+	require.NotNil(t, ar.DocumentResponse[0].Response.ResponseCode)
+	assert.Equal(t, "BusinessReject", ar.DocumentResponse[0].Response.ResponseCode.Value)
+	require.NotNil(t, ar.SenderParty.EndpointID, "the addon's derived endpoint proves normalization ran")
+}
+
+// TestConvertStatusRefusals pins what Convert refuses rather than converts.
+func TestConvertStatusRefusals(t *testing.T) {
+	t.Run("non-response status type", func(t *testing.T) {
+		st := testStatus()
+		st.Type = bill.StatusTypeSystem
+		env, err := gobl.Envelop(st)
+		require.NoError(t, err)
+		_, err = oioubl.Convert(env)
+		assert.ErrorIs(t, err, oioubl.ErrUnsupportedDocumentType)
+	})
+
+	t.Run("missing customer", func(t *testing.T) {
+		st := testStatus()
+		st.Customer = nil
+		env, err := gobl.Envelop(st)
+		require.NoError(t, err)
+		_, err = oioubl.Convert(env)
+		assert.ErrorContains(t, err, "customer is required")
+	})
+
+	t.Run("response code extension contradicting the key", func(t *testing.T) {
+		st := testStatus()
+		st.Lines[0].Key = bill.StatusLineAccepted
+		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{addon.ExtKeyResponseCode: "BusinessReject"})
+		env, err := gobl.Envelop(st)
+		require.NoError(t, err)
+		_, err = oioubl.Convert(env)
+		assert.ErrorContains(t, err, "must agree with the status key")
+	})
+
+	t.Run("response code outside the codelist", func(t *testing.T) {
+		st := testStatus()
+		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{addon.ExtKeyResponseCode: "BusinesReject"})
+		env, err := gobl.Envelop(st)
+		require.NoError(t, err)
+		_, err = oioubl.Convert(env)
+		assert.Error(t, err, "a typo'd code must not reach the wire")
+	})
+
+	t.Run("customer without a legal identity source (F-APR040)", func(t *testing.T) {
+		st := testStatus()
+		st.Customer = &org.Party{
+			Name:      "Beispiel GmbH",
+			TaxID:     &tax.Identity{Country: "DE", Code: "111111125"},
+			Endpoints: []*org.Endpoint{{URI: "GLN:4035811991021"}},
+		}
+		env, err := gobl.Envelop(st)
+		require.NoError(t, err)
+		_, err = oioubl.Convert(env)
+		assert.ErrorContains(t, err, "F-APR040")
+	})
+
+	t.Run("non-bill document", func(t *testing.T) {
+		env, err := gobl.Envelop(&org.Party{Name: "Eksempel A/S"})
+		require.NoError(t, err)
+		_, err = oioubl.Convert(env)
+		assert.ErrorIs(t, err, oioubl.ErrUnsupportedDocumentType)
+	})
+}
+
+// TestStatusRoundTrip converts a status out to OIOUBL and parses it back:
+// the wire-only DK prefixes and the code mapping must cancel out.
+func TestStatusRoundTrip(t *testing.T) {
+	ar := convertStatus(t, testStatus())
+	data, err := oioubl.Bytes(ar)
+	require.NoError(t, err)
+
+	parsed, err := oioubl.ParseApplicationResponse(data)
+	require.NoError(t, err)
+	env, err := parsed.Convert()
+	require.NoError(t, err)
+	st, ok := env.Extract().(*bill.Status)
+	require.True(t, ok)
+
+	assert.Equal(t, bill.StatusTypeResponse, st.Type)
+	assert.Equal(t, cbc.Code("RESP001"), st.Code)
+	require.Len(t, st.Lines, 1)
+	assert.Equal(t, bill.StatusLineRejected, st.Lines[0].Key)
+	assert.Equal(t, cbc.Code("BusinessReject"), st.Lines[0].Ext.Get(addon.ExtKeyResponseCode))
+	require.NotNil(t, st.Lines[0].Doc)
+	assert.Equal(t, cbc.Code("INV1000"), st.Lines[0].Doc.Code)
+	require.NotNil(t, st.Supplier.TaxID)
+	assert.Equal(t, cbc.Code("12345674"), st.Supplier.TaxID.Code, "the wire-only DK prefix must not survive the round trip")
+	require.NotNil(t, st.Customer.TaxID)
+	assert.Equal(t, cbc.Code("88146328"), st.Customer.TaxID.Code)
 }
 
 // TestConvertStatusCodes pins the wire code and profile each status key
@@ -100,13 +214,15 @@ func TestConvertStatusCodes(t *testing.T) {
 		ext         cbc.Code
 		wantCode    string
 		wantProfile string
+		wantScheme  string
 	}{
-		{name: "accepted", key: bill.StatusLineAccepted, wantCode: "BusinessAccept", wantProfile: oioubl.ProfileID},
-		{name: "rejected", key: bill.StatusLineRejected, wantCode: "BusinessReject", wantProfile: oioubl.ProfileID},
-		{name: "acknowledged", key: bill.StatusLineAcknowledged, wantCode: "ProfileAccept", wantProfile: oioubl.ProfileID},
-		{name: "error", key: bill.StatusLineError, wantCode: "TechnicalReject", wantProfile: "NONE"},
-		{name: "extension overrides the key", key: bill.StatusLineError, ext: "ProfileReject", wantCode: "ProfileReject", wantProfile: "NONE"},
-		{name: "technical accept names its own profile", key: bill.StatusLineAcknowledged, ext: "TechnicalAccept", wantCode: "TechnicalAccept", wantProfile: "Procurement-TecRes-1.0"},
+		{name: "accepted", key: bill.StatusLineAccepted, wantCode: "BusinessAccept", wantProfile: oioubl.ProfileID, wantScheme: "urn:oioubl:id:profileid-1.2"},
+		{name: "rejected", key: bill.StatusLineRejected, wantCode: "BusinessReject", wantProfile: oioubl.ProfileID, wantScheme: "urn:oioubl:id:profileid-1.2"},
+		{name: "acknowledged", key: bill.StatusLineAcknowledged, wantCode: "ProfileAccept", wantProfile: oioubl.ProfileID, wantScheme: "urn:oioubl:id:profileid-1.2"},
+		{name: "error", key: bill.StatusLineError, wantCode: "TechnicalReject", wantProfile: "NONE", wantScheme: "urn:oioubl:id:profileid-1.2"},
+		{name: "extension overrides the key", key: bill.StatusLineError, ext: "ProfileReject", wantCode: "ProfileReject", wantProfile: "NONE", wantScheme: "urn:oioubl:id:profileid-1.2"},
+		// TecRes only exists from profileid-1.4 on (F-LIB302).
+		{name: "technical accept names its own profile", key: bill.StatusLineAcknowledged, ext: "TechnicalAccept", wantCode: "TechnicalAccept", wantProfile: "Procurement-TecRes-1.0", wantScheme: "urn:oioubl:id:profileid-1.6"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -121,6 +237,8 @@ func TestConvertStatusCodes(t *testing.T) {
 			assert.Equal(t, test.wantCode, ar.DocumentResponse[0].Response.ResponseCode.Value)
 			require.NotNil(t, ar.ProfileID)
 			assert.Equal(t, test.wantProfile, ar.ProfileID.Value)
+			require.NotNil(t, ar.ProfileID.SchemeID)
+			assert.Equal(t, test.wantScheme, *ar.ProfileID.SchemeID)
 		})
 	}
 }
@@ -139,10 +257,8 @@ func TestParseApplicationResponse(t *testing.T) {
 			data, err := os.ReadFile(fixture)
 			require.NoError(t, err)
 
-			doc, err := oioubl.Parse(data)
+			ar, err := oioubl.ParseApplicationResponse(data)
 			require.NoError(t, err)
-			ar, ok := doc.(*oioubl.ApplicationResponse)
-			require.True(t, ok, "expected an application response, got %T", doc)
 
 			env, err := ar.Convert()
 			require.NoError(t, err)
@@ -182,10 +298,8 @@ func TestParseResponseCodes(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.code, func(t *testing.T) {
 			data := strings.Replace(string(fixture), "BusinessReject", test.code, 1)
-			doc, err := oioubl.Parse([]byte(data))
+			ar, err := oioubl.ParseApplicationResponse([]byte(data))
 			require.NoError(t, err)
-			ar, ok := doc.(*oioubl.ApplicationResponse)
-			require.True(t, ok)
 
 			env, err := ar.Convert()
 			require.NoError(t, err)
@@ -199,12 +313,30 @@ func TestParseResponseCodes(t *testing.T) {
 
 	t.Run("unknown code is refused", func(t *testing.T) {
 		data := strings.Replace(string(fixture), "BusinessReject", "MaybeLater", 1)
-		doc, err := oioubl.Parse([]byte(data))
+		ar, err := oioubl.ParseApplicationResponse([]byte(data))
 		require.NoError(t, err)
-		ar, ok := doc.(*oioubl.ApplicationResponse)
-		require.True(t, ok)
 
 		_, err = ar.Convert()
 		assert.ErrorContains(t, err, "unknown OIOUBL response code")
+	})
+
+	t.Run("missing response code is refused", func(t *testing.T) {
+		data := strings.Replace(string(fixture),
+			`<cbc:ResponseCode listAgencyID="320" listID="urn:oioubl:codelist:responsecode-1.1">BusinessReject</cbc:ResponseCode>`, "", 1)
+		ar, err := oioubl.ParseApplicationResponse([]byte(data))
+		require.NoError(t, err)
+
+		_, err = ar.Convert()
+		assert.ErrorContains(t, err, "carries no response code")
+	})
+
+	t.Run("unsupported customization id is refused", func(t *testing.T) {
+		data := strings.Replace(string(fixture), "OIOUBL-2.01",
+			"urn:fdc:peppol.eu:poacc:trns:invoice_response:3", 1)
+		ar, err := oioubl.ParseApplicationResponse([]byte(data))
+		require.NoError(t, err)
+
+		_, err = ar.Convert()
+		assert.ErrorIs(t, err, oioubl.ErrUnsupportedCustomizationID)
 	})
 }
