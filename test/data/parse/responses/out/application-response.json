@@ -22,7 +22,12 @@
 			{
 				"name": {
 					"given": "Hugo Jensen"
-				}
+				},
+				"identities": [
+					{
+						"code": "23456"
+					}
+				]
 			}
 		],
 		"endpoints": [
@@ -55,7 +60,7 @@
 		"identities": [
 			{
 				"scope": "legal",
-				"code": "DK16356697",
+				"code": "16356697",
 				"ext": {
 					"iso-scheme-id": "DK:CVR"
 				}
@@ -71,7 +76,12 @@
 			{
 				"name": {
 					"given": "Hans Hansen"
-				}
+				},
+				"identities": [
+					{
+						"code": "7778"
+					}
+				]
 			}
 		],
 		"endpoints": [

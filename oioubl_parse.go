@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -29,6 +30,11 @@ type BinaryAttachment = ubl.BinaryAttachment
 // ErrUnknownDocumentType is the base's error, re-exported so callers can match
 // what Parse returns without importing gobl.ubl.
 var ErrUnknownDocumentType = ubl.ErrUnknownDocumentType
+
+// ErrUnsupportedCustomizationID marks a well-formed UBL document whose
+// CustomizationID names a profile this module does not read — callers route
+// these to their unreadable-document handling rather than retrying.
+var ErrUnsupportedCustomizationID = errors.New("unsupported customization id")
 
 // oioublDetails is what the strip pass takes out of the document, held over so
 // the add pass can put it back into GOBL.
@@ -115,7 +121,7 @@ var spaceStripper = strings.NewReplacer(" ", "", "\t", "", "\n", "", "\r", "")
 // then adds the OIOUBL details the base has no field for.
 func (ui *Invoice) Convert() (*gobl.Envelope, error) {
 	if !slices.Contains(supportedCustomizationIDs, ui.CustomizationID) {
-		return nil, fmt.Errorf("unsupported customization id %q, expected one of %v", ui.CustomizationID, supportedCustomizationIDs)
+		return nil, fmt.Errorf("%w %q, expected one of %v", ErrUnsupportedCustomizationID, ui.CustomizationID, supportedCustomizationIDs)
 	}
 
 	// Stripping rewrites the document, so work on a copy: the caller keeps a
