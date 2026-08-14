@@ -31,6 +31,7 @@ func init() {
 		rules.GOBL.Add("DK-OIOUBL"),
 		is.InContext(tax.AddonIn(V2)),
 		billInvoiceRules(),
+		billStatusRules(),
 		taxComboRules(),
 		billChargeRules(),
 		lineChargeRules(),
