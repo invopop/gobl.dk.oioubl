@@ -14,6 +14,10 @@ const (
 	// ExtKeyDutyCode identifies the SKAT excise duty code carried by a charge
 	// keyed with ChargeKeyExcise.
 	ExtKeyDutyCode cbc.Key = "dk-oioubl-duty-code"
+
+	// ExtKeyReminderSequence is the reminder's position in the dunning sequence
+	// (cbc:ReminderSequenceNumeric).
+	ExtKeyReminderSequence cbc.Key = "dk-oioubl-reminder-sequence"
 )
 
 var extensions = []*cbc.Definition{
@@ -40,5 +44,23 @@ var extensions = []*cbc.Definition{
 				non-numeric codes (e.g. ~21d~).
 			`),
 		},
+	},
+	{
+		Key: ExtKeyReminderSequence,
+		Name: i18n.String{
+			i18n.EN: "OIOUBL Reminder Sequence",
+			i18n.DA: "OIOUBL Rykkersekvens",
+		},
+		Desc: i18n.String{
+			i18n.EN: here.Doc(`
+				How many times this bill has been reminded. A reminder (a bill.Payment)
+				restates an unpaid invoice, and OIOUBL records its position in the dunning
+				sequence: 1 for the first reminder, 2 for the second, and so on. The count
+				is stateful — it depends on how many prior reminders were sent, not on
+				anything in the document — so it has no native GOBL field and must be
+				supplied here. Mandatory on every reminder (F-REM007).
+			`),
+		},
+		Pattern: `^[0-9]+$`,
 	},
 }

@@ -31,6 +31,7 @@ func init() {
 		rules.GOBL.Add("DK-OIOUBL"),
 		is.InContext(tax.AddonIn(V2)),
 		billInvoiceRules(),
+		billPaymentRules(),
 		taxComboRules(),
 		billChargeRules(),
 		lineChargeRules(),
@@ -60,6 +61,9 @@ func newAddon() *tax.AddonDef {
 			en16931.V2017,
 		},
 		Extensions: extensions,
+		Tags: []*tax.TagSet{
+			paymentTags,
+		},
 		Description: i18n.String{
 			i18n.EN: here.Doc(`
 				Support for the Danish OIOUBL 2.1 standard used on the NemHandel
