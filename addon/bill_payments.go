@@ -2,22 +2,14 @@ package addon
 
 import (
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/pay"
+	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/rules/is"
 	"github.com/invopop/gobl/tax"
 )
 
-// billPayTermsRules relaxes EN 16931 BR-CO-25: OIOUBL allows bare payment terms
-// (ID + amount only), so the due-dates-or-notes requirement doesn't apply.
-func billPayTermsRules() *rules.Set {
-	return rules.For(new(pay.Terms),
-		rules.Ignore("GOBL-EU-EN16931-PAY-TERMS-01"),
-	)
-}
-
-// billPaymentRules returns the OIOUBL Reminder (Rykker) rules, applied only to the
-// "request" payment type. en16931 has no bill.Payment rules, so nothing to Ignore.
+// billPaymentRules returns the OIOUBL 2.1 rule set for bill.Payment, targeting
+// the Reminder (Rykker) mapped from the "request" payment type.
 func billPaymentRules() *rules.Set {
 	return rules.For(new(bill.Payment),
 		rules.When(bill.PaymentTypeIn(bill.PaymentTypeRequest),
@@ -29,16 +21,17 @@ func billPaymentRules() *rules.Set {
 					tax.ExtensionsRequire(ExtKeyReminderSequence)),
 			),
 			rules.Field("supplier",
-				rules.Assert("03", "supplier must have an endpoint (F-REM018)",
-					is.Func("has endpoint", partyHasEndpoint)),
+				rules.Field("endpoints",
+					rules.Assert("03", "supplier endpoint is required (F-REM018)", is.Present),
+				),
 				rules.Assert("04", "supplier requires a legal identity or a Danish tax ID for the OIOUBL PartyLegalEntity (F-REM021 / F-LIB187)",
 					is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
 			),
 			rules.Field("customer",
 				rules.Assert("05", "customer is required (F-REM024)", is.Present),
-				rules.Assert("06", "customer must have an endpoint (F-REM025)",
-					is.Func("has endpoint", partyHasEndpoint)),
-				// A named customer has a PartyLegalEntity, so OIOUBL requires its CompanyID (F-LIB187).
+				rules.Field("endpoints",
+					rules.Assert("06", "customer endpoint is required (F-REM025)", is.Present),
+				),
 				rules.Assert("07", "customer requires a legal identity or a Danish tax ID for the OIOUBL PartyLegalEntity (F-LIB187)",
 					is.Func("has an OIOUBL legal company ID", partyHasOIOUBLLegalID)),
 				rules.Field("people",
@@ -46,9 +39,30 @@ func billPaymentRules() *rules.Set {
 				),
 			),
 			rules.Field("payee",
-				rules.AssertIfPresent("09", "payee must have an endpoint (F-REM034)",
-					is.Func("has endpoint", partyHasEndpoint)),
+				rules.Field("endpoints",
+					rules.Assert("09", "payee endpoint is required (F-REM034)", is.Present),
+				),
 			),
 		),
 	)
+}
+
+// partyHasOIOUBLLegalID reports whether a named party can produce a non-empty
+// OIOUBL PartyLegalEntity/CompanyID from a legal-scope identity (F-LIB187); a
+// Danish tax ID satisfies it via the identity derived in normalization.
+func partyHasOIOUBLLegalID(val any) bool {
+	p, ok := val.(*org.Party)
+	if !ok || p == nil {
+		return true
+	}
+	// A party with no name has no PartyLegalEntity, so its CompanyID can't apply.
+	if p.Name == "" {
+		return true
+	}
+	for _, id := range p.Identities {
+		if id != nil && id.Scope == org.IdentityScopeLegal && !id.Code.IsEmpty() {
+			return true
+		}
+	}
+	return false
 }

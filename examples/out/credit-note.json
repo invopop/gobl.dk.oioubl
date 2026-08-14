@@ -4,10 +4,10 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "7bffe7c93cea2d0f51e645172ff15b1b69e9ac7ae9953ec74f003d592e982c7a"
+			"val": "15d50e0095d2685e95353a1ab1d04a9d384db6619804dfc217f99fcc2a94969b"
 		},
-		"from": "DK:CVR:12345674",
-		"to": "DK:CVR:88146328"
+		"from": "DK:CVR:16356700",
+		"to": "GLN:5798009811530"
 	},
 	"doc": {
 		"$schema": "https://gobl.org/draft-0/bill/invoice",
@@ -16,90 +16,119 @@
 			"eu-en16931-v2017",
 			"dk-oioubl-v2"
 		],
-		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+		"uuid": "9756b53a-8815-1029-857a-e388fe63f399",
 		"type": "credit-note",
-		"series": "2026",
-		"code": "1001",
-		"issue_date": "2026-01-15",
+		"code": "A00095679",
+		"issue_date": "2005-11-20",
 		"currency": "DKK",
 		"preceding": [
 			{
-				"issue_date": "2026-01-01",
-				"series": "2026",
-				"code": "1000",
-				"reason": "Fakturafejl"
+				"uuid": "9756b4d0-8815-1029-857a-e388fe63f399",
+				"issue_date": "2005-11-20",
+				"code": "A00095678"
 			}
 		],
 		"tax": {
+			"rounding": "currency",
 			"ext": {
 				"untdid-document-type": "381"
 			}
 		},
 		"supplier": {
-			"name": "Eksempel A/S",
+			"name": "Tavleleverandøren",
+			"alias": "Tavleverandøren",
 			"tax_id": {
 				"country": "DK",
-				"code": "12345674"
+				"code": "16356700"
 			},
 			"identities": [
 				{
 					"scope": "legal",
-					"code": "12345674"
-				}
-			],
-			"endpoints": [
-				{
-					"uri": "DK:CVR:12345674"
-				}
-			],
-			"addresses": [
-				{
-					"num": "1",
-					"street": "Hovedgaden",
-					"locality": "København",
-					"code": "1000",
-					"country": "DK"
-				}
-			]
-		},
-		"customer": {
-			"name": "Kunde ApS",
-			"tax_id": {
-				"country": "DK",
-				"code": "88146328"
-			},
-			"identities": [
-				{
-					"scope": "legal",
-					"code": "88146328"
+					"code": "16356700"
 				}
 			],
 			"people": [
 				{
 					"name": {
-						"given": "Anders",
-						"surname": "Jensen"
+						"given": "Hugo Jensen"
 					},
 					"identities": [
 						{
-							"label": "Contact",
-							"code": "C-001"
+							"code": "23456"
 						}
 					]
 				}
 			],
 			"endpoints": [
 				{
-					"uri": "DK:CVR:88146328"
+					"uri": "DK:CVR:16356700"
 				}
 			],
 			"addresses": [
 				{
-					"num": "5",
-					"street": "Bygaden",
-					"locality": "Aarhus",
-					"code": "8000",
+					"num": "11",
+					"street": "Leverandørvej",
+					"locality": "Dyssegård",
+					"code": "2870",
 					"country": "DK"
+				}
+			],
+			"emails": [
+				{
+					"addr": "Hugo@tavl.dk"
+				}
+			],
+			"telephones": [
+				{
+					"num": "15812337"
+				}
+			]
+		},
+		"customer": {
+			"name": "Den Lille Skole",
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "5798009811530",
+					"ext": {
+						"iso-scheme-id": "GLN"
+					}
+				}
+			],
+			"people": [
+				{
+					"name": {
+						"given": "Hans Hansen"
+					},
+					"identities": [
+						{
+							"code": "7778"
+						}
+					]
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "GLN:5798009811530"
+				}
+			],
+			"addresses": [
+				{
+					"num": "10",
+					"street": "Fredericiavej",
+					"locality": "Helsingør",
+					"code": "3000",
+					"country": "DK"
+				}
+			],
+			"emails": [
+				{
+					"addr": "Hans@dls.dk"
+				}
+			],
+			"telephones": [
+				{
+					"num": "26532147"
 				}
 			]
 		},
@@ -108,11 +137,13 @@
 				"i": 1,
 				"quantity": "1",
 				"item": {
-					"name": "Produkt",
-					"price": "100.00",
-					"unit": "one"
+					"ref": "5712345780121",
+					"name": "Hejsetavle",
+					"description": "Hejsetavle",
+					"price": "5000.00",
+					"unit": "item"
 				},
-				"sum": "100.00",
+				"sum": "5000.00",
 				"taxes": [
 					{
 						"cat": "VAT",
@@ -121,12 +152,42 @@
 						"percent": "25.0%"
 					}
 				],
-				"total": "100.00"
+				"total": "5000.00"
+			},
+			{
+				"i": 2,
+				"quantity": "2",
+				"item": {
+					"ref": "5712345780111",
+					"name": "Beslag",
+					"description": "Beslag",
+					"price": "25.00",
+					"unit": "item"
+				},
+				"sum": "50.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"rate": "general",
+						"percent": "25.0%"
+					}
+				],
+				"total": "50.00"
 			}
 		],
+		"ordering": {
+			"cost": "5250124502",
+			"purchases": [
+				{
+					"issue_date": "2005-11-01",
+					"code": "5002701"
+				}
+			]
+		},
 		"totals": {
-			"sum": "100.00",
-			"total": "100.00",
+			"sum": "5050.00",
+			"total": "5050.00",
 			"taxes": {
 				"categories": [
 					{
@@ -134,19 +195,19 @@
 						"rates": [
 							{
 								"key": "standard",
-								"base": "100.00",
+								"base": "5050.00",
 								"percent": "25.0%",
-								"amount": "25.00"
+								"amount": "1262.50"
 							}
 						],
-						"amount": "25.00"
+						"amount": "1262.50"
 					}
 				],
-				"sum": "25.00"
+				"sum": "1262.50"
 			},
-			"tax": "25.00",
-			"total_with_tax": "125.00",
-			"payable": "125.00"
+			"tax": "1262.50",
+			"total_with_tax": "6312.50",
+			"payable": "6312.50"
 		}
 	}
 }

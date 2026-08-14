@@ -7,6 +7,7 @@ import (
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/i18n"
 	"github.com/invopop/gobl/norm"
+	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/pkg/here"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/rules/is"
@@ -14,15 +15,13 @@ import (
 )
 
 const (
-	// Key is the OIOUBL addon family key, also the fault-code namespace.
 	Key cbc.Key = "dk-oioubl"
 
-	// V2 is the addon key for OIOUBL 2.1.
 	V2 cbc.Key = Key + "-v2"
 
 	// SchemeDKCVR is the OIOUBL EndpointID scheme for a Danish CVR number, used
 	// when deriving a participant endpoint from a Danish tax ID.
-	SchemeDKCVR = "DK:CVR"
+	SchemeDKCVR cbc.Code = "DK:CVR"
 )
 
 func init() {
@@ -32,19 +31,22 @@ func init() {
 		rules.GOBL.Add("DK-OIOUBL"),
 		is.InContext(tax.AddonIn(V2)),
 		billInvoiceRules(),
-		billStatusRules(),
-		billTaxComboRules(),
+		billPaymentRules(),
+		taxComboRules(),
 		billChargeRules(),
 		lineChargeRules(),
-		billPaymentRules(),
-		billPayTermsRules(),
+		payInstructionsRules(),
+		// OIOUBL accepts bare invoice payment terms (ID and amount only), so EN
+		// 16931's due-dates-or-notes requirement does not apply.
+		rules.For(new(pay.Terms),
+			rules.Ignore("GOBL-EU-EN16931-PAY-TERMS-01"),
+		),
 	)
 	norm.RegisterWithGuard(
 		is.InContext(tax.AddonIn(V2)),
+		norm.For(normalizeInvoice),
 		norm.For(normalizeParty),
 		norm.For(normalizeTaxCombo),
-		norm.For(normalizeTaxNote),
-		norm.For(normalizePayInstructions),
 	)
 }
 
@@ -58,6 +60,10 @@ func newAddon() *tax.AddonDef {
 		Requires: []cbc.Key{
 			en16931.V2017,
 		},
+		Extensions: extensions,
+		Tags: []*tax.TagSet{
+			paymentTags,
+		},
 		Description: i18n.String{
 			i18n.EN: here.Doc(`
 				Support for the Danish OIOUBL 2.1 standard used on the NemHandel
@@ -69,7 +75,7 @@ func newAddon() *tax.AddonDef {
 				European profiles it predates and does not extend EN 16931.
 
 				This addon translates the OIOUBL Schematron rules (v1.17.2, the
-				hotfix live since 2026-05-18, superseding 1.17.1) into GOBL
+				hotfix live since 2026-05-18) into GOBL
 				validations. OIOUBL 2.1 is scheduled to be replaced by NemHandel
 				BIS 4 starting in 2028.
 			`),
@@ -92,10 +98,12 @@ func newAddon() *tax.AddonDef {
 				},
 				URL: "https://git.erst.dk/openebusiness/common/-/tree/master/released/oioubl",
 			},
-		},
-		Extensions: extensions,
-		Tags: []*tax.TagSet{
-			paymentTags,
+			{
+				Title: i18n.String{
+					i18n.EN: "OIOUBL Schematron rules (browsable source, referenced by rule citations)",
+				},
+				URL: "https://git.erst.dk/openebusiness/common/-/tree/master/resources/Schematrons/OIOUBL?ref_type=heads",
+			},
 		},
 	}
 }

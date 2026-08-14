@@ -34,14 +34,14 @@ func testRequestPayment(t *testing.T) *bill.Payment {
 			oioubl.ExtKeyReminderSequence: "1",
 		}),
 		Supplier: &org.Party{
-			Name:    "Eksempel A/S",
-			TaxID:   &tax.Identity{Country: "DK", Code: "12345674"},
-			Inboxes: []*org.Inbox{{Scheme: "DK:CVR", Code: "12345674"}},
+			Name:      "Eksempel A/S",
+			TaxID:     &tax.Identity{Country: "DK", Code: "12345674"},
+			Endpoints: []*org.Endpoint{{URI: "iso6523-actorid-upis::0184:12345674"}},
 		},
 		Customer: &org.Party{
-			Name:    "Kunde ApS",
-			TaxID:   &tax.Identity{Country: "DK", Code: "88146328"},
-			Inboxes: []*org.Inbox{{Scheme: "DK:CVR", Code: "88146328"}},
+			Name:      "Kunde ApS",
+			TaxID:     &tax.Identity{Country: "DK", Code: "88146328"},
+			Endpoints: []*org.Endpoint{{URI: "iso6523-actorid-upis::0184:88146328"}},
 			People: []*org.Person{
 				{Name: &org.Name{Given: "Anders", Surname: "Jensen"}},
 			},
@@ -53,36 +53,20 @@ func testRequestPayment(t *testing.T) *bill.Payment {
 			},
 		},
 		Methods: []*pay.Record{
-			{Key: "credit-transfer", CreditTransfer: &pay.CreditTransfer{IBAN: "DK5000400440116243", BIC: "DABADKKK"}},
+			{
+				Key:            "credit-transfer",
+				Amount:         num.MakeAmount(125000, 2),
+				CreditTransfer: &pay.CreditTransfer{IBAN: "DK5000400440116243", BIC: "DABADKKK"},
+			},
 		},
 	}
 }
 
-func TestPaymentValidation(t *testing.T) {
+func TestReminderValidation(t *testing.T) {
 	t.Run("valid request payment", func(t *testing.T) {
 		p := testRequestPayment(t)
 		require.NoError(t, p.Calculate())
 		require.NoError(t, rules.Validate(p))
-	})
-
-	// The OIOUBL Reminder rules are scoped to the "request" type. A receipt
-	// payment carries no OIOUBL document, so none of them apply even when the
-	// reminder-specific data is absent.
-	t.Run("non-request type skips the OIOUBL rules", func(t *testing.T) {
-		p := testRequestPayment(t)
-		p.Type = bill.PaymentTypeReceipt
-		p.Code = ""
-		p.Ext = tax.Extensions{}
-		p.Customer = nil
-		require.NoError(t, p.Calculate())
-		require.NoError(t, rules.Validate(p))
-	})
-
-	t.Run("code is required (F-REM010)", func(t *testing.T) {
-		p := testRequestPayment(t)
-		p.Code = ""
-		require.NoError(t, p.Calculate())
-		assert.ErrorContains(t, rules.Validate(p), "F-REM010")
 	})
 
 	// The reminder type is a document-variant tag, not an extension: an untagged
@@ -96,6 +80,21 @@ func TestPaymentValidation(t *testing.T) {
 		assert.True(t, p.HasTags(oioubl.TagAdvis))
 	})
 
+	t.Run("bare DK parties pass via the derived participant and legal identity", func(t *testing.T) {
+		p := testRequestPayment(t)
+		p.Supplier.Endpoints = nil
+		p.Customer.Endpoints = nil
+		require.NoError(t, p.Calculate())
+		assert.NoError(t, rules.Validate(p))
+	})
+
+	t.Run("code is required (F-REM010)", func(t *testing.T) {
+		p := testRequestPayment(t)
+		p.Code = ""
+		require.NoError(t, p.Calculate())
+		assert.ErrorContains(t, rules.Validate(p), "F-REM010")
+	})
+
 	t.Run("reminder sequence is required (F-REM007)", func(t *testing.T) {
 		p := testRequestPayment(t)
 		p.Ext = p.Ext.Delete(oioubl.ExtKeyReminderSequence)
@@ -103,10 +102,10 @@ func TestPaymentValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(p), "F-REM007")
 	})
 
-	t.Run("supplier endpoint is required (F-REM018)", func(t *testing.T) {
+	t.Run("supplier without participant or tax ID code fails (F-REM018)", func(t *testing.T) {
 		p := testRequestPayment(t)
-		p.Supplier.Inboxes = nil
-		p.Supplier.TaxID = nil
+		p.Supplier.Endpoints = nil
+		p.Supplier.TaxID = &tax.Identity{Country: "DK"}
 		require.NoError(t, p.Calculate())
 		assert.ErrorContains(t, rules.Validate(p), "F-REM018")
 	})
@@ -114,7 +113,7 @@ func TestPaymentValidation(t *testing.T) {
 	t.Run("supplier legal identity is required (F-REM021)", func(t *testing.T) {
 		p := testRequestPayment(t)
 		p.Supplier.TaxID = &tax.Identity{Country: "DE", Code: "111111125"}
-		p.Supplier.Inboxes = []*org.Inbox{{Scheme: "GLN", Code: "4035811991021"}}
+		p.Supplier.Endpoints = []*org.Endpoint{{URI: "iso6523-actorid-upis::0088:4035811991021"}}
 		require.NoError(t, p.Calculate())
 		assert.ErrorContains(t, rules.Validate(p), "F-REM021")
 	})
@@ -126,10 +125,10 @@ func TestPaymentValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(p), "F-REM024")
 	})
 
-	t.Run("customer endpoint is required (F-REM025)", func(t *testing.T) {
+	t.Run("customer without participant or tax ID code fails (F-REM025)", func(t *testing.T) {
 		p := testRequestPayment(t)
-		p.Customer.Inboxes = nil
-		p.Customer.TaxID = nil
+		p.Customer.Endpoints = nil
+		p.Customer.TaxID = &tax.Identity{Country: "DK"}
 		require.NoError(t, p.Calculate())
 		assert.ErrorContains(t, rules.Validate(p), "F-REM025")
 	})
@@ -137,7 +136,7 @@ func TestPaymentValidation(t *testing.T) {
 	t.Run("customer legal identity is required (F-LIB187)", func(t *testing.T) {
 		p := testRequestPayment(t)
 		p.Customer.TaxID = &tax.Identity{Country: "DE", Code: "111111125"}
-		p.Customer.Inboxes = []*org.Inbox{{Scheme: "GLN", Code: "4035811991021"}}
+		p.Customer.Endpoints = []*org.Endpoint{{URI: "iso6523-actorid-upis::0088:4035811991021"}}
 		require.NoError(t, p.Calculate())
 		assert.ErrorContains(t, rules.Validate(p), "F-LIB187")
 	})
@@ -154,5 +153,17 @@ func TestPaymentValidation(t *testing.T) {
 		p.Payee = &org.Party{Name: "Inkasso A/S"}
 		require.NoError(t, p.Calculate())
 		assert.ErrorContains(t, rules.Validate(p), "F-REM034")
+	})
+
+	// The OIOUBL Reminder rules are scoped to the "request" type. A receipt
+	// payment carries no OIOUBL document, so none of them apply even when the
+	// reminder-specific data is absent.
+	t.Run("non-request type skips the OIOUBL rules", func(t *testing.T) {
+		p := testRequestPayment(t)
+		p.Type = bill.PaymentTypeReceipt
+		p.Ext = tax.Extensions{}
+		p.Customer.People = nil
+		require.NoError(t, p.Calculate())
+		require.NoError(t, rules.Validate(p))
 	})
 }

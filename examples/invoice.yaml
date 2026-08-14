@@ -2,46 +2,94 @@ $schema: "https://gobl.org/draft-0/bill/invoice"
 $regime: "DK"
 $addons:
   - "dk-oioubl-v2"
-uuid: "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2"
+uuid: "9756b4d0-8815-1029-857a-e388fe63f399"
 type: "standard"
 currency: "DKK"
-issue_date: "2026-01-01"
-series: "2026"
-code: "1000"
+issue_date: "2005-11-20"
+code: "A00095678"
 supplier:
-  name: "Eksempel A/S"
+  name: "Tavleleverandøren"
+  alias: "Tavleverandøren"
   tax_id:
     country: "DK"
-    code: "12345674"
-  addresses:
-    - num: "1"
-      street: "Hovedgaden"
-      locality: "København"
-      code: "1000"
-      country: "DK"
-customer:
-  name: "Kunde ApS"
-  tax_id:
-    country: "DK"
-    code: "88146328"
+    code: "16356700" # checksum-valid; real ERST demo data uses 16356706, which fails DK's mod-11 check
   people:
     - name:
-        given: "Anders"
-        surname: "Jensen"
+        given: "Hugo Jensen"
       identities:
-        - label: "Contact"
-          code: "C-001"
+        - code: "23456"
   addresses:
-    - num: "5"
-      street: "Bygaden"
-      locality: "Aarhus"
-      code: "8000"
+    - num: "11"
+      street: "Leverandørvej"
+      locality: "Dyssegård"
+      code: "2870"
       country: "DK"
+  emails:
+    - addr: "Hugo@tavl.dk"
+  telephones:
+    - num: "15812337"
+customer:
+  name: "Den Lille Skole"
+  identities:
+    - scope: "legal"
+      code: "5798009883735"
+      ext:
+        iso-scheme-id: "GLN"
+  endpoints:
+    - uri: "GLN:5798009883735"
+  people:
+    - name:
+        given: "Hans Hansen"
+      identities:
+        - code: "7778"
+  addresses:
+    - num: "10"
+      street: "Fredericiavej"
+      locality: "Helsingør"
+      code: "3000"
+      country: "DK"
+  emails:
+    - addr: "Hans@dls.dk"
+  telephones:
+    - num: "26532147"
 lines:
   - quantity: 1
     item:
-      name: "Produkt"
-      price: "100.00"
+      ref: "5712345780121"
+      name: "Hejsetavle"
+      description: "Hejsetavle"
+      price: "5000.00"
+      unit: "item"
     taxes:
       - cat: "VAT"
         rate: "standard"
+  - quantity: 2
+    item:
+      ref: "5712345780111"
+      name: "Beslag"
+      description: "Beslag"
+      price: "25.00"
+      unit: "item"
+    taxes:
+      - cat: "VAT"
+        rate: "standard"
+ordering:
+  cost: "5250124502"
+  purchases:
+    - issue_date: "2005-11-01"
+      code: "5002701"
+payment:
+  terms:
+    due_dates:
+      - date: "2005-11-25"
+        amount: "6312.50"
+        percent: "100%"
+  instructions:
+    key: "other"
+    credit_transfer:
+      - number: "1234567890"
+        clearing: "1234"
+    ext:
+      untdid-payment-means: "42"
+delivery:
+  date: "2005-11-15"

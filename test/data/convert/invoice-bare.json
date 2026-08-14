@@ -1,0 +1,182 @@
+{
+	"$schema": "https://gobl.org/draft-0/envelope",
+	"head": {
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+		"dig": {
+			"alg": "sha256",
+			"val": "1faa62a12a380a99ffb7eddc968c917e5f3d6ad1ffe6f28192094be62727f41f"
+		}
+	},
+	"doc": {
+		"$schema": "https://gobl.org/draft-0/bill/invoice",
+		"$regime": "DK",
+		"$addons": [
+			"eu-en16931-v2017"
+		],
+		"uuid": "0195ce71-dc9c-72c8-bf2c-9890a4a9f0a2",
+		"type": "standard",
+		"series": "SAMPLE",
+		"code": "001",
+		"issue_date": "2024-05-15",
+		"currency": "DKK",
+		"tax": {
+			"ext": {
+				"untdid-document-type": "380"
+			}
+		},
+		"supplier": {
+			"name": "Sample Supplier ApS",
+			"tax_id": {
+				"country": "DK",
+				"code": "10000009"
+			},
+			"inboxes": [
+				{
+					"scheme": "DK:CVR",
+					"code": "10000009"
+				}
+			],
+			"addresses": [
+				{
+					"num": "7-9",
+					"street": "Eksempelvej",
+					"locality": "København Ø",
+					"code": "2100",
+					"country": "DK"
+				}
+			]
+		},
+		"customer": {
+			"name": "Sample Customer A/S",
+			"tax_id": {
+				"country": "DK",
+				"code": "10000017"
+			},
+			"people": [
+				{
+					"name": {
+						"given": "Kontakt",
+						"surname": "Ansvarlig"
+					},
+					"identities": [
+						{
+							"label": "Contact",
+							"code": "C-001"
+						}
+					]
+				}
+			],
+			"inboxes": [
+				{
+					"scheme": "DK:CVR",
+					"code": "10000017"
+				}
+			],
+			"addresses": [
+				{
+					"num": "1",
+					"street": "Prøvevej",
+					"locality": "Billund",
+					"code": "7190",
+					"country": "DK"
+				}
+			]
+		},
+		"lines": [
+			{
+				"i": 1,
+				"quantity": "1",
+				"item": {
+					"name": "Booking Fee (Fixed Rate)",
+					"price": "31676.00",
+					"unit": "one"
+				},
+				"sum": "31676.00",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"percent": "25%",
+						"ext": {
+							"untdid-tax-category": "S"
+						}
+					}
+				],
+				"total": "31676.00"
+			},
+			{
+				"i": 2,
+				"quantity": "1",
+				"item": {
+					"name": "Sample service fee",
+					"price": "1267.04",
+					"unit": "one"
+				},
+				"sum": "1267.04",
+				"taxes": [
+					{
+						"cat": "VAT",
+						"key": "standard",
+						"percent": "25%",
+						"ext": {
+							"untdid-tax-category": "S"
+						}
+					}
+				],
+				"total": "1267.04"
+			}
+		],
+		"payment": {
+			"terms": {
+				"due_dates": [
+					{
+						"date": "2024-06-15",
+						"amount": "41178.80",
+						"currency": "DKK"
+					}
+				]
+			},
+			"instructions": {
+				"key": "debit-transfer",
+				"ref": "SAMPLE-001",
+				"credit_transfer": [
+					{
+						"iban": "DK1100409876543210",
+						"bic": "DABADKKK",
+						"name": "Danske Bank"
+					}
+				],
+				"ext": {
+					"untdid-payment-means": "31"
+				}
+			}
+		},
+		"totals": {
+			"sum": "32943.04",
+			"total": "32943.04",
+			"taxes": {
+				"categories": [
+					{
+						"code": "VAT",
+						"rates": [
+							{
+								"key": "standard",
+								"ext": {
+									"untdid-tax-category": "S"
+								},
+								"base": "32943.04",
+								"percent": "25%",
+								"amount": "8235.76"
+							}
+						],
+						"amount": "8235.76"
+					}
+				],
+				"sum": "8235.76"
+			},
+			"tax": "8235.76",
+			"total_with_tax": "41178.80",
+			"payable": "41178.80"
+		}
+	}
+}

@@ -1,0 +1,224 @@
+{
+	"$regime": "DK",
+	"$addons": [
+		"eu-en16931-v2017",
+		"dk-oioubl-v2"
+	],
+	"uuid": "9756b4d0-8815-1029-857a-e388fe63f399",
+	"type": "standard",
+	"code": "A00095678",
+	"issue_date": "2005-11-20",
+	"currency": "DKK",
+	"tax": {
+		"rounding": "currency",
+		"ext": {
+			"untdid-document-type": "380"
+		},
+		"notes": [
+			{
+				"cat": "VAT",
+				"key": "reverse-charge",
+				"text": "Omvendt betalingspligt",
+				"ext": {
+					"untdid-tax-category": "AE"
+				}
+			}
+		]
+	},
+	"supplier": {
+		"name": "Tavleleverandøren",
+		"alias": "International A/S",
+		"tax_id": {
+			"country": "DK",
+			"code": "16356808"
+		},
+		"identities": [
+			{
+				"scope": "legal",
+				"code": "16356706",
+				"ext": {
+					"iso-scheme-id": "DK:CVR"
+				}
+			},
+			{
+				"code": "16356706",
+				"ext": {
+					"iso-scheme-id": "DK:CVR"
+				}
+			}
+		],
+		"people": [
+			{
+				"name": {
+					"given": "Hugo Jensen"
+				},
+				"identities": [
+					{
+						"code": "23456"
+					}
+				]
+			}
+		],
+		"endpoints": [
+			{
+				"uri": "DK:CVR:16356706"
+			}
+		],
+		"addresses": [
+			{
+				"num": "11",
+				"street": "Leverandørvej",
+				"locality": "Dyssegård",
+				"code": "2870",
+				"country": "DK"
+			}
+		],
+		"emails": [
+			{
+				"addr": "Hugo@international.dk"
+			}
+		],
+		"telephones": [
+			{
+				"num": "15812337"
+			}
+		]
+	},
+	"customer": {
+		"name": "Headoffice AB",
+		"tax_id": {
+			"country": "SE",
+			"code": "123456789701"
+		},
+		"identities": [
+			{
+				"scope": "legal",
+				"code": "SE123456789701",
+				"ext": {
+					"iso-scheme-id": "ZZZ"
+				}
+			},
+			{
+				"code": "5798000416604",
+				"ext": {
+					"iso-scheme-id": "GLN"
+				}
+			}
+		],
+		"people": [
+			{
+				"name": {
+					"given": "Hans Hansen"
+				},
+				"identities": [
+					{
+						"code": "7778"
+					}
+				]
+			}
+		],
+		"endpoints": [
+			{
+				"uri": "GLN:5798000416604"
+			}
+		],
+		"addresses": [
+			{
+				"num": "10",
+				"street": "Kungsgatan",
+				"locality": "Malmö",
+				"code": "3000",
+				"country": "SE"
+			}
+		],
+		"emails": [
+			{
+				"addr": "Hans@headof.se"
+			}
+		],
+		"telephones": [
+			{
+				"num": "26532147"
+			}
+		]
+	},
+	"lines": [
+		{
+			"i": 1,
+			"quantity": "1.00",
+			"order": "1",
+			"item": {
+				"name": "Stock Handling",
+				"description": "Stock Handling",
+				"price": "5000.00",
+				"unit": "item"
+			},
+			"sum": "5000.00",
+			"taxes": [
+				{
+					"cat": "VAT",
+					"key": "reverse-charge"
+				}
+			],
+			"total": "5000.00"
+		}
+	],
+	"ordering": {
+		"cost": "5250124502",
+		"purchases": [
+			{
+				"issue_date": "2005-11-01",
+				"code": "5002701"
+			}
+		]
+	},
+	"payment": {
+		"terms": {
+			"due_dates": [
+				{
+					"date": "2005-11-25",
+					"amount": "5000.00",
+					"percent": "100%"
+				}
+			]
+		},
+		"instructions": {
+			"key": "other",
+			"credit_transfer": [
+				{
+					"number": "1234567890",
+					"clearing": "1234"
+				}
+			],
+			"ext": {
+				"untdid-payment-means": "42"
+			}
+		}
+	},
+	"delivery": {
+		"date": "2005-11-15"
+	},
+	"totals": {
+		"sum": "5000.00",
+		"total": "5000.00",
+		"taxes": {
+			"categories": [
+				{
+					"code": "VAT",
+					"rates": [
+						{
+							"key": "reverse-charge",
+							"base": "5000.00",
+							"amount": "0.00"
+						}
+					],
+					"amount": "0.00"
+				}
+			],
+			"sum": "0.00"
+		},
+		"tax": "0.00",
+		"total_with_tax": "5000.00",
+		"payable": "5000.00"
+	}
+}
