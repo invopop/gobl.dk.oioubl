@@ -23,19 +23,6 @@ var responseCodeForKey = map[cbc.Key]string{
 	bill.StatusLineError:        "TechnicalReject",
 }
 
-// keyForResponseCode reads the six responsecode-1.1 words back onto GOBL's four
-// status keys: the business answers keep their meaning, the profile and
-// technical ones collapse to acknowledged/error, with the exact word preserved
-// in the dk-oioubl-response-code extension.
-var keyForResponseCode = map[string]cbc.Key{
-	"BusinessAccept":  bill.StatusLineAccepted,
-	"BusinessReject":  bill.StatusLineRejected,
-	"ProfileAccept":   bill.StatusLineAcknowledged,
-	"TechnicalAccept": bill.StatusLineAcknowledged,
-	"ProfileReject":   bill.StatusLineError,
-	"TechnicalReject": bill.StatusLineError,
-}
-
 // buildStatus builds the plain EN16931 ApplicationResponse, then reworks it
 // into OIOUBL.
 func buildStatus(env *gobl.Envelope) (*ApplicationResponse, error) {
@@ -60,6 +47,20 @@ func buildStatus(env *gobl.Envelope) (*ApplicationResponse, error) {
 	out := (*ApplicationResponse)(ar)
 	out.applyOIOUBL(st)
 	return out, nil
+}
+
+// ConvertApplicationResponse is Convert for callers that already know the
+// document is a response status.
+func ConvertApplicationResponse(env *gobl.Envelope) (*ApplicationResponse, error) {
+	doc, err := Convert(env)
+	if err != nil {
+		return nil, err
+	}
+	ar, ok := doc.(*ApplicationResponse)
+	if !ok {
+		return nil, fmt.Errorf("expected application response, got %T", doc)
+	}
+	return ar, nil
 }
 
 // ensureStatusOIOUBLAddon is ensureOIOUBLAddon for a status document.
@@ -126,6 +127,10 @@ func (ar *ApplicationResponse) applyOIOUBL(st *bill.Status) {
 	}
 	ar.ProfileID = newProfileID()
 	ar.ProfileID.Value = profile
+	if profile == profileTecRes {
+		// TecRes is not in the profileid-1.2 codelist the invoices use.
+		*ar.ProfileID.SchemeID = schemeProfileV16
+	}
 }
 
 // responseDocumentType names the referenced document on OIOUBL's

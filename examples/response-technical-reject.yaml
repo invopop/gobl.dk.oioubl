@@ -2,12 +2,12 @@ $schema: "https://gobl.org/draft-0/bill/status"
 $regime: "DK"
 $addons:
   - "dk-oioubl-v2"
-uuid: "9756b516-8815-1029-857a-e388fe63f399"
+uuid: "9756b517-8815-1029-857a-e388fe63f399"
 type: "response"
 issue_date: "2005-11-22"
-code: "B65830"
-# The response answers examples/invoice.yaml, so the parties keep their
-# original roles: the customer refuses, the supplier is told.
+code: "B65831"
+# An error status becomes a TechnicalReject, which names no business profile
+# (F-APR004): the document could not be read, so no profile applies.
 supplier:
   name: "Tavleleverandøren"
   tax_id:
@@ -23,8 +23,8 @@ customer:
   endpoints:
     - uri: "GLN:5798009883735"
 lines:
-  - key: "rejected"
-    description: "Vi har ikke fået de aftalte 800,- kr i rabat"
+  - key: "error"
+    description: "Dokumentet kunne ikke læses"
     doc:
       code: "A00095678"
       uuid: "9756b4d0-8815-1029-857a-e388fe63f399"

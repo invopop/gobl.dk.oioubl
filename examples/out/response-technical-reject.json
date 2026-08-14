@@ -4,7 +4,7 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "405488f0e5563bd32609ab553f0a402eca6391ac293b1e12aa4181334111fdcb"
+			"val": "f400fa37a7530ce6c6d0843cb54d71fb7f6cefd37db2fc25a1ce266bb8688db9"
 		},
 		"from": "GLN:5798009883735",
 		"to": "DK:CVR:16356700"
@@ -16,10 +16,10 @@
 			"eu-en16931-v2017",
 			"dk-oioubl-v2"
 		],
-		"uuid": "9756b516-8815-1029-857a-e388fe63f399",
+		"uuid": "9756b517-8815-1029-857a-e388fe63f399",
 		"type": "response",
 		"issue_date": "2005-11-22",
-		"code": "B65830",
+		"code": "B65831",
 		"supplier": {
 			"name": "Tavleleverandøren",
 			"tax_id": {
@@ -58,13 +58,13 @@
 		"lines": [
 			{
 				"index": 1,
-				"key": "rejected",
+				"key": "error",
 				"doc": {
 					"uuid": "9756b4d0-8815-1029-857a-e388fe63f399",
 					"issue_date": "2005-11-20",
 					"code": "A00095678"
 				},
-				"description": "Vi har ikke fået de aftalte 800,- kr i rabat"
+				"description": "Dokumentet kunne ikke læses"
 			}
 		]
 	}

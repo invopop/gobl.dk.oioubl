@@ -25,8 +25,10 @@ const (
 )
 
 const (
-	VESIDInvoice             = "dk.oioubl:invoice:1.17.2"
-	VESIDCreditNote          = "dk.oioubl:credit-note:1.17.2"
+	VESIDInvoice    = "dk.oioubl:invoice:1.17.2"
+	VESIDCreditNote = "dk.oioubl:credit-note:1.17.2"
+	// VESIDApplicationResponse has no GetVESID counterpart: every response
+	// validates against this one schematron, with nothing to choose.
 	VESIDApplicationResponse = "dk.oioubl:application-response:1.17.2"
 )
 
@@ -45,6 +47,9 @@ const (
 	schemeTaxCategory = "urn:oioubl:id:taxcategoryid-1.1"
 	schemeTaxScheme   = "urn:oioubl:id:taxschemeid-1.5"
 	schemeProfileV12  = "urn:oioubl:id:profileid-1.2"
+	// The technical-response profile only exists from profileid-1.4 on
+	// (F-LIB302); 1.6 is the current list.
+	schemeProfileV16 = "urn:oioubl:id:profileid-1.6"
 
 	codelistInvoiceType     = "urn:oioubl:codelist:invoicetypecode-1.1"
 	codelistPaymentChannel  = "urn:oioubl:codelist:paymentchannelcode-1.1"

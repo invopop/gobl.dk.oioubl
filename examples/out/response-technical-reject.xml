@@ -2,9 +2,9 @@
 <ApplicationResponse xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns="urn:oasis:names:specification:ubl:schema:xsd:ApplicationResponse-2">
   <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
   <cbc:CustomizationID>OIOUBL-2.1</cbc:CustomizationID>
-  <cbc:ProfileID schemeAgencyID="320" schemeID="urn:oioubl:id:profileid-1.2">urn:www.nesubl.eu:profiles:profile5:ver2.0</cbc:ProfileID>
-  <cbc:ID>B65830</cbc:ID>
-  <cbc:UUID>9756b516-8815-1029-857a-e388fe63f399</cbc:UUID>
+  <cbc:ProfileID schemeAgencyID="320" schemeID="urn:oioubl:id:profileid-1.2">NONE</cbc:ProfileID>
+  <cbc:ID>B65831</cbc:ID>
+  <cbc:UUID>9756b517-8815-1029-857a-e388fe63f399</cbc:UUID>
   <cbc:IssueDate>2005-11-22</cbc:IssueDate>
   <cac:SenderParty>
     <cbc:EndpointID schemeID="GLN">5798009883735</cbc:EndpointID>
@@ -42,8 +42,8 @@
   <cac:DocumentResponse>
     <cac:Response>
       <cbc:ReferenceID>1</cbc:ReferenceID>
-      <cbc:ResponseCode listAgencyID="320" listID="urn:oioubl:codelist:responsecode-1.1">BusinessReject</cbc:ResponseCode>
-      <cbc:Description>Vi har ikke fået de aftalte 800,- kr i rabat</cbc:Description>
+      <cbc:ResponseCode listAgencyID="320" listID="urn:oioubl:codelist:responsecode-1.1">TechnicalReject</cbc:ResponseCode>
+      <cbc:Description>Dokumentet kunne ikke læses</cbc:Description>
     </cac:Response>
     <cac:DocumentReference>
       <cbc:ID>A00095678</cbc:ID>
