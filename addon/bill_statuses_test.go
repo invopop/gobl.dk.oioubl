@@ -90,6 +90,16 @@ func TestStatusValidation(t *testing.T) {
 		assert.ErrorContains(t, err, "F-APR041")
 	})
 
+	t.Run("supplier with a codeless tax ID and explicit endpoint fails (F-APR041)", func(t *testing.T) {
+		// The explicit endpoint satisfies F-APR012, so without this rule a
+		// supplier with no usable identifier at all would validate.
+		st := testStatusResponse(t)
+		st.Supplier.TaxID = &tax.Identity{Country: "DK"}
+		require.NoError(t, st.Calculate())
+		err := rules.Validate(st)
+		assert.ErrorContains(t, err, "F-APR041")
+	})
+
 	t.Run("supplier with identities and no tax ID passes", func(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Supplier.TaxID = nil
@@ -102,8 +112,8 @@ func TestStatusValidation(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Supplier.Name = ""
 		st.Supplier.Identities = nil
-		// Clear the CVR too: a Danish tax ID normalizes into a legal identity, so
-		// only a party with no name AND no derivable legal id fails F-LIB022.
+		// Clear the CVR too so this covers the nothing-at-all case; the derived
+		// legal identity it would leave has its own case below.
 		st.Supplier.TaxID = nil
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
@@ -166,7 +176,7 @@ func TestStatusValidation(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Customer.Name = ""
 		st.Customer.Identities = nil
-		st.Customer.TaxID = nil // CVR would normalize into a legal identity
+		st.Customer.TaxID = nil // cover the nothing-at-all case, as for the supplier
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "F-LIB022")
@@ -207,12 +217,14 @@ func TestStatusValidation(t *testing.T) {
 	})
 
 	t.Run("no response line is rejected by core", func(t *testing.T) {
-		// The empty case is GOBL core's responsibility (a status needs at least
-		// one line); the OIOUBL rule only adds the single-response upper bound.
+		// A nil lines field never reaches the OIOUBL cardinality rule; GOBL core
+		// rejects the empty status first.
 		st := testStatusResponse(t)
 		st.Lines = nil
 		require.NoError(t, st.Calculate())
-		assert.Error(t, rules.Validate(st))
+		err := rules.Validate(st)
+		assert.ErrorContains(t, err, "GOBL-BILL-STATUS-04")
+		assert.NotContains(t, err.Error(), "F-APR051")
 	})
 
 	t.Run("non-response status skips F-APR rules", func(t *testing.T) {

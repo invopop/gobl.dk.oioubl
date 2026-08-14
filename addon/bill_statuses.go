@@ -23,8 +23,8 @@ func billStatusRules() *rules.Set {
 				rules.Field("endpoints",
 					rules.Assert("02", "supplier endpoint is required (F-APR012)", is.Present),
 				),
-				rules.Assert("03", "supplier must have a tax ID or identities (F-APR041)",
-					is.Func("has tax id or identities", partyHasTaxIDOrIdentities)),
+				rules.Assert("03", "supplier must have a tax ID code or an identity (F-APR041)",
+					is.Func("has tax id code or identity", partyHasTaxIDOrIdentities)),
 				rules.Assert("04", "supplier must have a name or identification (F-LIB022)",
 					is.Func("has name or identification", partyHasNameOrIdentification)),
 			),
@@ -69,7 +69,16 @@ func partyHasTaxIDOrIdentities(val any) bool {
 	if !ok || p == nil {
 		return true
 	}
-	return p.TaxID != nil || len(p.Identities) > 0
+	// A codeless tax ID yields no CompanyID in the XML, so it does not count.
+	if p.TaxID != nil && p.TaxID.Code != "" {
+		return true
+	}
+	for _, id := range p.Identities {
+		if id != nil && id.Code != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func partyHasNameOrIdentification(val any) bool {
