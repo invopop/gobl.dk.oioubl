@@ -13,16 +13,13 @@ import (
 )
 
 // responseCodeForKey names the wire code emitted when a status line carries no
-// dk-oioubl-response-code extension. The four keys land on the codes whose
-// meaning they carry; the two remaining wire codes (TechnicalAccept,
-// ProfileReject) are reachable through the extension. GOBL defines the error
-// key as a technical issue that caused the document to be rejected — a
-// definitive refusal, not a retryable fault — which is TechnicalReject.
+// dk-oioubl-response-code extension. The three keys land on the codes whose
+// meaning they carry; the other three wire codes are reachable through the
+// extension.
 var responseCodeForKey = map[cbc.Key]cbc.Code{
 	bill.StatusLineAccepted:     addon.ResponseCodeBusinessAccept,
 	bill.StatusLineRejected:     addon.ResponseCodeBusinessReject,
 	bill.StatusLineAcknowledged: addon.ResponseCodeProfileAccept,
-	bill.StatusLineError:        addon.ResponseCodeTechnicalReject,
 }
 
 // buildStatus builds the plain EN16931 ApplicationResponse, then reworks it

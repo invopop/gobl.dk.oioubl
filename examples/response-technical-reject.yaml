@@ -6,8 +6,9 @@ uuid: "9756b517-8815-1029-857a-e388fe63f399"
 type: "response"
 issue_date: "2005-11-22"
 code: "B65831"
-# An error status becomes a TechnicalReject, which names no business profile
-# (F-APR004): the document could not be read, so no profile applies.
+# The extension turns the rejection into a TechnicalReject, which names no
+# business profile (F-APR004): the document could not be read, so no profile
+# applies.
 supplier:
   name: "Tavleleverandøren"
   tax_id:
@@ -23,8 +24,10 @@ customer:
   endpoints:
     - uri: "GLN:5798009883735"
 lines:
-  - key: "error"
+  - key: "rejected"
     description: "Dokumentet kunne ikke læses"
+    ext:
+      dk-oioubl-response-code: "TechnicalReject"
     doc:
       code: "A00095678"
       uuid: "9756b4d0-8815-1029-857a-e388fe63f399"
