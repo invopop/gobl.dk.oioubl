@@ -74,32 +74,32 @@ var extensions = []*cbc.Definition{
 			{
 				Code: ResponseCodeBusinessAccept,
 				Name: i18n.String{i18n.EN: "Business Accept"},
-				Desc: i18n.String{i18n.EN: "The document is accepted."},
+				Desc: i18n.String{i18n.EN: "The receiving party has reviewed the document's content and accepted it."},
 			},
 			{
 				Code: ResponseCodeBusinessReject,
 				Name: i18n.String{i18n.EN: "Business Reject"},
-				Desc: i18n.String{i18n.EN: "The document is refused."},
+				Desc: i18n.String{i18n.EN: "The receiving party has reviewed the document's content and rejected it."},
 			},
 			{
 				Code: ResponseCodeProfileAccept,
 				Name: i18n.String{i18n.EN: "Profile Accept"},
-				Desc: i18n.String{i18n.EN: "The document's business profile is supported."},
+				Desc: i18n.String{i18n.EN: "The receiver supports the business process the document's profile refers to and will process the document."},
 			},
 			{
 				Code: ResponseCodeProfileReject,
 				Name: i18n.String{i18n.EN: "Profile Reject"},
-				Desc: i18n.String{i18n.EN: "The document's business profile is not supported."},
+				Desc: i18n.String{i18n.EN: "The receiver does not support the business process the document's profile refers to. The document must be sent again under a profile the receiver supports."},
 			},
 			{
 				Code: ResponseCodeTechnicalAccept,
 				Name: i18n.String{i18n.EN: "Technical Accept"},
-				Desc: i18n.String{i18n.EN: "The document was received and can be read."},
+				Desc: i18n.String{i18n.EN: "The receiver confirms that the document arrived and can be read. This is a receipt of delivery, not a business acceptance."},
 			},
 			{
 				Code: ResponseCodeTechnicalReject,
 				Name: i18n.String{i18n.EN: "Technical Reject"},
-				Desc: i18n.String{i18n.EN: "The document could not be read or processed."},
+				Desc: i18n.String{i18n.EN: "The document could not be processed because of errors or missing information. A corrected document must be issued."},
 			},
 		},
 	},
