@@ -77,12 +77,12 @@ func billStatusRules() *rules.Set {
 // means: the business answers keep their meaning, the profile and technical
 // ones collapse to acknowledged/error.
 var statusKeyForResponseCode = map[cbc.Code]cbc.Key{
-	"BusinessAccept":  bill.StatusLineAccepted,
-	"BusinessReject":  bill.StatusLineRejected,
-	"ProfileAccept":   bill.StatusLineAcknowledged,
-	"TechnicalAccept": bill.StatusLineAcknowledged,
-	"ProfileReject":   bill.StatusLineError,
-	"TechnicalReject": bill.StatusLineError,
+	ResponseCodeBusinessAccept:  bill.StatusLineAccepted,
+	ResponseCodeBusinessReject:  bill.StatusLineRejected,
+	ResponseCodeProfileAccept:   bill.StatusLineAcknowledged,
+	ResponseCodeTechnicalAccept: bill.StatusLineAcknowledged,
+	ResponseCodeProfileReject:   bill.StatusLineError,
+	ResponseCodeTechnicalReject: bill.StatusLineError,
 }
 
 // StatusKeyForResponseCode returns the bill.StatusLine key a responsecode-1.1

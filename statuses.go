@@ -15,12 +15,14 @@ import (
 // responseCodeForKey names the wire code emitted when a status line carries no
 // dk-oioubl-response-code extension. The four keys land on the codes whose
 // meaning they carry; the two remaining wire codes (TechnicalAccept,
-// ProfileReject) are reachable through the extension.
-var responseCodeForKey = map[cbc.Key]string{
-	bill.StatusLineAccepted:     "BusinessAccept",
-	bill.StatusLineRejected:     "BusinessReject",
-	bill.StatusLineAcknowledged: "ProfileAccept",
-	bill.StatusLineError:        "TechnicalReject",
+// ProfileReject) are reachable through the extension. GOBL defines the error
+// key as a technical issue that caused the document to be rejected — a
+// definitive refusal, not a retryable fault — which is TechnicalReject.
+var responseCodeForKey = map[cbc.Key]cbc.Code{
+	bill.StatusLineAccepted:     addon.ResponseCodeBusinessAccept,
+	bill.StatusLineRejected:     addon.ResponseCodeBusinessReject,
+	bill.StatusLineAcknowledged: addon.ResponseCodeProfileAccept,
+	bill.StatusLineError:        addon.ResponseCodeTechnicalReject,
 }
 
 // buildStatus builds the plain EN16931 ApplicationResponse, then reworks it
@@ -95,14 +97,14 @@ func (ar *ApplicationResponse) applyOIOUBL(st *bill.Status) {
 			continue
 		}
 		line := st.Lines[i]
-		code := line.Ext.Get(addon.ExtKeyResponseCode).String()
+		code := line.Ext.Get(addon.ExtKeyResponseCode)
 		if code == "" {
 			code = responseCodeForKey[line.Key]
 		}
 		dr.Response.ResponseCode = &ubl.IDType{
 			ListID:       ptr(codelistResponseCode),
 			ListAgencyID: ptr(agencyID),
-			Value:        code,
+			Value:        code.String(),
 		}
 		if dr.Response.ReferenceID == "" {
 			// A Response requires a ReferenceID (F-APR016); its position serves.
@@ -119,9 +121,9 @@ func (ar *ApplicationResponse) applyOIOUBL(st *bill.Status) {
 		// reasons has no business profile to name (F-APR004), and TechnicalAccept
 		// belongs to the technical-response profile alone (F-APR057 / F-APR058).
 		switch code {
-		case "TechnicalReject", "ProfileReject":
+		case addon.ResponseCodeTechnicalReject, addon.ResponseCodeProfileReject:
 			profile = profileNone
-		case "TechnicalAccept":
+		case addon.ResponseCodeTechnicalAccept:
 			profile = profileTecRes
 		}
 	}

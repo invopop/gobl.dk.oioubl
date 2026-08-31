@@ -20,6 +20,16 @@ const (
 	ExtKeyResponseCode cbc.Key = "dk-oioubl-response-code"
 )
 
+// The six ExtKeyResponseCode values, from OIOUBL's responsecode-1.1 list.
+const (
+	ResponseCodeBusinessAccept  cbc.Code = "BusinessAccept"
+	ResponseCodeBusinessReject  cbc.Code = "BusinessReject"
+	ResponseCodeProfileAccept   cbc.Code = "ProfileAccept"
+	ResponseCodeProfileReject   cbc.Code = "ProfileReject"
+	ResponseCodeTechnicalAccept cbc.Code = "TechnicalAccept"
+	ResponseCodeTechnicalReject cbc.Code = "TechnicalReject"
+)
+
 var extensions = []*cbc.Definition{
 	{
 		Key: ExtKeyDutyCode,
@@ -62,28 +72,34 @@ var extensions = []*cbc.Definition{
 		},
 		Values: []*cbc.Definition{
 			{
-				Code: "BusinessAccept",
-				Name: i18n.String{i18n.EN: "The document is accepted"},
+				Code: ResponseCodeBusinessAccept,
+				Name: i18n.String{i18n.EN: "Business Accept"},
+				Desc: i18n.String{i18n.EN: "The document is accepted."},
 			},
 			{
-				Code: "BusinessReject",
-				Name: i18n.String{i18n.EN: "The document is refused"},
+				Code: ResponseCodeBusinessReject,
+				Name: i18n.String{i18n.EN: "Business Reject"},
+				Desc: i18n.String{i18n.EN: "The document is refused."},
 			},
 			{
-				Code: "ProfileAccept",
-				Name: i18n.String{i18n.EN: "The document's business profile is supported"},
+				Code: ResponseCodeProfileAccept,
+				Name: i18n.String{i18n.EN: "Profile Accept"},
+				Desc: i18n.String{i18n.EN: "The document's business profile is supported."},
 			},
 			{
-				Code: "ProfileReject",
-				Name: i18n.String{i18n.EN: "The document's business profile is not supported"},
+				Code: ResponseCodeProfileReject,
+				Name: i18n.String{i18n.EN: "Profile Reject"},
+				Desc: i18n.String{i18n.EN: "The document's business profile is not supported."},
 			},
 			{
-				Code: "TechnicalAccept",
-				Name: i18n.String{i18n.EN: "The document was received and can be read"},
+				Code: ResponseCodeTechnicalAccept,
+				Name: i18n.String{i18n.EN: "Technical Accept"},
+				Desc: i18n.String{i18n.EN: "The document was received and can be read."},
 			},
 			{
-				Code: "TechnicalReject",
-				Name: i18n.String{i18n.EN: "The document could not be read or processed"},
+				Code: ResponseCodeTechnicalReject,
+				Name: i18n.String{i18n.EN: "Technical Reject"},
+				Desc: i18n.String{i18n.EN: "The document could not be read or processed."},
 			},
 		},
 	},
