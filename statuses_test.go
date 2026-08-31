@@ -148,6 +148,17 @@ func TestConvertStatusRefusals(t *testing.T) {
 		assert.ErrorContains(t, err, "must agree with the status key")
 	})
 
+	t.Run("error key is not an OIOUBL response event", func(t *testing.T) {
+		// Every negative OIOUBL answer is a definitive rejection; a status
+		// keyed error has no honest wire code and is refused.
+		st := testStatus()
+		st.Lines[0].Key = bill.StatusLineError
+		env, err := gobl.Envelop(st)
+		require.NoError(t, err)
+		_, err = oioubl.Convert(env)
+		assert.ErrorContains(t, err, "must be one OIOUBL supports")
+	})
+
 	t.Run("response code outside the codelist", func(t *testing.T) {
 		st := testStatus()
 		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{addon.ExtKeyResponseCode: "BusinesReject"})
@@ -232,8 +243,8 @@ func TestConvertStatusCodes(t *testing.T) {
 		{name: "accepted", key: bill.StatusLineAccepted, wantCode: "BusinessAccept", wantProfile: oioubl.ProfileID, wantScheme: "urn:oioubl:id:profileid-1.2"},
 		{name: "rejected", key: bill.StatusLineRejected, wantCode: "BusinessReject", wantProfile: oioubl.ProfileID, wantScheme: "urn:oioubl:id:profileid-1.2"},
 		{name: "acknowledged", key: bill.StatusLineAcknowledged, wantCode: "ProfileAccept", wantProfile: oioubl.ProfileID, wantScheme: "urn:oioubl:id:profileid-1.2"},
-		{name: "error", key: bill.StatusLineError, wantCode: "TechnicalReject", wantProfile: "NONE", wantScheme: "urn:oioubl:id:profileid-1.2"},
-		{name: "extension overrides the key", key: bill.StatusLineError, ext: "ProfileReject", wantCode: "ProfileReject", wantProfile: "NONE", wantScheme: "urn:oioubl:id:profileid-1.2"},
+		{name: "technical reject via the extension", key: bill.StatusLineRejected, ext: "TechnicalReject", wantCode: "TechnicalReject", wantProfile: "NONE", wantScheme: "urn:oioubl:id:profileid-1.2"},
+		{name: "profile reject via the extension", key: bill.StatusLineRejected, ext: "ProfileReject", wantCode: "ProfileReject", wantProfile: "NONE", wantScheme: "urn:oioubl:id:profileid-1.2"},
 		// TecRes only exists from profileid-1.4 on (F-LIB302).
 		{name: "technical accept names its own profile", key: bill.StatusLineAcknowledged, ext: "TechnicalAccept", wantCode: "TechnicalAccept", wantProfile: "Procurement-TecRes-1.0", wantScheme: "urn:oioubl:id:profileid-1.6"},
 	}
@@ -305,8 +316,8 @@ func TestParseResponseCodes(t *testing.T) {
 		{code: "BusinessReject", wantKey: bill.StatusLineRejected},
 		{code: "ProfileAccept", wantKey: bill.StatusLineAcknowledged},
 		{code: "TechnicalAccept", wantKey: bill.StatusLineAcknowledged},
-		{code: "ProfileReject", wantKey: bill.StatusLineError},
-		{code: "TechnicalReject", wantKey: bill.StatusLineError},
+		{code: "ProfileReject", wantKey: bill.StatusLineRejected},
+		{code: "TechnicalReject", wantKey: bill.StatusLineRejected},
 	}
 	for _, test := range tests {
 		t.Run(test.code, func(t *testing.T) {

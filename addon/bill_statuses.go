@@ -50,14 +50,15 @@ func billStatusRules() *rules.Set {
 				// One Response per referenced document (F-APR051 / F-APR054).
 				rules.Assert("08", "a response carries exactly one document response (F-APR051 / F-APR054)", is.Length(1, 1)),
 				rules.Each(
-					// Only the four responsecode-1.1 events are representable (F-APR018).
+					// Only these three keys are representable (F-APR018); the error
+					// key is refused because every negative responsecode-1.1 answer
+					// is a definitive rejection, not a recoverable error.
 					rules.Field("key",
 						rules.Assert("09", "response status event must be one OIOUBL supports (F-APR018)",
 							is.In(
 								bill.StatusLineAccepted,
 								bill.StatusLineRejected,
 								bill.StatusLineAcknowledged,
-								bill.StatusLineError,
 							)),
 					),
 					rules.Field("doc",
@@ -75,14 +76,16 @@ func billStatusRules() *rules.Set {
 
 // statusKeyForResponseCode names the status key each responsecode-1.1 value
 // means: the business answers keep their meaning, the profile and technical
-// ones collapse to acknowledged/error.
+// ones collapse to acknowledged/rejected. All three rejects are terminal —
+// OIOUBL expects a new document after any of them — so none maps to the
+// error key, which the platform reads as recoverable.
 var statusKeyForResponseCode = map[cbc.Code]cbc.Key{
 	ResponseCodeBusinessAccept:  bill.StatusLineAccepted,
 	ResponseCodeBusinessReject:  bill.StatusLineRejected,
 	ResponseCodeProfileAccept:   bill.StatusLineAcknowledged,
 	ResponseCodeTechnicalAccept: bill.StatusLineAcknowledged,
-	ResponseCodeProfileReject:   bill.StatusLineError,
-	ResponseCodeTechnicalReject: bill.StatusLineError,
+	ResponseCodeProfileReject:   bill.StatusLineRejected,
+	ResponseCodeTechnicalReject: bill.StatusLineRejected,
 }
 
 // StatusKeyForResponseCode returns the bill.StatusLine key a responsecode-1.1

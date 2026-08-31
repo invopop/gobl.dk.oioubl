@@ -260,12 +260,20 @@ func TestStatusValidation(t *testing.T) {
 
 	t.Run("response code extension matching the key passes", func(t *testing.T) {
 		st := testStatusResponse(t)
-		st.Lines[0].Key = bill.StatusLineError
+		st.Lines[0].Key = bill.StatusLineRejected
 		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "ProfileReject"})
 		require.NoError(t, st.Calculate())
 		assert.NoError(t, rules.Validate(st))
-		assert.Equal(t, bill.StatusLineError, oioubl.StatusKeyForResponseCode("ProfileReject"))
+		assert.Equal(t, bill.StatusLineRejected, oioubl.StatusKeyForResponseCode("ProfileReject"))
 		assert.Equal(t, cbc.Key(""), oioubl.StatusKeyForResponseCode("Bogus"), "an unknown code maps to nothing")
+	})
+
+	t.Run("error key fails the response event rule", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Lines[0].Key = bill.StatusLineError
+		require.NoError(t, st.Calculate())
+		err := rules.Validate(st)
+		assert.ErrorContains(t, err, "must be one OIOUBL supports")
 	})
 
 	t.Run("response code extension contradicting the key fails", func(t *testing.T) {
