@@ -176,6 +176,19 @@ func TestConvertStatusRefusals(t *testing.T) {
 		_, err = oioubl.Convert(env)
 		assert.ErrorIs(t, err, oioubl.ErrUnsupportedDocumentType)
 	})
+
+	t.Run("invoice envelope through ConvertApplicationResponse", func(t *testing.T) {
+		env := loadTestEnvelope(t, filepath.Join(getConvertPath(), "dk-bank.json"))
+		_, err := oioubl.ConvertApplicationResponse(env)
+		assert.ErrorContains(t, err, "expected application response")
+	})
+
+	t.Run("invoice XML through ParseApplicationResponse", func(t *testing.T) {
+		data, err := os.ReadFile(filepath.Join(getParsePath(), "invoice-bare.xml"))
+		require.NoError(t, err)
+		_, err = oioubl.ParseApplicationResponse(data)
+		assert.ErrorContains(t, err, "expected application response")
+	})
 }
 
 // TestStatusRoundTrip converts a status out to OIOUBL and parses it back:
@@ -328,6 +341,16 @@ func TestParseResponseCodes(t *testing.T) {
 
 		_, err = ar.Convert()
 		assert.ErrorContains(t, err, "carries no response code")
+	})
+
+	t.Run("response failing the addon's rules is refused", func(t *testing.T) {
+		data := strings.Replace(string(fixture),
+			`<cbc:EndpointID schemeAgencyID="9" schemeID="GLN">5798009811578</cbc:EndpointID>`, "", 1)
+		ar, err := oioubl.ParseApplicationResponse([]byte(data))
+		require.NoError(t, err)
+
+		_, err = ar.Convert()
+		assert.ErrorContains(t, err, "endpoint is required")
 	})
 
 	t.Run("unsupported customization id is refused", func(t *testing.T) {
