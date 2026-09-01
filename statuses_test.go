@@ -202,6 +202,20 @@ func TestConvertStatusRefusals(t *testing.T) {
 	})
 }
 
+// TestConvertStatusEndpointSelection pins that the wire endpoint is the
+// OIOUBL-register one, not whichever endpoint happens to come first.
+func TestConvertStatusEndpointSelection(t *testing.T) {
+	st := testStatus()
+	st.Customer.Endpoints = []*org.Endpoint{
+		{URI: "iso6523-actorid-upis::0184:88146328"},
+		{URI: "GLN:5798009883735"},
+	}
+	ar := convertStatus(t, st)
+	require.NotNil(t, ar.SenderParty.EndpointID)
+	assert.Equal(t, "GLN", ar.SenderParty.EndpointID.SchemeID)
+	assert.Equal(t, "5798009883735", ar.SenderParty.EndpointID.Value)
+}
+
 // TestStatusRoundTrip converts a status out to OIOUBL and parses it back:
 // the wire-only DK prefixes and the code mapping must cancel out.
 func TestStatusRoundTrip(t *testing.T) {

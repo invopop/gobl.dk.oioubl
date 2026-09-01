@@ -298,6 +298,8 @@ func TestStatusValidation(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Customer.TaxID = nil
 		st.Customer.Identities = []*org.Identity{{Scope: org.IdentityScopeLegal, Code: "5798009883735"}}
+		// No tax ID means no derived endpoint, so name an OIOUBL one directly.
+		st.Customer.Endpoints = []*org.Endpoint{{URI: "GLN:5798009883735"}}
 		require.NoError(t, st.Calculate())
 		assert.NoError(t, rules.Validate(st))
 	})
