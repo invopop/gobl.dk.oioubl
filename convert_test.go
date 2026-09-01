@@ -185,6 +185,50 @@ func TestConvertUnsupportedVATKey(t *testing.T) {
 	}
 }
 
+// TestConvertEndpointSelection pins that the emitted EndpointID is the one
+// from OIOUBL's register list (F-LIB179), not whichever endpoint happens to
+// come first: the en16931 addon gives parties a Peppol endpoint that OIOUBL
+// cannot use.
+func TestConvertEndpointSelection(t *testing.T) {
+	inv := &bill.Invoice{
+		Regime:    tax.WithRegime("DK"),
+		Addons:    tax.WithAddons(en16931.V2017, addon.V2),
+		IssueDate: cal.MakeDate(2026, 1, 1),
+		Type:      "standard",
+		Series:    "2026",
+		Code:      "1",
+		Currency:  "DKK",
+		Supplier: &org.Party{
+			Name:      "Eksempel A/S",
+			TaxID:     &tax.Identity{Country: "DK", Code: "12345674"},
+			Addresses: []*org.Address{{Street: "Hovedgaden", Locality: "København", Code: "1000", Country: "DK"}},
+		},
+		Customer: &org.Party{
+			Name:  "Kunde ApS",
+			TaxID: &tax.Identity{Country: "DK", Code: "88146328"},
+			Endpoints: []*org.Endpoint{
+				{URI: "iso6523-actorid-upis::0184:88146328"},
+				{URI: "GLN:5798009883735"},
+			},
+			Addresses: []*org.Address{{Street: "Fredericiavej", Locality: "Helsingør", Code: "3000", Country: "DK"}},
+		},
+		Lines: []*bill.Line{{
+			Quantity: num.MakeAmount(1, 0),
+			Item:     &org.Item{Name: "vare", Price: num.NewAmount(10000, 2)},
+			Taxes:    tax.Set{{Category: "VAT", Percent: num.NewPercentage(25, 2)}},
+		}},
+	}
+	env, err := gobl.Envelop(inv)
+	require.NoError(t, err)
+	doc, err := oioubl.ConvertInvoice(env)
+	require.NoError(t, err)
+
+	ep := doc.AccountingCustomerParty.Party.EndpointID
+	require.NotNil(t, ep)
+	assert.Equal(t, "GLN", ep.SchemeID)
+	assert.Equal(t, "5798009883735", ep.Value)
+}
+
 // A party's own identity scheme decides its CompanyID scheme. OIOUBL allows
 // only DK:CVR, DK:CPR and ZZZ on the legal entity (F-LIB189) and only DK:SE and
 // ZZZ on the tax scheme (F-LIB195), so a register it has no code for — a GLN,

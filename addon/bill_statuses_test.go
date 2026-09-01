@@ -64,6 +64,33 @@ func TestStatusValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(st))
 	})
 
+	t.Run("a DK party with only other-network endpoints gains a derived Danish one", func(t *testing.T) {
+		st := testStatusResponse(t)
+		require.NoError(t, st.Calculate())
+		require.NoError(t, rules.Validate(st))
+		ep := oioubl.OIOUBLEndpoint(st.Supplier)
+		require.NotNil(t, ep)
+		assert.Equal(t, "DK:CVR:88146328", ep.URI.String())
+		assert.Len(t, st.Supplier.Endpoints, 2, "the Peppol endpoint stays alongside")
+	})
+
+	t.Run("foreign supplier with only other-network endpoints fails (F-LIB179)", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Supplier.TaxID = &tax.Identity{Country: "SE", Code: "556677889901"}
+		require.NoError(t, st.Calculate())
+		err := rules.Validate(st)
+		assert.ErrorContains(t, err, "F-LIB179")
+	})
+
+	t.Run("foreign customer with only other-network endpoints fails (F-LIB179)", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Customer.TaxID = &tax.Identity{Country: "DE", Code: "111111125"}
+		st.Customer.Identities = []*org.Identity{{Scope: org.IdentityScopeLegal, Code: "4035811991021"}}
+		require.NoError(t, st.Calculate())
+		err := rules.Validate(st)
+		assert.ErrorContains(t, err, "F-LIB179")
+	})
+
 	t.Run("supplier without participant or tax ID code fails (F-APR012)", func(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Supplier.Endpoints = nil
@@ -104,6 +131,8 @@ func TestStatusValidation(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Supplier.TaxID = nil
 		st.Supplier.Identities = []*org.Identity{{Key: "dk-cvr", Code: "88146328"}}
+		// No tax ID means no derived endpoint, so name an OIOUBL one directly.
+		st.Supplier.Endpoints = []*org.Endpoint{{URI: "DK:CVR:88146328"}}
 		require.NoError(t, st.Calculate())
 		assert.NoError(t, rules.Validate(st))
 	})
@@ -151,6 +180,7 @@ func TestStatusValidation(t *testing.T) {
 		st.Supplier.Name = ""
 		st.Supplier.TaxID = nil
 		st.Supplier.Identities = []*org.Identity{{Code: "88146328"}}
+		st.Supplier.Endpoints = []*org.Endpoint{{URI: "DK:CVR:88146328"}}
 		require.NoError(t, st.Calculate())
 		assert.NoError(t, rules.Validate(st))
 	})
