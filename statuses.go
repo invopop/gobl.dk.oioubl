@@ -132,13 +132,19 @@ func (ar *ApplicationResponse) applyOIOUBL(st *bill.Status) {
 	}
 }
 
+// The responsedocumenttypecode-1.1 values a response of ours may reference.
+const (
+	docTypeInvoice    = "Invoice"
+	docTypeCreditNote = "CreditNote"
+)
+
 // responseDocumentType names the referenced document on OIOUBL's
 // responsedocumenttypecode-1.1 list.
 func responseDocumentType(doc *org.DocumentRef) string {
 	if doc != nil && doc.Type == bill.InvoiceTypeCreditNote {
-		return "CreditNote"
+		return docTypeCreditNote
 	}
-	return "Invoice"
+	return docTypeInvoice
 }
 
 // applyResponseParty adds the details the base leaves out and corrects the

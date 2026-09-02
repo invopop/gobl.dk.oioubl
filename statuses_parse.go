@@ -91,6 +91,10 @@ func (ar *ApplicationResponse) addGOBLDetails(st *bill.Status) error {
 	// The sender is the customer, the receiver the supplier.
 	addPartyContact(st.Customer, ar.SenderParty)
 	addPartyContact(st.Supplier, ar.ReceiverParty)
+	recoverIdentityScheme(st.Customer, ar.SenderParty)
+	recoverIdentityScheme(st.Supplier, ar.ReceiverParty)
+	markLegalIdentity(st.Customer)
+	markLegalIdentity(st.Supplier)
 
 	for i, line := range st.Lines {
 		if i >= len(ar.DocumentResponse) {
@@ -108,6 +112,15 @@ func (ar *ApplicationResponse) addGOBLDetails(st *bill.Status) error {
 		}
 		line.Key = key
 		line.Ext = line.Ext.Set(addon.ExtKeyResponseCode, code)
+
+		// The generic parser only reads DocumentTypeCode under the Peppol
+		// context, so a referenced credit note would come back untyped and be
+		// re-emitted as an Invoice.
+		if line.Doc != nil && dr.DocumentReference != nil &&
+			dr.DocumentReference.DocumentTypeCode != nil &&
+			dr.DocumentReference.DocumentTypeCode.Value == docTypeCreditNote {
+			line.Doc.Type = bill.InvoiceTypeCreditNote
+		}
 	}
 	return nil
 }
