@@ -12,6 +12,7 @@ import (
 	"github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/tax"
@@ -241,6 +242,61 @@ func TestStatusRoundTrip(t *testing.T) {
 	assert.Equal(t, cbc.Code("12345674"), st.Supplier.TaxID.Code, "the wire-only DK prefix must not survive the round trip")
 	require.NotNil(t, st.Customer.TaxID)
 	assert.Equal(t, cbc.Code("88146328"), st.Customer.TaxID.Code)
+}
+
+// TestStatusRoundTripCreditNote pins that the referenced document's type
+// survives the round trip: the generic parser never reads OIOUBL's
+// DocumentTypeCode, so the parse restores it.
+func TestStatusRoundTripCreditNote(t *testing.T) {
+	st := testStatus()
+	st.Lines[0].Doc.Type = bill.InvoiceTypeCreditNote
+	ar := convertStatus(t, st)
+	data, err := oioubl.Bytes(ar)
+	require.NoError(t, err)
+
+	parsed, err := oioubl.ParseApplicationResponse(data)
+	require.NoError(t, err)
+	env, err := parsed.Convert()
+	require.NoError(t, err)
+	out, ok := env.Extract().(*bill.Status)
+	require.True(t, ok)
+
+	require.Len(t, out.Lines, 1)
+	require.NotNil(t, out.Lines[0].Doc)
+	assert.Equal(t, bill.InvoiceTypeCreditNote, out.Lines[0].Doc.Type)
+}
+
+// TestStatusRoundTripGLNIdentity pins the identity decorations on parse: a GLN
+// legal identity goes out as a ZZZ CompanyID (F-LIB189) with the register named
+// on the endpoint, and parsing must restore the GLN scheme.
+func TestStatusRoundTripGLNIdentity(t *testing.T) {
+	st := testStatus()
+	st.Customer = &org.Party{
+		Name: "Den Lille Skole",
+		Identities: []*org.Identity{{
+			Scope: org.IdentityScopeLegal,
+			Code:  "5798009883735",
+			Ext:   tax.ExtensionsOf(cbc.CodeMap{iso.ExtKeySchemeID: "GLN"}),
+		}},
+		Endpoints: []*org.Endpoint{{URI: "GLN:5798009883735"}},
+	}
+	ar := convertStatus(t, st)
+	data, err := oioubl.Bytes(ar)
+	require.NoError(t, err)
+
+	parsed, err := oioubl.ParseApplicationResponse(data)
+	require.NoError(t, err)
+	env, err := parsed.Convert()
+	require.NoError(t, err)
+	out, ok := env.Extract().(*bill.Status)
+	require.True(t, ok)
+
+	require.NotNil(t, out.Customer)
+	require.Len(t, out.Customer.Identities, 1)
+	id := out.Customer.Identities[0]
+	assert.Equal(t, "GLN", id.Ext.Get(iso.ExtKeySchemeID).String(),
+		"the ZZZ scheme must recover to the endpoint's register")
+	assert.Equal(t, cbc.Code("5798009883735"), id.Code)
 }
 
 // TestConvertStatusCodes pins the wire code and profile each status key
