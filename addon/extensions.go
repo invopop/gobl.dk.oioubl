@@ -16,7 +16,7 @@ const (
 	ExtKeyDutyCode cbc.Key = "dk-oioubl-duty-code"
 
 	// ExtKeyResponseCode carries the OIOUBL response code on a status line,
-	// preserving the wire value across GOBL's four status keys.
+	// preserving the wire value the three allowed status keys cannot.
 	ExtKeyResponseCode cbc.Key = "dk-oioubl-response-code"
 )
 
@@ -64,8 +64,8 @@ var extensions = []*cbc.Definition{
 		Desc: i18n.String{
 			i18n.EN: here.Doc(`
 				The response code from OIOUBL's ~responsecode-1.1~ list, set on an
-				ApplicationResponse status line. OIOUBL distinguishes six answers where
-				GOBL's status keys have four, so the wire value is kept here: the key
+				ApplicationResponse status line. OIOUBL distinguishes six answers and
+				this addon allows three status keys, so the wire value is kept here: the key
 				carries the meaning, this extension the exact code. Absent on outgoing
 				documents, the key decides the code.
 			`),
