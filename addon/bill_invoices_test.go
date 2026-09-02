@@ -89,6 +89,15 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(inv), "F-INV011")
 	})
 
+	t.Run("customer without an OIOUBL endpoint is rejected (F-LIB179)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Customer.TaxID = &tax.Identity{Country: "DE", Code: "111111125"}
+		inv.Customer.Inboxes = nil
+		inv.Customer.Endpoints = []*org.Endpoint{{URI: "iso6523-actorid-upis::9930:DE111111125"}}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB179")
+	})
+
 	t.Run("line without a VAT tax is rejected (F-INV138 / F-CRN081)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Lines[0].Taxes = nil

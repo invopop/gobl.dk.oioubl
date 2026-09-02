@@ -89,7 +89,9 @@ func addContactID(p *ubl.Party, party *org.Party) {
 // setPartyEndpoint replaces the base's EndpointID with the OIOUBL endpoint URI,
 // DK-prefixing a CVR value as F-LIB180 requires.
 func setPartyEndpoint(p *ubl.Party, party *org.Party) {
-	ep := party.FirstEndpoint()
+	// The party may also carry endpoints for other networks (e.g. Peppol);
+	// only one naming a register OIOUBL accepts may go on the wire (F-LIB179).
+	ep := addon.OIOUBLEndpoint(party)
 	if ep == nil {
 		return
 	}

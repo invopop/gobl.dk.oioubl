@@ -40,6 +40,15 @@ func billInvoiceRules() *rules.Set {
 			rules.Field("endpoints",
 				rules.Assert("03", "customer endpoint is required (F-INV044 / F-CRN040)",
 					is.Present),
+				rules.Assert("06", "at least one customer endpoint must name a register OIOUBL accepts (F-LIB179)",
+					is.Func("has an OIOUBL endpoint", partyHasOIOUBLEndpoint)),
+			),
+		),
+
+		rules.Field("supplier",
+			rules.Field("endpoints",
+				rules.Assert("07", "at least one supplier endpoint must name a register OIOUBL accepts (F-LIB179)",
+					is.Func("has an OIOUBL endpoint", partyHasOIOUBLEndpoint)),
 			),
 		),
 
