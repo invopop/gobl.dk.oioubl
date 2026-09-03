@@ -2,6 +2,7 @@ package addon
 
 import (
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/rules/is"
@@ -39,28 +40,75 @@ func billStatusRules() *rules.Set {
 				),
 				rules.Assert("07", "customer must have a name or identification (F-LIB022)",
 					is.Func("has name or identification", partyHasNameOrIdentification)),
+				// The customer sends the response, and the SenderParty requires
+				// exactly one PartyLegalEntity; a Danish tax ID satisfies this via
+				// the identity derived in normalization.
+				rules.Assert("12", "customer requires a legal identity for the OIOUBL PartyLegalEntity (F-APR040)",
+					is.Func("has a legal identity", partyHasLegalIdentity)),
 			),
 			rules.Field("lines",
 				// One Response per referenced document (F-APR051 / F-APR054).
 				rules.Assert("08", "a response carries exactly one document response (F-APR051 / F-APR054)", is.Length(1, 1)),
 				rules.Each(
-					// Only the four responsecode-1.1 events are representable (F-APR018).
+					// Only these three keys are representable (F-APR018); the error
+					// key is refused because every negative responsecode-1.1 answer
+					// is a definitive rejection, not a recoverable error.
 					rules.Field("key",
 						rules.Assert("09", "response status event must be one OIOUBL supports (F-APR018)",
 							is.In(
 								bill.StatusLineAccepted,
 								bill.StatusLineRejected,
 								bill.StatusLineAcknowledged,
-								bill.StatusLineError,
 							)),
 					),
 					rules.Field("doc",
 						rules.Assert("10", "line document reference is required for a response (cf. F-APR016, F-APR025)", is.Present),
+						// The converter names untyped and standard references
+						// Invoice; any other type would be misrepresented.
+						rules.Field("type",
+							rules.AssertIfPresent("15", "referenced document type must be standard or credit-note (responsedocumenttypecode-1.1)",
+								is.In(bill.InvoiceTypeStandard, bill.InvoiceTypeCreditNote)),
+						),
 					),
+					// The key carries the meaning and the extension the exact wire
+					// value, so a pair that contradicts itself is a data error.
+					rules.Assert("11", "response code extension must agree with the status key",
+						is.Func("response code matches the key", lineResponseCodeMatchesKey)),
 				),
 			),
 		),
 	)
+}
+
+// statusKeyForResponseCode names the status key each responsecode-1.1 value
+// means: the business answers keep their meaning, the technical receipt lands
+// on acknowledged and both rejects on rejected. All three rejects are
+// terminal — OIOUBL expects a new document after any of them — so none maps
+// to the error key, which the platform reads as recoverable.
+var statusKeyForResponseCode = map[cbc.Code]cbc.Key{
+	ResponseCodeBusinessAccept:  bill.StatusLineAccepted,
+	ResponseCodeBusinessReject:  bill.StatusLineRejected,
+	ResponseCodeTechnicalAccept: bill.StatusLineAcknowledged,
+	ResponseCodeProfileReject:   bill.StatusLineRejected,
+	ResponseCodeTechnicalReject: bill.StatusLineRejected,
+}
+
+// StatusKeyForResponseCode returns the bill.StatusLine key a responsecode-1.1
+// value maps to, or empty when OIOUBL defines no such code.
+func StatusKeyForResponseCode(code cbc.Code) cbc.Key {
+	return statusKeyForResponseCode[code]
+}
+
+func lineResponseCodeMatchesKey(val any) bool {
+	line, ok := val.(*bill.StatusLine)
+	if !ok || line == nil {
+		return true
+	}
+	code := line.Ext.Get(ExtKeyResponseCode)
+	if code == "" {
+		return true
+	}
+	return statusKeyForResponseCode[code] == line.Key
 }
 
 var isResponseType = is.Func("response status type", func(val any) bool {
@@ -79,6 +127,19 @@ func partyHasTaxIDOrIdentities(val any) bool {
 	}
 	for _, id := range p.Identities {
 		if id != nil && id.Code != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func partyHasLegalIdentity(val any) bool {
+	p, ok := val.(*org.Party)
+	if !ok || p == nil {
+		return true
+	}
+	for _, id := range p.Identities {
+		if id != nil && id.Scope == org.IdentityScopeLegal && !id.Code.IsEmpty() {
 			return true
 		}
 	}

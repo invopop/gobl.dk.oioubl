@@ -1,0 +1,127 @@
+{
+	"$regime": "DK",
+	"$addons": [
+		"eu-en16931-v2017",
+		"dk-oioubl-v2"
+	],
+	"uuid": "9756b516-8815-1029-857a-e388fe63f399",
+	"type": "response",
+	"issue_date": "2005-11-20",
+	"code": "B65830",
+	"supplier": {
+		"name": "Tavleverandøren",
+		"identities": [
+			{
+				"code": "5798009814203",
+				"ext": {
+					"iso-scheme-id": "GLN"
+				}
+			}
+		],
+		"people": [
+			{
+				"name": {
+					"given": "Hugo Jensen"
+				},
+				"identities": [
+					{
+						"code": "23456"
+					}
+				]
+			}
+		],
+		"endpoints": [
+			{
+				"uri": "GLN:5798009814203"
+			}
+		],
+		"addresses": [
+			{
+				"num": "11",
+				"street": "Leverandørvej",
+				"locality": "Dyssegård",
+				"code": "2870",
+				"country": "DK"
+			}
+		],
+		"emails": [
+			{
+				"addr": "Hugo@tavl.dk"
+			}
+		],
+		"telephones": [
+			{
+				"num": "15812337"
+			}
+		]
+	},
+	"customer": {
+		"name": "Den Lille Skole",
+		"identities": [
+			{
+				"scope": "legal",
+				"code": "16356697",
+				"ext": {
+					"iso-scheme-id": "DK:CVR"
+				}
+			},
+			{
+				"code": "5798009811578",
+				"ext": {
+					"iso-scheme-id": "GLN"
+				}
+			}
+		],
+		"people": [
+			{
+				"name": {
+					"given": "Hans Hansen"
+				},
+				"identities": [
+					{
+						"code": "7778"
+					}
+				]
+			}
+		],
+		"endpoints": [
+			{
+				"uri": "GLN:5798009811578"
+			}
+		],
+		"addresses": [
+			{
+				"num": "10",
+				"street": "Fredericiavej",
+				"locality": "Helsingør",
+				"code": "3000",
+				"country": "DK"
+			}
+		],
+		"emails": [
+			{
+				"addr": "Hans@dls.dk"
+			}
+		],
+		"telephones": [
+			{
+				"num": "26532147"
+			}
+		]
+	},
+	"lines": [
+		{
+			"index": 1,
+			"key": "rejected",
+			"doc": {
+				"uuid": "9756b4d0-8815-1029-857a-e388fe63f399",
+				"issue_date": "2005-11-20",
+				"code": "A00095678"
+			},
+			"description": "Vi har ikke fået de aftalte 800,- kr i rabat",
+			"ext": {
+				"dk-oioubl-response-code": "BusinessReject"
+			}
+		}
+	]
+}

@@ -14,6 +14,21 @@ const (
 	// ExtKeyDutyCode identifies the SKAT excise duty code carried by a charge
 	// keyed with ChargeKeyExcise.
 	ExtKeyDutyCode cbc.Key = "dk-oioubl-duty-code"
+
+	// ExtKeyResponseCode carries the OIOUBL response code on a status line,
+	// preserving the wire value the three allowed status keys cannot.
+	ExtKeyResponseCode cbc.Key = "dk-oioubl-response-code"
+)
+
+// The ExtKeyResponseCode values, from OIOUBL's responsecode-1.1 list. The
+// codelist also names ProfileAccept, but the ApplicationResponse schematron
+// refuses it (F-APR018 enumerates the other five), so it is not defined here.
+const (
+	ResponseCodeBusinessAccept  cbc.Code = "BusinessAccept"
+	ResponseCodeBusinessReject  cbc.Code = "BusinessReject"
+	ResponseCodeProfileReject   cbc.Code = "ProfileReject"
+	ResponseCodeTechnicalAccept cbc.Code = "TechnicalAccept"
+	ResponseCodeTechnicalReject cbc.Code = "TechnicalReject"
 )
 
 var extensions = []*cbc.Definition{
@@ -39,6 +54,49 @@ var extensions = []*cbc.Definition{
 				gained and lost codes across taxschemeid versions, and includes
 				non-numeric codes (e.g. ~21d~).
 			`),
+		},
+	},
+	{
+		Key: ExtKeyResponseCode,
+		Name: i18n.String{
+			i18n.EN: "OIOUBL Response Code",
+			i18n.DA: "OIOUBL Svarkode",
+		},
+		Desc: i18n.String{
+			i18n.EN: here.Doc(`
+				The response code from OIOUBL's ~responsecode-1.1~ list, set on an
+				ApplicationResponse status line. OIOUBL accepts five answers and
+				this addon allows three status keys, so the wire value is kept here: the key
+				carries the meaning, this extension the exact code. Absent on outgoing
+				documents, the key decides the code.
+			`),
+		},
+		Values: []*cbc.Definition{
+			{
+				Code: ResponseCodeBusinessAccept,
+				Name: i18n.String{i18n.EN: "Business Accept"},
+				Desc: i18n.String{i18n.EN: "The receiving party has reviewed the document's content and accepted it."},
+			},
+			{
+				Code: ResponseCodeBusinessReject,
+				Name: i18n.String{i18n.EN: "Business Reject"},
+				Desc: i18n.String{i18n.EN: "The receiving party has reviewed the document's content and rejected it."},
+			},
+			{
+				Code: ResponseCodeProfileReject,
+				Name: i18n.String{i18n.EN: "Profile Reject"},
+				Desc: i18n.String{i18n.EN: "The receiver does not support the business process the document's profile refers to. The document must be sent again under a profile the receiver supports."},
+			},
+			{
+				Code: ResponseCodeTechnicalAccept,
+				Name: i18n.String{i18n.EN: "Technical Accept"},
+				Desc: i18n.String{i18n.EN: "The receiver confirms that the document arrived and can be read. This is a receipt of delivery, not a business acceptance."},
+			},
+			{
+				Code: ResponseCodeTechnicalReject,
+				Name: i18n.String{i18n.EN: "Technical Reject"},
+				Desc: i18n.String{i18n.EN: "The document could not be processed because of errors or missing information. A corrected document must be issued."},
+			},
 		},
 	},
 }

@@ -1,0 +1,70 @@
+{
+	"$schema": "https://gobl.org/draft-0/envelope",
+	"head": {
+		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
+		"dig": {
+			"alg": "sha256",
+			"val": "279ebc6567c62f96d329f9fd3259cf12e668ca9b8994cd0b501b2fbbe81ff47f"
+		},
+		"from": "GLN:5798009883735",
+		"to": "DK:CVR:16356700"
+	},
+	"doc": {
+		"$schema": "https://gobl.org/draft-0/bill/status",
+		"$regime": "DK",
+		"$addons": [
+			"eu-en16931-v2017",
+			"dk-oioubl-v2"
+		],
+		"uuid": "9756b518-8815-1029-857a-e388fe63f399",
+		"type": "response",
+		"issue_date": "2005-11-22",
+		"code": "B65832",
+		"supplier": {
+			"name": "Tavleleverandøren",
+			"tax_id": {
+				"country": "DK",
+				"code": "16356700"
+			},
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "16356700"
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "DK:CVR:16356700"
+				}
+			]
+		},
+		"customer": {
+			"name": "Den Lille Skole",
+			"identities": [
+				{
+					"scope": "legal",
+					"code": "5798009883735",
+					"ext": {
+						"iso-scheme-id": "GLN"
+					}
+				}
+			],
+			"endpoints": [
+				{
+					"uri": "GLN:5798009883735"
+				}
+			]
+		},
+		"lines": [
+			{
+				"index": 1,
+				"key": "acknowledged",
+				"doc": {
+					"uuid": "9756b4d0-8815-1029-857a-e388fe63f399",
+					"issue_date": "2005-11-20",
+					"code": "A00095678"
+				}
+			}
+		]
+	}
+}
