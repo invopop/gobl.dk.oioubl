@@ -20,11 +20,12 @@ const (
 	ExtKeyResponseCode cbc.Key = "dk-oioubl-response-code"
 )
 
-// The six ExtKeyResponseCode values, from OIOUBL's responsecode-1.1 list.
+// The ExtKeyResponseCode values, from OIOUBL's responsecode-1.1 list. The
+// codelist also names ProfileAccept, but the ApplicationResponse schematron
+// refuses it (F-APR018 enumerates the other five), so it is not defined here.
 const (
 	ResponseCodeBusinessAccept  cbc.Code = "BusinessAccept"
 	ResponseCodeBusinessReject  cbc.Code = "BusinessReject"
-	ResponseCodeProfileAccept   cbc.Code = "ProfileAccept"
 	ResponseCodeProfileReject   cbc.Code = "ProfileReject"
 	ResponseCodeTechnicalAccept cbc.Code = "TechnicalAccept"
 	ResponseCodeTechnicalReject cbc.Code = "TechnicalReject"
@@ -64,7 +65,7 @@ var extensions = []*cbc.Definition{
 		Desc: i18n.String{
 			i18n.EN: here.Doc(`
 				The response code from OIOUBL's ~responsecode-1.1~ list, set on an
-				ApplicationResponse status line. OIOUBL distinguishes six answers and
+				ApplicationResponse status line. OIOUBL accepts five answers and
 				this addon allows three status keys, so the wire value is kept here: the key
 				carries the meaning, this extension the exact code. Absent on outgoing
 				documents, the key decides the code.
@@ -80,11 +81,6 @@ var extensions = []*cbc.Definition{
 				Code: ResponseCodeBusinessReject,
 				Name: i18n.String{i18n.EN: "Business Reject"},
 				Desc: i18n.String{i18n.EN: "The receiving party has reviewed the document's content and rejected it."},
-			},
-			{
-				Code: ResponseCodeProfileAccept,
-				Name: i18n.String{i18n.EN: "Profile Accept"},
-				Desc: i18n.String{i18n.EN: "The receiver supports the business process the document's profile refers to and will process the document."},
 			},
 			{
 				Code: ResponseCodeProfileReject,

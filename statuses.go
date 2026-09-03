@@ -14,12 +14,13 @@ import (
 
 // responseCodeForKey names the wire code emitted when a status line carries no
 // dk-oioubl-response-code extension. The three keys land on the codes whose
-// meaning they carry; the other three wire codes are reachable through the
-// extension.
+// meaning they carry; the other two wire codes are reachable through the
+// extension. Acknowledged means TechnicalAccept: the schematron refuses the
+// codelist's ProfileAccept (F-APR018).
 var responseCodeForKey = map[cbc.Key]cbc.Code{
 	bill.StatusLineAccepted:     addon.ResponseCodeBusinessAccept,
 	bill.StatusLineRejected:     addon.ResponseCodeBusinessReject,
-	bill.StatusLineAcknowledged: addon.ResponseCodeProfileAccept,
+	bill.StatusLineAcknowledged: addon.ResponseCodeTechnicalAccept,
 }
 
 // buildStatus builds the plain EN16931 ApplicationResponse, then reworks it

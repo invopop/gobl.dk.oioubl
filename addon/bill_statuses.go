@@ -75,14 +75,13 @@ func billStatusRules() *rules.Set {
 }
 
 // statusKeyForResponseCode names the status key each responsecode-1.1 value
-// means: the business answers keep their meaning, the profile and technical
-// ones collapse to acknowledged/rejected. All three rejects are terminal —
-// OIOUBL expects a new document after any of them — so none maps to the
-// error key, which the platform reads as recoverable.
+// means: the business answers keep their meaning, the technical receipt lands
+// on acknowledged and both rejects on rejected. All three rejects are
+// terminal — OIOUBL expects a new document after any of them — so none maps
+// to the error key, which the platform reads as recoverable.
 var statusKeyForResponseCode = map[cbc.Code]cbc.Key{
 	ResponseCodeBusinessAccept:  bill.StatusLineAccepted,
 	ResponseCodeBusinessReject:  bill.StatusLineRejected,
-	ResponseCodeProfileAccept:   bill.StatusLineAcknowledged,
 	ResponseCodeTechnicalAccept: bill.StatusLineAcknowledged,
 	ResponseCodeProfileReject:   bill.StatusLineRejected,
 	ResponseCodeTechnicalReject: bill.StatusLineRejected,

@@ -115,11 +115,23 @@ func (ar *ApplicationResponse) addGOBLDetails(st *bill.Status) error {
 
 		// The generic parser only reads DocumentTypeCode under the Peppol
 		// context, so a referenced credit note would come back untyped and be
-		// re-emitted as an Invoice.
-		if line.Doc != nil && dr.DocumentReference != nil &&
-			dr.DocumentReference.DocumentTypeCode != nil &&
-			dr.DocumentReference.DocumentTypeCode.Value == docTypeCreditNote {
-			line.Doc.Type = bill.InvoiceTypeCreditNote
+		// re-emitted as an Invoice. OIOUBL requires the code (F-APR024), and a
+		// type we cannot represent is refused rather than relabelled.
+		if dr.DocumentReference != nil {
+			dt := dr.DocumentReference.DocumentTypeCode
+			if dt == nil || dt.Value == "" {
+				return fmt.Errorf("document response %d names no document type", i+1)
+			}
+			switch dt.Value {
+			case docTypeInvoice:
+				// GOBL's default: an untyped reference means an invoice.
+			case docTypeCreditNote:
+				if line.Doc != nil {
+					line.Doc.Type = bill.InvoiceTypeCreditNote
+				}
+			default:
+				return fmt.Errorf("unsupported referenced document type %q", dt.Value)
+			}
 		}
 	}
 	return nil

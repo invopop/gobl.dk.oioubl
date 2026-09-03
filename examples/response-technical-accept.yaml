@@ -6,9 +6,8 @@ uuid: "9756b518-8815-1029-857a-e388fe63f399"
 type: "response"
 issue_date: "2005-11-22"
 code: "B65832"
-# A TechnicalAccept belongs to the technical-response profile alone
-# (F-APR057 / F-APR058); the extension picks it over the acknowledged
-# key's default ProfileAccept.
+# An acknowledged status becomes a TechnicalAccept, which belongs to the
+# technical-response profile alone (F-APR057 / F-APR058).
 supplier:
   name: "Tavleleverandøren"
   tax_id:
@@ -25,8 +24,6 @@ customer:
     - uri: "GLN:5798009883735"
 lines:
   - key: "acknowledged"
-    ext:
-      dk-oioubl-response-code: "TechnicalAccept"
     doc:
       code: "A00095678"
       uuid: "9756b4d0-8815-1029-857a-e388fe63f399"
