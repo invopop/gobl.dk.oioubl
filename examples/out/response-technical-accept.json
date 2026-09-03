@@ -4,7 +4,7 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "dcf2e38a09c5cf5ca12dcabdb5b8afd9687b96b1e424528fa85721263b139ce7"
+			"val": "279ebc6567c62f96d329f9fd3259cf12e668ca9b8994cd0b501b2fbbe81ff47f"
 		},
 		"from": "GLN:5798009883735",
 		"to": "DK:CVR:16356700"
@@ -63,9 +63,6 @@
 					"uuid": "9756b4d0-8815-1029-857a-e388fe63f399",
 					"issue_date": "2005-11-20",
 					"code": "A00095678"
-				},
-				"ext": {
-					"dk-oioubl-response-code": "TechnicalAccept"
 				}
 			}
 		]

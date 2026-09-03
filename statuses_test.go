@@ -312,11 +312,12 @@ func TestConvertStatusCodes(t *testing.T) {
 	}{
 		{name: "accepted", key: bill.StatusLineAccepted, wantCode: "BusinessAccept", wantProfile: oioubl.ProfileID, wantScheme: "urn:oioubl:id:profileid-1.2"},
 		{name: "rejected", key: bill.StatusLineRejected, wantCode: "BusinessReject", wantProfile: oioubl.ProfileID, wantScheme: "urn:oioubl:id:profileid-1.2"},
-		{name: "acknowledged", key: bill.StatusLineAcknowledged, wantCode: "ProfileAccept", wantProfile: oioubl.ProfileID, wantScheme: "urn:oioubl:id:profileid-1.2"},
+		// Acknowledged means TechnicalAccept (the schematron refuses ProfileAccept,
+		// F-APR018), with its own profile whose scheme only exists from
+		// profileid-1.4 on (F-APR057 / F-APR058, F-LIB302).
+		{name: "acknowledged", key: bill.StatusLineAcknowledged, wantCode: "TechnicalAccept", wantProfile: "Procurement-TecRes-1.0", wantScheme: "urn:oioubl:id:profileid-1.6"},
 		{name: "technical reject via the extension", key: bill.StatusLineRejected, ext: "TechnicalReject", wantCode: "TechnicalReject", wantProfile: "NONE", wantScheme: "urn:oioubl:id:profileid-1.2"},
 		{name: "profile reject via the extension", key: bill.StatusLineRejected, ext: "ProfileReject", wantCode: "ProfileReject", wantProfile: "NONE", wantScheme: "urn:oioubl:id:profileid-1.2"},
-		// TecRes only exists from profileid-1.4 on (F-LIB302).
-		{name: "technical accept names its own profile", key: bill.StatusLineAcknowledged, ext: "TechnicalAccept", wantCode: "TechnicalAccept", wantProfile: "Procurement-TecRes-1.0", wantScheme: "urn:oioubl:id:profileid-1.6"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -384,7 +385,6 @@ func TestParseResponseCodes(t *testing.T) {
 	}{
 		{code: "BusinessAccept", wantKey: bill.StatusLineAccepted},
 		{code: "BusinessReject", wantKey: bill.StatusLineRejected},
-		{code: "ProfileAccept", wantKey: bill.StatusLineAcknowledged},
 		{code: "TechnicalAccept", wantKey: bill.StatusLineAcknowledged},
 		{code: "ProfileReject", wantKey: bill.StatusLineRejected},
 		{code: "TechnicalReject", wantKey: bill.StatusLineRejected},
@@ -412,6 +412,34 @@ func TestParseResponseCodes(t *testing.T) {
 
 		_, err = ar.Convert()
 		assert.ErrorContains(t, err, "unknown OIOUBL response code")
+	})
+
+	t.Run("ProfileAccept is refused, as the schematron excludes it (F-APR018)", func(t *testing.T) {
+		data := strings.Replace(string(fixture), "BusinessReject", "ProfileAccept", 1)
+		ar, err := oioubl.ParseApplicationResponse([]byte(data))
+		require.NoError(t, err)
+
+		_, err = ar.Convert()
+		assert.ErrorContains(t, err, "unknown OIOUBL response code")
+	})
+
+	t.Run("unsupported referenced document type is refused", func(t *testing.T) {
+		data := strings.Replace(string(fixture), ">Invoice<", ">Reminder<", 1)
+		ar, err := oioubl.ParseApplicationResponse([]byte(data))
+		require.NoError(t, err)
+
+		_, err = ar.Convert()
+		assert.ErrorContains(t, err, "unsupported referenced document type")
+	})
+
+	t.Run("missing document type is refused (F-APR024)", func(t *testing.T) {
+		data := strings.Replace(string(fixture),
+			`<cbc:DocumentTypeCode listAgencyID="320" listID="urn:oioubl:codelist:responsedocumenttypecode-1.1">Invoice</cbc:DocumentTypeCode>`, "", 1)
+		ar, err := oioubl.ParseApplicationResponse([]byte(data))
+		require.NoError(t, err)
+
+		_, err = ar.Convert()
+		assert.ErrorContains(t, err, "names no document type")
 	})
 
 	t.Run("missing response code is refused", func(t *testing.T) {
