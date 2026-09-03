@@ -107,6 +107,17 @@ func TestConvertStatusCreditNote(t *testing.T) {
 	assert.Equal(t, "CreditNote", ar.DocumentResponse[0].DocumentReference.DocumentTypeCode.Value)
 }
 
+// TestConvertStatusStandardDocType names a standard-typed reference an Invoice.
+func TestConvertStatusStandardDocType(t *testing.T) {
+	st := testStatus()
+	st.Lines[0].Doc.Type = bill.InvoiceTypeStandard
+	ar := convertStatus(t, st)
+	require.Len(t, ar.DocumentResponse, 1)
+	require.NotNil(t, ar.DocumentResponse[0].DocumentReference)
+	require.NotNil(t, ar.DocumentResponse[0].DocumentReference.DocumentTypeCode)
+	assert.Equal(t, "Invoice", ar.DocumentResponse[0].DocumentReference.DocumentTypeCode.Value)
+}
+
 // TestConvertStatusAddsAddon converts a status that never declared the addon:
 // Convert adds it, so its normalizations and rules still run.
 func TestConvertStatusAddsAddon(t *testing.T) {
@@ -147,6 +158,16 @@ func TestConvertStatusRefusals(t *testing.T) {
 		require.NoError(t, err)
 		_, err = oioubl.Convert(env)
 		assert.ErrorContains(t, err, "must agree with the status key")
+	})
+
+	t.Run("unsupported referenced document type is refused", func(t *testing.T) {
+		// Emitting it would relabel the reference as an Invoice on the wire.
+		st := testStatus()
+		st.Lines[0].Doc.Type = bill.InvoiceTypeDebitNote
+		env, err := gobl.Envelop(st)
+		require.NoError(t, err)
+		_, err = oioubl.Convert(env)
+		assert.ErrorContains(t, err, "must be standard or credit-note")
 	})
 
 	t.Run("error key is not an OIOUBL response event", func(t *testing.T) {

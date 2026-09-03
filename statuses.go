@@ -140,7 +140,8 @@ const (
 )
 
 // responseDocumentType names the referenced document on OIOUBL's
-// responsedocumenttypecode-1.1 list.
+// responsedocumenttypecode-1.1 list. The addon only lets untyped, standard and
+// credit-note references through, so anything not a credit note is an Invoice.
 func responseDocumentType(doc *org.DocumentRef) string {
 	if doc != nil && doc.Type == bill.InvoiceTypeCreditNote {
 		return docTypeCreditNote
