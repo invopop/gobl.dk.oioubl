@@ -63,6 +63,12 @@ func billStatusRules() *rules.Set {
 					),
 					rules.Field("doc",
 						rules.Assert("10", "line document reference is required for a response (cf. F-APR016, F-APR025)", is.Present),
+						// The converter names untyped and standard references
+						// Invoice; any other type would be misrepresented.
+						rules.Field("type",
+							rules.AssertIfPresent("15", "referenced document type must be standard or credit-note (responsedocumenttypecode-1.1)",
+								is.In(bill.InvoiceTypeStandard, bill.InvoiceTypeCreditNote)),
+						),
 					),
 					// The key carries the meaning and the extension the exact wire
 					// value, so a pair that contradicts itself is a data error.
