@@ -21,7 +21,7 @@ customer:
       ext:
         iso-scheme-id: "GLN"
   endpoints:
-    - uri: "GLN:5798009883735"
+    - uri: "nemhandel:gln:5798009883735"
 lines:
   - key: "acknowledged"
     doc:

@@ -195,7 +195,7 @@ func TestConvertStatusRefusals(t *testing.T) {
 		st.Customer = &org.Party{
 			Name:      "Beispiel GmbH",
 			TaxID:     &tax.Identity{Country: "DE", Code: "111111125"},
-			Endpoints: []*org.Endpoint{{URI: "GLN:4035811991021"}},
+			Endpoints: []*org.Endpoint{{URI: "nemhandel:gln:4035811991021"}},
 		}
 		env, err := gobl.Envelop(st)
 		require.NoError(t, err)
@@ -230,7 +230,7 @@ func TestConvertStatusEndpointSelection(t *testing.T) {
 	st := testStatus()
 	st.Customer.Endpoints = []*org.Endpoint{
 		{URI: "iso6523-actorid-upis::0184:88146328"},
-		{URI: "GLN:5798009883735"},
+		{URI: "nemhandel:gln:5798009883735"},
 	}
 	ar := convertStatus(t, st)
 	require.NotNil(t, ar.SenderParty.EndpointID)
@@ -299,7 +299,7 @@ func TestStatusRoundTripGLNIdentity(t *testing.T) {
 			Code:  "5798009883735",
 			Ext:   tax.ExtensionsOf(cbc.CodeMap{iso.ExtKeySchemeID: "GLN"}),
 		}},
-		Endpoints: []*org.Endpoint{{URI: "GLN:5798009883735"}},
+		Endpoints: []*org.Endpoint{{URI: "nemhandel:gln:5798009883735"}},
 	}
 	ar := convertStatus(t, st)
 	data, err := oioubl.Bytes(ar)

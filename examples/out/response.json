@@ -4,10 +4,10 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "405488f0e5563bd32609ab553f0a402eca6391ac293b1e12aa4181334111fdcb"
+			"val": "23f7f786c26cd49c2685370bf94ae814a35ef8ec77409ba490f6950582e0b038"
 		},
-		"from": "GLN:5798009883735",
-		"to": "DK:CVR:16356700"
+		"from": "nemhandel:gln:5798009883735",
+		"to": "nemhandel:dk:cvr:16356700"
 	},
 	"doc": {
 		"$schema": "https://gobl.org/draft-0/bill/status",
@@ -34,7 +34,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "DK:CVR:16356700"
+					"uri": "nemhandel:dk:cvr:16356700"
 				}
 			]
 		},
@@ -51,7 +51,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "GLN:5798009883735"
+					"uri": "nemhandel:gln:5798009883735"
 				}
 			]
 		},

@@ -32,7 +32,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "GLN:5798009814203"
+				"uri": "nemhandel:gln:5798009814203"
 			}
 		],
 		"addresses": [
@@ -86,7 +86,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "GLN:5798009811578"
+				"uri": "nemhandel:gln:5798009811578"
 			}
 		],
 		"addresses": [
