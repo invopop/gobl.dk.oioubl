@@ -48,7 +48,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "DK:CPR:1111111118"
+				"uri": "nemhandel:dk:cpr:1111111118"
 			}
 		],
 		"addresses": [
@@ -90,7 +90,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "GLN:5790001968502"
+				"uri": "nemhandel:gln:5790001968502"
 			}
 		],
 		"addresses": [

@@ -4,10 +4,10 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "15d50e0095d2685e95353a1ab1d04a9d384db6619804dfc217f99fcc2a94969b"
+			"val": "4cc8a5c468c97de6405614dc3531e03247632374bb9e2e198399dd058dd7930b"
 		},
-		"from": "DK:CVR:16356700",
-		"to": "GLN:5798009811530"
+		"from": "nemhandel:dk:cvr:16356700",
+		"to": "nemhandel:gln:5798009811530"
 	},
 	"doc": {
 		"$schema": "https://gobl.org/draft-0/bill/invoice",
@@ -61,7 +61,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "DK:CVR:16356700"
+					"uri": "nemhandel:dk:cvr:16356700"
 				}
 			],
 			"addresses": [
@@ -109,7 +109,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "GLN:5798009811530"
+					"uri": "nemhandel:gln:5798009811530"
 				}
 			],
 			"addresses": [

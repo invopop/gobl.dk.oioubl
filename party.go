@@ -7,15 +7,14 @@ import (
 	"github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 )
 
 // OIOUBL symbolic schemes for company identifiers (F-LIB179/189/195); the CVR
 // endpoint scheme is shared with the addon's own endpoint derivation.
 const (
-	schemeDKCVR = string(addon.SchemeDKCVR)
-	schemeDKSE  = "DK:SE"
+	schemeDKCVR = string(addon.RegisterDKCVR)
+	schemeDKSE  = string(addon.RegisterDKSE)
 	schemeDKCPR = "DK:CPR"
 	schemeZZZ   = "ZZZ"
 )
@@ -86,33 +85,24 @@ func addContactID(p *ubl.Party, party *org.Party) {
 	p.Contact.ID = ptr(code)
 }
 
-// setPartyEndpoint replaces the base's EndpointID with the OIOUBL endpoint URI,
-// DK-prefixing a CVR value as F-LIB180 requires.
+// setPartyEndpoint writes the party's NemHandel endpoint as cbc:EndpointID,
+// prefixing a CVR or SE value with "DK" (F-LIB180 for CVR; SE follows its
+// company-ID rules F-LIB184 and F-LIB196).
 func setPartyEndpoint(p *ubl.Party, party *org.Party) {
-	// The party may also carry endpoints for other networks (e.g. Peppol);
-	// only one naming a register OIOUBL accepts may go on the wire (F-LIB179).
+	// Only an endpoint naming a register OIOUBL accepts may be written (F-LIB179).
 	ep := addon.OIOUBLEndpoint(party)
 	if ep == nil {
 		return
 	}
-	scheme, value, ok := splitEndpointURI(ep.URI.String())
+	register, value, ok := addon.SplitEndpointURI(ep.URI)
 	if !ok {
 		return
 	}
 	code := value.String()
-	if scheme.String() == schemeDKCVR {
-		// OIOUBL CVR endpoints must carry the DK-prefixed form (F-LIB180).
+	if s := register.String(); s == schemeDKCVR || s == schemeDKSE {
 		code = dkPrefixed(code)
 	}
-	p.EndpointID = &ubl.EndpointID{SchemeID: scheme.String(), Value: code}
-}
-
-func splitEndpointURI(uri string) (scheme, code cbc.Code, ok bool) {
-	i := strings.LastIndex(uri, ":")
-	if i <= 0 || i == len(uri)-1 {
-		return "", "", false
-	}
-	return cbc.Code(uri[:i]), cbc.Code(uri[i+1:]), true
+	p.EndpointID = &ubl.EndpointID{SchemeID: register.String(), Value: code}
 }
 
 // dkPrefixed adds the "DK" prefix OIOUBL mandates on CVR and SE values, if absent

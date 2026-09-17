@@ -188,7 +188,8 @@ func TestConvertUnsupportedVATKey(t *testing.T) {
 // TestConvertEndpointSelection pins that the emitted EndpointID is the one
 // from OIOUBL's register list (F-LIB179), not whichever endpoint happens to
 // come first: the en16931 addon gives parties a Peppol endpoint that OIOUBL
-// cannot use.
+// cannot use. The bare "GLN:…" spelling here and in the fixtures keeps the
+// legacy form covered.
 func TestConvertEndpointSelection(t *testing.T) {
 	inv := &bill.Invoice{
 		Regime:    tax.WithRegime("DK"),

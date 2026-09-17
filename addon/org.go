@@ -7,14 +7,38 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// OIOUBLEndpointURI joins a scheme and code with a colon (e.g. "DK:CVR:12345674").
-func OIOUBLEndpointURI(scheme, code cbc.Code) cbc.URI {
-	return cbc.URI(scheme + ":" + code)
+// EndpointScheme is the URI scheme of a NemHandel endpoint, the way
+// "iso6523-actorid-upis" is Peppol's.
+const EndpointScheme = "nemhandel"
+
+// OIOUBLEndpointURI builds a NemHandel endpoint URI such as
+// "nemhandel:dk:cvr:12345674": the register lowercased, the code as given.
+func OIOUBLEndpointURI(register, code cbc.Code) cbc.URI {
+	return cbc.URI(EndpointScheme + ":" + strings.ToLower(register.String()) + ":" + code.String())
 }
 
-// endpointSchemes lists the registers an OIOUBL EndpointID may name
+// SplitEndpointURI returns the register, as OIOUBL spells it, and the code of
+// a NemHandel endpoint URI; ok is false for any other network. The earlier
+// scheme-less "DK:CVR:12345674" form is still read.
+func SplitEndpointURI(uri cbc.URI) (register, code cbc.Code, ok bool) {
+	addr := uri.String()
+	if uri.Scheme() == EndpointScheme {
+		addr = uri.Opaque()
+	}
+	i := strings.LastIndex(addr, ":")
+	if i <= 0 || i == len(addr)-1 {
+		return "", "", false
+	}
+	register = cbc.Code(strings.ToUpper(addr[:i]))
+	if !registers[register] {
+		return "", "", false
+	}
+	return register, cbc.Code(addr[i+1:]), true
+}
+
+// registers lists the registers an OIOUBL EndpointID may name
 // (F-LIB179, schematron 1.17.2; invoices and responses share the list).
-var endpointSchemes = map[cbc.Code]bool{
+var registers = map[cbc.Code]bool{
 	"GLN": true, "DUNS": true, "IBAN": true,
 	"DK:P": true, "DK:CVR": true, "DK:CPR": true, "DK:SE": true, "DK:VANS": true,
 	"FR:SIRET": true, "SE:ORGNR": true, "FI:OVT": true, "FI:ORGNR": true,
@@ -31,11 +55,9 @@ var endpointSchemes = map[cbc.Code]bool{
 	"SI:VAT": true, "SK:VAT": true, "SM:VAT": true, "TR:VAT": true, "VA:VAT": true,
 }
 
-// OIOUBLEndpoint returns the party's first endpoint whose URI ("scheme:code")
-// names a register OIOUBL accepts (F-LIB179), or nil when it has none. A party
-// may also carry endpoints for other networks (e.g. Peppol's
-// iso6523-actorid-upis, added by the en16931 addon); those are not errors,
-// they are just not usable here.
+// OIOUBLEndpoint returns the party's first NemHandel endpoint naming a register
+// OIOUBL accepts (F-LIB179), or nil when it has none; endpoints for other
+// networks, such as Peppol's, are left alone.
 func OIOUBLEndpoint(p *org.Party) *org.Endpoint {
 	if p == nil {
 		return nil
@@ -48,8 +70,7 @@ func oioublEndpoint(eps []*org.Endpoint) *org.Endpoint {
 		if ep == nil {
 			continue
 		}
-		uri := ep.URI.String()
-		if i := strings.LastIndex(uri, ":"); i > 0 && endpointSchemes[cbc.Code(uri[:i])] {
+		if _, _, ok := SplitEndpointURI(ep.URI); ok {
 			return ep
 		}
 	}
@@ -73,6 +94,7 @@ func normalizeParty(p *org.Party) {
 	if OIOUBLEndpoint(p) == nil {
 		migrateInboxesToEndpoints(p)
 	}
+	normalizeEndpoints(p)
 
 	// Only a Danish tax ID gives us anything to derive from.
 	if p.TaxID == nil || p.TaxID.Country != "DK" || p.TaxID.Code == cbc.CodeEmpty {
@@ -83,7 +105,7 @@ func normalizeParty(p *org.Party) {
 	// are kept alongside the derived one.
 	if OIOUBLEndpoint(p) == nil {
 		p.Endpoints = append(p.Endpoints, &org.Endpoint{
-			URI: OIOUBLEndpointURI(SchemeDKCVR, p.TaxID.Code),
+			URI: OIOUBLEndpointURI(RegisterDKCVR, p.TaxID.Code),
 		})
 	}
 
@@ -93,6 +115,29 @@ func normalizeParty(p *org.Party) {
 			Scope: org.IdentityScopeLegal,
 			Code:  p.TaxID.Code,
 		})
+	}
+}
+
+// normalizeEndpoints rewrites each NemHandel endpoint onto the "nemhandel:"
+// scheme and strips the "DK" prefix from a CVR or SE code, which the converter
+// adds back in the XML; other registers' codes are kept as given.
+func normalizeEndpoints(p *org.Party) {
+	for _, ep := range p.Endpoints {
+		if ep == nil {
+			continue
+		}
+		register, code, ok := SplitEndpointURI(ep.URI)
+		if !ok {
+			continue
+		}
+		if register == RegisterDKCVR || register == RegisterDKSE {
+			code = cbc.Code(strings.TrimPrefix(code.String(), "DK"))
+		}
+		if code == cbc.CodeEmpty {
+			// Only the prefix was given; leave it for validation to refuse.
+			continue
+		}
+		ep.URI = OIOUBLEndpointURI(register, code)
 	}
 }
 
