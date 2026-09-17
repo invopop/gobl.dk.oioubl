@@ -7,6 +7,7 @@ import (
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/tax"
@@ -255,6 +256,52 @@ func TestStatusValidation(t *testing.T) {
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "GOBL-BILL-STATUS-04")
 		assert.NotContains(t, err.Error(), "F-APR051")
+	})
+
+	t.Run("response code extension matching the key passes", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Lines[0].Key = bill.StatusLineRejected
+		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "ProfileReject"})
+		require.NoError(t, st.Calculate())
+		assert.NoError(t, rules.Validate(st))
+		assert.Equal(t, bill.StatusLineRejected, oioubl.StatusKeyForResponseCode("ProfileReject"))
+		assert.Equal(t, cbc.Key(""), oioubl.StatusKeyForResponseCode("Bogus"), "an unknown code maps to nothing")
+	})
+
+	t.Run("error key fails the response event rule", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Lines[0].Key = bill.StatusLineError
+		require.NoError(t, st.Calculate())
+		err := rules.Validate(st)
+		assert.ErrorContains(t, err, "must be one OIOUBL supports")
+	})
+
+	t.Run("response code extension contradicting the key fails", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Lines[0].Key = bill.StatusLineAccepted
+		st.Lines[0].Ext = tax.ExtensionsOf(cbc.CodeMap{oioubl.ExtKeyResponseCode: "BusinessReject"})
+		require.NoError(t, st.Calculate())
+		err := rules.Validate(st)
+		assert.ErrorContains(t, err, "must agree with the status key")
+	})
+
+	t.Run("customer without a legal identity source fails (F-APR040)", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Customer.TaxID = &tax.Identity{Country: "DE", Code: "111111125"}
+		st.Customer.Identities = nil
+		require.NoError(t, st.Calculate())
+		err := rules.Validate(st)
+		assert.ErrorContains(t, err, "F-APR040")
+	})
+
+	t.Run("customer with a legal identity and no tax ID passes (F-APR040)", func(t *testing.T) {
+		st := testStatusResponse(t)
+		st.Customer.TaxID = nil
+		st.Customer.Identities = []*org.Identity{{Scope: org.IdentityScopeLegal, Code: "5798009883735"}}
+		// No tax ID means no derived endpoint, so name an OIOUBL one directly.
+		st.Customer.Endpoints = []*org.Endpoint{{URI: "GLN:5798009883735"}}
+		require.NoError(t, st.Calculate())
+		assert.NoError(t, rules.Validate(st))
 	})
 
 	t.Run("non-response status skips F-APR rules", func(t *testing.T) {
