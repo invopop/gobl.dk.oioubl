@@ -133,6 +133,10 @@ func normalizeEndpoints(p *org.Party) {
 		if register == SchemeDKCVR || register == SchemeDKSE {
 			code = cbc.Code(strings.TrimPrefix(code.String(), "DK"))
 		}
+		if code == cbc.CodeEmpty {
+			// Only the prefix was given; leave it for validation to refuse.
+			continue
+		}
 		ep.URI = OIOUBLEndpointURI(register, code)
 	}
 }

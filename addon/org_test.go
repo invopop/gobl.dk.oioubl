@@ -97,6 +97,17 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		}
 	})
 
+	// A code that is only the prefix is left alone rather than rewritten to
+	// an empty one that nothing would recognise.
+	t.Run("a prefix-only code is not rewritten", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Supplier.Inboxes = nil
+		inv.Supplier.Endpoints = []*org.Endpoint{{URI: "DK:CVR:DK"}}
+		require.NoError(t, inv.Calculate())
+		require.Len(t, inv.Supplier.Endpoints, 1)
+		assert.Equal(t, "DK:CVR:DK", inv.Supplier.Endpoints[0].URI.String())
+	})
+
 	// No other register has a prefix convention, so nothing is invented for
 	// GLN or CPR: the code is kept exactly as given.
 	t.Run("other registers keep the code they were given", func(t *testing.T) {
