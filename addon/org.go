@@ -7,9 +7,38 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// OIOUBLEndpointURI joins a scheme and code with a colon (e.g. "DK:CVR:12345674").
-func OIOUBLEndpointURI(scheme, code cbc.Code) cbc.URI {
-	return cbc.URI(scheme + ":" + code)
+// EndpointScheme names the NemHandel network, the way "iso6523-actorid-upis"
+// names Peppol's. It is what makes an endpoint findable as a network address:
+// the register that follows ("DK:CVR", "GLN") says how the party is numbered,
+// not where it can be reached.
+const EndpointScheme = "nemhandel"
+
+// OIOUBLEndpointURI builds the endpoint URI for a register and code, e.g.
+// "nemhandel:DK:CVR:12345674".
+func OIOUBLEndpointURI(register, code cbc.Code) cbc.URI {
+	return cbc.URI(EndpointScheme + ":" + register.String() + ":" + code.String())
+}
+
+// SplitEndpointURI pulls the register and code out of a NemHandel endpoint URI,
+// and ok=false for an endpoint on any other network.
+//
+// The bare "DK:CVR:12345674" form is still read: it is what this addon wrote
+// before the network scheme existed, so documents stored then must keep
+// converting. normalizeEndpoints rewrites it on the way through.
+func SplitEndpointURI(uri cbc.URI) (register, code cbc.Code, ok bool) {
+	addr := uri.String()
+	if uri.Scheme() == EndpointScheme {
+		addr = uri.Opaque()
+	}
+	i := strings.LastIndex(addr, ":")
+	if i <= 0 || i == len(addr)-1 {
+		return "", "", false
+	}
+	register = cbc.Code(addr[:i])
+	if !endpointSchemes[register] {
+		return "", "", false
+	}
+	return register, cbc.Code(addr[i+1:]), true
 }
 
 // endpointSchemes lists the registers an OIOUBL EndpointID may name
@@ -31,11 +60,10 @@ var endpointSchemes = map[cbc.Code]bool{
 	"SI:VAT": true, "SK:VAT": true, "SM:VAT": true, "TR:VAT": true, "VA:VAT": true,
 }
 
-// OIOUBLEndpoint returns the party's first endpoint whose URI ("scheme:code")
-// names a register OIOUBL accepts (F-LIB179), or nil when it has none. A party
-// may also carry endpoints for other networks (e.g. Peppol's
-// iso6523-actorid-upis, added by the en16931 addon); those are not errors,
-// they are just not usable here.
+// OIOUBLEndpoint returns the party's first NemHandel endpoint naming a register
+// OIOUBL accepts (F-LIB179), or nil when it has none. A party may also carry
+// endpoints for other networks (e.g. Peppol's iso6523-actorid-upis, added by
+// the en16931 addon); those are not errors, they are just not usable here.
 func OIOUBLEndpoint(p *org.Party) *org.Endpoint {
 	if p == nil {
 		return nil
@@ -48,8 +76,7 @@ func oioublEndpoint(eps []*org.Endpoint) *org.Endpoint {
 		if ep == nil {
 			continue
 		}
-		uri := ep.URI.String()
-		if i := strings.LastIndex(uri, ":"); i > 0 && endpointSchemes[cbc.Code(uri[:i])] {
+		if _, _, ok := SplitEndpointURI(ep.URI); ok {
 			return ep
 		}
 	}
@@ -70,6 +97,8 @@ func partyHasOIOUBLEndpoint(val any) bool {
 // omit. An endpoint for another network (e.g. Peppol) does not count as
 // having one: OIOUBL needs its own.
 func normalizeParty(p *org.Party) {
+	normalizeEndpoints(p)
+
 	if OIOUBLEndpoint(p) == nil {
 		migrateInboxesToEndpoints(p)
 	}
@@ -93,6 +122,20 @@ func normalizeParty(p *org.Party) {
 			Scope: org.IdentityScopeLegal,
 			Code:  p.TaxID.Code,
 		})
+	}
+}
+
+// normalizeEndpoints rewrites the bare "DK:CVR:12345674" endpoints this addon
+// wrote before the network scheme existed into the "nemhandel:" form, so a
+// document converges on one spelling as it passes through.
+func normalizeEndpoints(p *org.Party) {
+	for _, ep := range p.Endpoints {
+		if ep == nil || ep.URI.Scheme() == EndpointScheme {
+			continue
+		}
+		if register, code, ok := SplitEndpointURI(ep.URI); ok {
+			ep.URI = OIOUBLEndpointURI(register, code)
+		}
 	}
 }
 

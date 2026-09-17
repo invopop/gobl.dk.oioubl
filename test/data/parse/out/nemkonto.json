@@ -32,7 +32,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "DK:CVR:10000009"
+				"uri": "nemhandel:DK:CVR:10000009"
 			}
 		],
 		"addresses": [
@@ -74,7 +74,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "DK:CVR:10000017"
+				"uri": "nemhandel:DK:CVR:10000017"
 			}
 		],
 		"addresses": [

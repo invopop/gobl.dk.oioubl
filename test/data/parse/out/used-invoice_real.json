@@ -51,7 +51,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "DK:CVR:16356700"
+				"uri": "nemhandel:DK:CVR:16356700"
 			}
 		],
 		"addresses": [
@@ -109,7 +109,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "GLN:5798000416604"
+				"uri": "nemhandel:GLN:5798000416604"
 			}
 		],
 		"addresses": [
@@ -269,7 +269,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "GLN:5798000416605"
+					"uri": "nemhandel:GLN:5798000416605"
 				}
 			],
 			"addresses": [

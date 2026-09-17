@@ -7,7 +7,6 @@ import (
 	"github.com/invopop/gobl.dk.oioubl/addon"
 	ubl "github.com/invopop/gobl.ubl"
 	"github.com/invopop/gobl/bill"
-	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 )
 
@@ -95,24 +94,16 @@ func setPartyEndpoint(p *ubl.Party, party *org.Party) {
 	if ep == nil {
 		return
 	}
-	scheme, value, ok := splitEndpointURI(ep.URI.String())
+	register, value, ok := addon.SplitEndpointURI(ep.URI)
 	if !ok {
 		return
 	}
 	code := value.String()
-	if scheme.String() == schemeDKCVR {
+	if register.String() == schemeDKCVR {
 		// OIOUBL CVR endpoints must carry the DK-prefixed form (F-LIB180).
 		code = dkPrefixed(code)
 	}
-	p.EndpointID = &ubl.EndpointID{SchemeID: scheme.String(), Value: code}
-}
-
-func splitEndpointURI(uri string) (scheme, code cbc.Code, ok bool) {
-	i := strings.LastIndex(uri, ":")
-	if i <= 0 || i == len(uri)-1 {
-		return "", "", false
-	}
-	return cbc.Code(uri[:i]), cbc.Code(uri[i+1:]), true
+	p.EndpointID = &ubl.EndpointID{SchemeID: register.String(), Value: code}
 }
 
 // dkPrefixed adds the "DK" prefix OIOUBL mandates on CVR and SE values, if absent

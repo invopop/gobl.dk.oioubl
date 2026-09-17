@@ -70,7 +70,7 @@ func TestStatusValidation(t *testing.T) {
 		require.NoError(t, rules.Validate(st))
 		ep := oioubl.OIOUBLEndpoint(st.Supplier)
 		require.NotNil(t, ep)
-		assert.Equal(t, "DK:CVR:88146328", ep.URI.String())
+		assert.Equal(t, "nemhandel:DK:CVR:88146328", ep.URI.String())
 		assert.Len(t, st.Supplier.Endpoints, 2, "the Peppol endpoint stays alongside")
 	})
 

@@ -60,9 +60,47 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		inv.Payment = bankPayment()
 		require.NoError(t, inv.Calculate())
 		require.Len(t, inv.Supplier.Endpoints, 1)
-		assert.Equal(t, "DK:CVR:12345674", inv.Supplier.Endpoints[0].URI.String())
+		assert.Equal(t, "nemhandel:DK:CVR:12345674", inv.Supplier.Endpoints[0].URI.String())
 		assert.Empty(t, inv.Supplier.Inboxes, "no Peppol endpoint URI is fabricated; the deprecated inbox is not used")
 		require.NoError(t, rules.Validate(inv), "a bare DK party should validate via the derived participant")
+	})
+
+	// Documents stored before the network scheme existed carry the bare form.
+	// They still convert, and normalizing brings them onto the current spelling
+	// rather than leaving two ways of saying the same address in circulation.
+	t.Run("a bare endpoint is rewritten onto the network scheme", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Supplier.Inboxes = nil
+		inv.Supplier.Endpoints = []*org.Endpoint{{URI: "DK:SE:12345678"}}
+		require.NoError(t, inv.Calculate())
+		require.Len(t, inv.Supplier.Endpoints, 1, "no second endpoint is derived from the tax ID")
+		assert.Equal(t, "nemhandel:DK:SE:12345678", inv.Supplier.Endpoints[0].URI.String())
+	})
+
+	// Apps keep their own shorthand for a participant — gov-dk stores
+	// "cvr:33070691" — and that is not a register OIOUBL knows. It cannot be
+	// accepted here even as a convenience: "se:12345678" would be ambiguous
+	// between DK:SE and SE:ORGNR. Callers spell the register out.
+	t.Run("an app's internal shorthand is not a register", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Supplier.Inboxes = nil
+		inv.Supplier.Endpoints = []*org.Endpoint{{URI: "cvr:12345674"}}
+		require.NoError(t, inv.Calculate())
+		assert.Equal(t, "cvr:12345674", inv.Supplier.Endpoints[0].URI.String(),
+			"left untouched: it names no network we recognise")
+		require.Len(t, inv.Supplier.Endpoints, 2, "so a Danish endpoint is still derived")
+		assert.Equal(t, "nemhandel:DK:CVR:12345674", inv.Supplier.Endpoints[1].URI.String())
+	})
+
+	// A party may sit on both networks. Rewriting must not touch the Peppol one.
+	t.Run("an endpoint on another network is left alone", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Supplier.Inboxes = nil
+		inv.Supplier.Endpoints = []*org.Endpoint{{URI: "iso6523-actorid-upis::0184:12345674"}}
+		require.NoError(t, inv.Calculate())
+		require.Len(t, inv.Supplier.Endpoints, 2, "a Danish one is derived alongside")
+		assert.Equal(t, "iso6523-actorid-upis::0184:12345674", inv.Supplier.Endpoints[0].URI.String())
+		assert.Equal(t, "nemhandel:DK:CVR:12345674", inv.Supplier.Endpoints[1].URI.String())
 	})
 
 	t.Run("an explicit inbox is migrated to an endpoint", func(t *testing.T) {
@@ -72,7 +110,7 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		require.NoError(t, inv.Calculate())
 		assert.Empty(t, inv.Supplier.Inboxes, "the deprecated inbox is migrated away")
 		require.Len(t, inv.Supplier.Endpoints, 1, "the inbox becomes the participant endpoint")
-		assert.Equal(t, "DK:SE:12345678", inv.Supplier.Endpoints[0].URI.String(),
+		assert.Equal(t, "nemhandel:DK:SE:12345678", inv.Supplier.Endpoints[0].URI.String(),
 			"an explicit DK:SE participant wins over the derived CVR")
 	})
 
