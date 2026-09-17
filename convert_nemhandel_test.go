@@ -17,10 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestConvertNemHandelEndpointURI pins the endpoint URI form end to end: a
-// party addressed on the NemHandel network reaches the wire as the register
-// and code OIOUBL wants, with the DK prefix OIOUBL spells CVR and SE numbers
-// with (F-LIB180 for CVR).
+// TestConvertNemHandelEndpointURI pins the endpoint URI end to end: the
+// cbc:EndpointID carries OIOUBL's register and a DK-prefixed CVR or SE code.
 func TestConvertNemHandelEndpointURI(t *testing.T) {
 	for _, tt := range []struct {
 		given, stored, scheme, value string

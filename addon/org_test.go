@@ -67,9 +67,8 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		require.NoError(t, rules.Validate(inv), "a bare DK party should validate via the derived participant")
 	})
 
-	// Documents stored before the network scheme existed carry the bare form.
-	// They still convert, and normalizing brings them onto the current spelling
-	// rather than leaving two ways of saying the same address in circulation.
+	// Documents stored before the network scheme existed still read, and
+	// normalizing settles them on the current spelling.
 	t.Run("a bare endpoint is rewritten onto the network scheme", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Inboxes = nil
@@ -79,9 +78,8 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		assert.Equal(t, "nemhandel:dk:se:12345678", inv.Supplier.Endpoints[0].URI.String())
 	})
 
-	// OIOUBL spells CVR and SE numbers with a DK prefix on the wire (F-LIB180
-	// for CVR), and the converter adds it itself. Carrying it in the stored URI
-	// as well means one address has two spellings, so it is stripped on the way in.
+	// The converter adds the DK prefix in the XML (F-LIB180 for CVR), so the
+	// stored code does without it and one address has one spelling.
 	t.Run("a CVR or SE endpoint is stored without the DK prefix", func(t *testing.T) {
 		for given, want := range map[string]string{
 			"DK:CVR:12345674":             "nemhandel:dk:cvr:12345674",
@@ -115,8 +113,7 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		}
 	})
 
-	// The register means the same thing in any case, so one spelling is kept:
-	// OIOUBL's own, which is also what goes on the wire.
+	// The register means the same thing in any case, so one spelling is kept.
 	t.Run("a register is read regardless of case", func(t *testing.T) {
 		for _, given := range []string{
 			"nemhandel:dk:cvr:12345674",
@@ -133,10 +130,8 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		}
 	})
 
-	// Apps keep their own shorthand for a participant — gov-dk stores
-	// "cvr:33070691" — and that is not a register OIOUBL knows. It cannot be
-	// accepted here even as a convenience: "se:12345678" would be ambiguous
-	// between DK:SE and SE:ORGNR. Callers spell the register out.
+	// A shorthand like "cvr:12345674" names no register OIOUBL knows, and
+	// "se:12345678" would be ambiguous between DK:SE and SE:ORGNR.
 	t.Run("an app's internal shorthand is not a register", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Inboxes = nil
@@ -159,8 +154,7 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		assert.Equal(t, "nemhandel:dk:cvr:12345674", inv.Supplier.Endpoints[1].URI.String())
 	})
 
-	// An inbox is settled like an endpoint that arrived as one: a CVR code
-	// carrying the wire's DK prefix loses it on the way through.
+	// An inbox is settled like an endpoint that arrived as one.
 	t.Run("a migrated inbox is normalized too", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Endpoints = nil

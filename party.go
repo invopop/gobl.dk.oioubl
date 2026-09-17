@@ -85,13 +85,11 @@ func addContactID(p *ubl.Party, party *org.Party) {
 	p.Contact.ID = ptr(code)
 }
 
-// setPartyEndpoint replaces the base's EndpointID with the OIOUBL endpoint URI,
-// DK-prefixing a CVR value as F-LIB180 requires. No endpoint rule covers SE;
-// it is prefixed the way SE company IDs are (F-LIB184, F-LIB196), so one party
-// spells its number one way.
+// setPartyEndpoint writes the party's NemHandel endpoint as cbc:EndpointID,
+// prefixing a CVR or SE value with "DK" (F-LIB180 for CVR; SE follows its
+// company-ID rules F-LIB184 and F-LIB196).
 func setPartyEndpoint(p *ubl.Party, party *org.Party) {
-	// The party may also carry endpoints for other networks (e.g. Peppol);
-	// only one naming a register OIOUBL accepts may go on the wire (F-LIB179).
+	// Only an endpoint naming a register OIOUBL accepts may be written (F-LIB179).
 	ep := addon.OIOUBLEndpoint(party)
 	if ep == nil {
 		return

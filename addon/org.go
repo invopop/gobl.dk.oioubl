@@ -7,26 +7,19 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// EndpointScheme names the NemHandel network, the way "iso6523-actorid-upis"
-// names Peppol's. It is what makes an endpoint findable as a network address:
-// the register that follows ("DK:CVR", "GLN") says how the party is numbered,
-// not where it can be reached.
+// EndpointScheme is the URI scheme of a NemHandel endpoint, the way
+// "iso6523-actorid-upis" is Peppol's.
 const EndpointScheme = "nemhandel"
 
-// OIOUBLEndpointURI builds the endpoint URI for a register and code, e.g.
-// "nemhandel:dk:cvr:12345674". The register is lowercase, as URIs are; the
-// converter spells it OIOUBL's way on the wire. The code is kept as given.
+// OIOUBLEndpointURI builds a NemHandel endpoint URI such as
+// "nemhandel:dk:cvr:12345674": the register lowercased, the code as given.
 func OIOUBLEndpointURI(register, code cbc.Code) cbc.URI {
 	return cbc.URI(EndpointScheme + ":" + strings.ToLower(register.String()) + ":" + code.String())
 }
 
-// SplitEndpointURI pulls the register and code out of a NemHandel endpoint URI,
-// and ok=false for an endpoint on any other network. The register is read
-// regardless of case and returned as OIOUBL spells it.
-//
-// The bare "DK:CVR:12345674" form is still read: it is what this addon wrote
-// before the network scheme existed, so documents stored then must keep
-// converting. normalizeEndpoints rewrites it on the way through.
+// SplitEndpointURI returns the register, as OIOUBL spells it, and the code of
+// a NemHandel endpoint URI; ok is false for any other network. The earlier
+// scheme-less "DK:CVR:12345674" form is still read.
 func SplitEndpointURI(uri cbc.URI) (register, code cbc.Code, ok bool) {
 	addr := uri.String()
 	if uri.Scheme() == EndpointScheme {
@@ -63,9 +56,8 @@ var endpointSchemes = map[cbc.Code]bool{
 }
 
 // OIOUBLEndpoint returns the party's first NemHandel endpoint naming a register
-// OIOUBL accepts (F-LIB179), or nil when it has none. A party may also carry
-// endpoints for other networks (e.g. Peppol's iso6523-actorid-upis, added by
-// the en16931 addon); those are not errors, they are just not usable here.
+// OIOUBL accepts (F-LIB179), or nil when it has none; endpoints for other
+// networks, such as Peppol's, are left alone.
 func OIOUBLEndpoint(p *org.Party) *org.Endpoint {
 	if p == nil {
 		return nil
@@ -102,8 +94,6 @@ func normalizeParty(p *org.Party) {
 	if OIOUBLEndpoint(p) == nil {
 		migrateInboxesToEndpoints(p)
 	}
-	// After migrating, so an inbox's code is settled the same way as one that
-	// arrived as an endpoint.
 	normalizeEndpoints(p)
 
 	// Only a Danish tax ID gives us anything to derive from.
@@ -128,11 +118,9 @@ func normalizeParty(p *org.Party) {
 	}
 }
 
-// normalizeEndpoints settles a NemHandel endpoint on one spelling: the
-// "nemhandel:" scheme this addon now writes, and a CVR or SE code without the
-// "DK" prefix. The prefix belongs to the wire, where OIOUBL spells both numbers
-// with it and the converter adds it; carrying it here too would give one
-// address two spellings. Other registers' codes are left exactly as given.
+// normalizeEndpoints rewrites each NemHandel endpoint onto the "nemhandel:"
+// scheme and strips the "DK" prefix from a CVR or SE code, which the converter
+// adds back in the XML; other registers' codes are kept as given.
 func normalizeEndpoints(p *org.Party) {
 	for _, ep := range p.Endpoints {
 		if ep == nil {
