@@ -9,6 +9,7 @@ import (
 	"github.com/invopop/gobl/addons/eu/en16931"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/tax"
@@ -18,8 +19,37 @@ import (
 
 // TestConvertNemHandelEndpointURI pins the endpoint URI form end to end: a
 // party addressed on the NemHandel network reaches the wire as the register
-// and code OIOUBL wants, with the DK prefix F-LIB180 requires on a CVR.
+// and code OIOUBL wants, with the DK prefix OIOUBL spells CVR and SE numbers
+// with (F-LIB180 for CVR).
 func TestConvertNemHandelEndpointURI(t *testing.T) {
+	for _, tt := range []struct {
+		given, stored, scheme, value string
+	}{
+		{"nemhandel:DK:CVR:88146328", "nemhandel:dk:cvr:88146328", "DK:CVR", "DK88146328"},
+		{"DK:SE:DK88146328", "nemhandel:dk:se:88146328", "DK:SE", "DK88146328"},
+	} {
+		t.Run(tt.given, func(t *testing.T) {
+			env := envelopeWithCustomerEndpoint(t, tt.given)
+
+			// Normalizing must not derive a second endpoint from the tax ID: the
+			// party already says where it is addressed.
+			out := env.Extract().(*bill.Invoice)
+			require.Len(t, out.Customer.Endpoints, 1)
+			assert.Equal(t, tt.stored, out.Customer.Endpoints[0].URI.String())
+
+			doc, err := oioubl.ConvertInvoice(env)
+			require.NoError(t, err)
+
+			ep := doc.AccountingCustomerParty.Party.EndpointID
+			require.NotNil(t, ep)
+			assert.Equal(t, tt.scheme, ep.SchemeID)
+			assert.Equal(t, tt.value, ep.Value)
+		})
+	}
+}
+
+func envelopeWithCustomerEndpoint(t *testing.T, uri string) *gobl.Envelope {
+	t.Helper()
 	inv := &bill.Invoice{
 		Regime:    tax.WithRegime("DK"),
 		Addons:    tax.WithAddons(en16931.V2017, addon.V2),
@@ -36,7 +66,7 @@ func TestConvertNemHandelEndpointURI(t *testing.T) {
 		Customer: &org.Party{
 			Name:      "Kunde ApS",
 			TaxID:     &tax.Identity{Country: "DK", Code: "88146328"},
-			Endpoints: []*org.Endpoint{{URI: "nemhandel:DK:CVR:88146328"}},
+			Endpoints: []*org.Endpoint{{URI: cbc.URI(uri)}},
 			Addresses: []*org.Address{{Street: "Fredericiavej", Locality: "Helsingør", Code: "3000", Country: "DK"}},
 		},
 		Lines: []*bill.Line{{
@@ -47,18 +77,5 @@ func TestConvertNemHandelEndpointURI(t *testing.T) {
 	}
 	env, err := gobl.Envelop(inv)
 	require.NoError(t, err)
-
-	// Normalizing must not derive a second endpoint from the tax ID: the party
-	// already says where it is addressed.
-	out := env.Extract().(*bill.Invoice)
-	require.Len(t, out.Customer.Endpoints, 1)
-	assert.Equal(t, "nemhandel:dk:cvr:88146328", out.Customer.Endpoints[0].URI.String())
-
-	doc, err := oioubl.ConvertInvoice(env)
-	require.NoError(t, err)
-
-	ep := doc.AccountingCustomerParty.Party.EndpointID
-	require.NotNil(t, ep)
-	assert.Equal(t, "DK:CVR", ep.SchemeID)
-	assert.Equal(t, "DK88146328", ep.Value)
+	return env
 }

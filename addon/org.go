@@ -129,12 +129,10 @@ func normalizeParty(p *org.Party) {
 }
 
 // normalizeEndpoints settles a NemHandel endpoint on one spelling: the
-// "nemhandel:" scheme this addon now writes, and a CVR code without the "DK"
-// prefix. The prefix belongs to the wire, where F-LIB180 asks for it and the
-// converter adds it; carrying it here too would give one address two spellings.
-//
-// Only CVR is touched. No comparable rule is recorded for the other registers,
-// so their codes are left exactly as given rather than guessed at.
+// "nemhandel:" scheme this addon now writes, and a CVR or SE code without the
+// "DK" prefix. The prefix belongs to the wire, where OIOUBL spells both numbers
+// with it and the converter adds it; carrying it here too would give one
+// address two spellings. Other registers' codes are left exactly as given.
 func normalizeEndpoints(p *org.Party) {
 	for _, ep := range p.Endpoints {
 		if ep == nil {
@@ -144,7 +142,7 @@ func normalizeEndpoints(p *org.Party) {
 		if !ok {
 			continue
 		}
-		if register == SchemeDKCVR {
+		if register == SchemeDKCVR || register == SchemeDKSE {
 			code = cbc.Code(strings.TrimPrefix(code.String(), "DK"))
 		}
 		ep.URI = OIOUBLEndpointURI(register, code)

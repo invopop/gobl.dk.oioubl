@@ -79,32 +79,32 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		assert.Equal(t, "nemhandel:dk:se:12345678", inv.Supplier.Endpoints[0].URI.String())
 	})
 
-	// F-LIB180 wants a CVR endpoint on the wire as "DK12345674", and the
-	// converter adds that prefix itself. Carrying it in the stored URI as well
-	// means one address has two spellings, so it is stripped on the way in.
-	t.Run("a CVR endpoint is stored without the DK prefix", func(t *testing.T) {
-		for _, given := range []string{
-			"DK:CVR:12345674",
-			"DK:CVR:DK12345674",
-			"nemhandel:DK:CVR:DK12345674",
+	// OIOUBL spells CVR and SE numbers with a DK prefix on the wire (F-LIB180
+	// for CVR), and the converter adds it itself. Carrying it in the stored URI
+	// as well means one address has two spellings, so it is stripped on the way in.
+	t.Run("a CVR or SE endpoint is stored without the DK prefix", func(t *testing.T) {
+		for given, want := range map[string]string{
+			"DK:CVR:12345674":             "nemhandel:dk:cvr:12345674",
+			"DK:CVR:DK12345674":           "nemhandel:dk:cvr:12345674",
+			"nemhandel:DK:CVR:DK12345674": "nemhandel:dk:cvr:12345674",
+			"DK:SE:12345678":              "nemhandel:dk:se:12345678",
+			"DK:SE:DK12345678":            "nemhandel:dk:se:12345678",
 		} {
 			inv := testInvoiceStandard(t)
 			inv.Supplier.Inboxes = nil
 			inv.Supplier.Endpoints = []*org.Endpoint{{URI: cbc.URI(given)}}
 			require.NoError(t, inv.Calculate())
 			require.Len(t, inv.Supplier.Endpoints, 1)
-			assert.Equal(t, "nemhandel:dk:cvr:12345674", inv.Supplier.Endpoints[0].URI.String(),
-				"given %q", given)
+			assert.Equal(t, want, inv.Supplier.Endpoints[0].URI.String(), "given %q", given)
 		}
 	})
 
-	// Only CVR has a documented prefix rule (F-LIB180). Every other register
-	// is left exactly as given, so nothing is invented for SE, GLN or CPR.
+	// No other register has a prefix convention, so nothing is invented for
+	// GLN or CPR: the code is kept exactly as given.
 	t.Run("other registers keep the code they were given", func(t *testing.T) {
 		for given, want := range map[string]string{
-			"DK:SE:12345678":    "nemhandel:dk:se:12345678",
-			"DK:SE:DK12345678":  "nemhandel:dk:se:DK12345678",
 			"GLN:5798009883735": "nemhandel:gln:5798009883735",
+			"DK:CPR:1111111118": "nemhandel:dk:cpr:1111111118",
 		} {
 			inv := testInvoiceStandard(t)
 			inv.Supplier.Inboxes = nil

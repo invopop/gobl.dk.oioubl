@@ -14,7 +14,7 @@ import (
 // endpoint scheme is shared with the addon's own endpoint derivation.
 const (
 	schemeDKCVR = string(addon.SchemeDKCVR)
-	schemeDKSE  = "DK:SE"
+	schemeDKSE  = string(addon.SchemeDKSE)
 	schemeDKCPR = "DK:CPR"
 	schemeZZZ   = "ZZZ"
 )
@@ -86,7 +86,9 @@ func addContactID(p *ubl.Party, party *org.Party) {
 }
 
 // setPartyEndpoint replaces the base's EndpointID with the OIOUBL endpoint URI,
-// DK-prefixing a CVR value as F-LIB180 requires.
+// DK-prefixing a CVR value as F-LIB180 requires. No endpoint rule covers SE;
+// it is prefixed the way SE company IDs are (F-LIB184, F-LIB196), so one party
+// spells its number one way.
 func setPartyEndpoint(p *ubl.Party, party *org.Party) {
 	// The party may also carry endpoints for other networks (e.g. Peppol);
 	// only one naming a register OIOUBL accepts may go on the wire (F-LIB179).
@@ -99,8 +101,7 @@ func setPartyEndpoint(p *ubl.Party, party *org.Party) {
 		return
 	}
 	code := value.String()
-	if register.String() == schemeDKCVR {
-		// OIOUBL CVR endpoints must carry the DK-prefixed form (F-LIB180).
+	if s := register.String(); s == schemeDKCVR || s == schemeDKSE {
 		code = dkPrefixed(code)
 	}
 	p.EndpointID = &ubl.EndpointID{SchemeID: register.String(), Value: code}
