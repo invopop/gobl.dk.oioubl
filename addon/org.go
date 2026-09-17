@@ -14,13 +14,15 @@ import (
 const EndpointScheme = "nemhandel"
 
 // OIOUBLEndpointURI builds the endpoint URI for a register and code, e.g.
-// "nemhandel:DK:CVR:12345674".
+// "nemhandel:dk:cvr:12345674". The register is lowercase, as URIs are; the
+// converter spells it OIOUBL's way on the wire. The code is kept as given.
 func OIOUBLEndpointURI(register, code cbc.Code) cbc.URI {
-	return cbc.URI(EndpointScheme + ":" + register.String() + ":" + code.String())
+	return cbc.URI(EndpointScheme + ":" + strings.ToLower(register.String()) + ":" + code.String())
 }
 
 // SplitEndpointURI pulls the register and code out of a NemHandel endpoint URI,
-// and ok=false for an endpoint on any other network.
+// and ok=false for an endpoint on any other network. The register is read
+// regardless of case and returned as OIOUBL spells it.
 //
 // The bare "DK:CVR:12345674" form is still read: it is what this addon wrote
 // before the network scheme existed, so documents stored then must keep
@@ -34,7 +36,7 @@ func SplitEndpointURI(uri cbc.URI) (register, code cbc.Code, ok bool) {
 	if i <= 0 || i == len(addr)-1 {
 		return "", "", false
 	}
-	register = cbc.Code(addr[:i])
+	register = cbc.Code(strings.ToUpper(addr[:i]))
 	if !endpointSchemes[register] {
 		return "", "", false
 	}
@@ -97,11 +99,12 @@ func partyHasOIOUBLEndpoint(val any) bool {
 // omit. An endpoint for another network (e.g. Peppol) does not count as
 // having one: OIOUBL needs its own.
 func normalizeParty(p *org.Party) {
-	normalizeEndpoints(p)
-
 	if OIOUBLEndpoint(p) == nil {
 		migrateInboxesToEndpoints(p)
 	}
+	// After migrating, so an inbox's code is settled the same way as one that
+	// arrived as an endpoint.
+	normalizeEndpoints(p)
 
 	// Only a Danish tax ID gives us anything to derive from.
 	if p.TaxID == nil || p.TaxID.Country != "DK" || p.TaxID.Code == cbc.CodeEmpty {
@@ -125,17 +128,26 @@ func normalizeParty(p *org.Party) {
 	}
 }
 
-// normalizeEndpoints rewrites the bare "DK:CVR:12345674" endpoints this addon
-// wrote before the network scheme existed into the "nemhandel:" form, so a
-// document converges on one spelling as it passes through.
+// normalizeEndpoints settles a NemHandel endpoint on one spelling: the
+// "nemhandel:" scheme this addon now writes, and a CVR code without the "DK"
+// prefix. The prefix belongs to the wire, where F-LIB180 asks for it and the
+// converter adds it; carrying it here too would give one address two spellings.
+//
+// Only CVR is touched. No comparable rule is recorded for the other registers,
+// so their codes are left exactly as given rather than guessed at.
 func normalizeEndpoints(p *org.Party) {
 	for _, ep := range p.Endpoints {
-		if ep == nil || ep.URI.Scheme() == EndpointScheme {
+		if ep == nil {
 			continue
 		}
-		if register, code, ok := SplitEndpointURI(ep.URI); ok {
-			ep.URI = OIOUBLEndpointURI(register, code)
+		register, code, ok := SplitEndpointURI(ep.URI)
+		if !ok {
+			continue
 		}
+		if register == SchemeDKCVR {
+			code = cbc.Code(strings.TrimPrefix(code.String(), "DK"))
+		}
+		ep.URI = OIOUBLEndpointURI(register, code)
 	}
 }
 

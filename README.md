@@ -39,10 +39,12 @@ Both target the OIOUBL 2.1 profile, schematron v1.17.2.
   account, the 4-digit registration number a domestic transfer needs), and
   NemKonto rejects account details outright, since it resolves the payee's
   registered account.
-- **Participants** — parties are routed by OIOUBL endpoints, whose URI carries
-  the symbolic scheme (`DK:CVR:12345674`, and likewise `DK:SE`, `GLN`). A Danish
-  party carrying only a tax identity derives its `DK:CVR` endpoint
-  automatically; explicit endpoints or inboxes always win.
+- **Participants** — parties are routed by their NemHandel endpoint, a URI
+  naming the network, the OIOUBL register and the code
+  (`nemhandel:dk:cvr:12345674`, and likewise `dk:se`, `gln`). The earlier
+  `DK:CVR:12345674` spelling is still read. A Danish party carrying only a tax
+  identity derives its CVR endpoint automatically; explicit endpoints or
+  inboxes always win.
 - **Invoice / credit note** — the document type must be an OIOUBL-supported code
   (325/380/393, or 381 for a credit note), the customer must resolve to an
   endpoint for NemHandel to route to, every line needs a VAT category and a
@@ -82,7 +84,7 @@ supplier:
     country: "DK"
     code: "12345674"
   # endpoints may be omitted: the addon derives
-  # DK:CVR:12345674 from the tax identity.
+  # nemhandel:dk:cvr:12345674 from the tax identity.
 ```
 
 See [`examples/`](examples/) for complete invoice and credit note documents with

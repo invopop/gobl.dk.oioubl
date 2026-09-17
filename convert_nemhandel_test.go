@@ -52,7 +52,7 @@ func TestConvertNemHandelEndpointURI(t *testing.T) {
 	// already says where it is addressed.
 	out := env.Extract().(*bill.Invoice)
 	require.Len(t, out.Customer.Endpoints, 1)
-	assert.Equal(t, "nemhandel:DK:CVR:88146328", out.Customer.Endpoints[0].URI.String())
+	assert.Equal(t, "nemhandel:dk:cvr:88146328", out.Customer.Endpoints[0].URI.String())
 
 	doc, err := oioubl.ConvertInvoice(env)
 	require.NoError(t, err)
