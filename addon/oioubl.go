@@ -19,12 +19,12 @@ const (
 
 	V2 cbc.Key = Key + "-v2"
 
-	// SchemeDKCVR is the OIOUBL EndpointID scheme for a Danish CVR number, used
-	// when deriving a participant endpoint from a Danish tax ID.
-	SchemeDKCVR cbc.Code = "DK:CVR"
+	// RegisterDKCVR is the OIOUBL register (the schemeID on cbc:EndpointID) of a
+	// Danish CVR number, the one derived from a Danish tax ID.
+	RegisterDKCVR cbc.Code = "DK:CVR"
 
-	// SchemeDKSE is the OIOUBL EndpointID scheme for a Danish SE number.
-	SchemeDKSE cbc.Code = "DK:SE"
+	// RegisterDKSE is the OIOUBL register of a Danish SE number.
+	RegisterDKSE cbc.Code = "DK:SE"
 )
 
 func init() {

@@ -30,15 +30,15 @@ func SplitEndpointURI(uri cbc.URI) (register, code cbc.Code, ok bool) {
 		return "", "", false
 	}
 	register = cbc.Code(strings.ToUpper(addr[:i]))
-	if !endpointSchemes[register] {
+	if !registers[register] {
 		return "", "", false
 	}
 	return register, cbc.Code(addr[i+1:]), true
 }
 
-// endpointSchemes lists the registers an OIOUBL EndpointID may name
+// registers lists the registers an OIOUBL EndpointID may name
 // (F-LIB179, schematron 1.17.2; invoices and responses share the list).
-var endpointSchemes = map[cbc.Code]bool{
+var registers = map[cbc.Code]bool{
 	"GLN": true, "DUNS": true, "IBAN": true,
 	"DK:P": true, "DK:CVR": true, "DK:CPR": true, "DK:SE": true, "DK:VANS": true,
 	"FR:SIRET": true, "SE:ORGNR": true, "FI:OVT": true, "FI:ORGNR": true,
@@ -105,7 +105,7 @@ func normalizeParty(p *org.Party) {
 	// are kept alongside the derived one.
 	if OIOUBLEndpoint(p) == nil {
 		p.Endpoints = append(p.Endpoints, &org.Endpoint{
-			URI: OIOUBLEndpointURI(SchemeDKCVR, p.TaxID.Code),
+			URI: OIOUBLEndpointURI(RegisterDKCVR, p.TaxID.Code),
 		})
 	}
 
@@ -130,7 +130,7 @@ func normalizeEndpoints(p *org.Party) {
 		if !ok {
 			continue
 		}
-		if register == SchemeDKCVR || register == SchemeDKSE {
+		if register == RegisterDKCVR || register == RegisterDKSE {
 			code = cbc.Code(strings.TrimPrefix(code.String(), "DK"))
 		}
 		if code == cbc.CodeEmpty {
