@@ -1,6 +1,7 @@
 package addon
 
 import (
+	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 )
@@ -87,7 +88,7 @@ func migrateInboxesToEndpoints(p *org.Party) {
 // participant identifier, whatever register it names.
 func hasParticipantEndpoint(p *org.Party) bool {
 	for _, ep := range p.Endpoints {
-		if ep != nil && ep.URI.Scheme() == EndpointScheme {
+		if ep != nil && ep.URI.Scheme() == iso.ActorIDScheme {
 			return true
 		}
 	}

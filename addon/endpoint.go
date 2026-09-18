@@ -9,17 +9,6 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// EndpointScheme is the URI scheme of a participant identifier: the register's
-// code and the party's code follow it, as "iso6523-actorid-upis::0184:12345674".
-// It is Peppol's scheme and NemHandel shares it -- the Nemhandelsregister is
-// itself a Peppol SMP, so a Danish party is the same participant on both
-// networks and is spelled the same way in both. Every endpoint this addon
-// writes uses it; there is no second spelling.
-//
-// It is GOBL's own iso.ActorIDScheme, re-exported so callers reading these
-// endpoints need not reach for the catalogue.
-const EndpointScheme = iso.ActorIDScheme
-
 // prefixRule says what OIOUBL's "DK" prefix means for a register's code.
 type prefixRule uint8
 
@@ -137,9 +126,15 @@ func buildRegisterByICD() map[cbc.Code]cbc.Code {
 }
 
 // OIOUBLEndpointURI builds the participant identifier URI of an address in the
-// given OIOUBL register, settling the code on what that register expects. It
-// returns an empty URI when the register is not one OIOUBL names, or when
-// nothing addressable is left, such as a code that was only the "DK" prefix.
+// given OIOUBL register, settling the code on what that register expects, as
+// "iso6523-actorid-upis::0184:12345674". The scheme is GOBL's iso.ActorIDScheme
+// and is not copied here: it is Peppol's, and NemHandel shares it, the
+// Nemhandelsregister being itself a Peppol SMP -- so a Danish party is the same
+// participant on both networks and is spelled the same way in both. Every
+// endpoint this addon writes takes this shape; there is no second one.
+//
+// The URI is empty when the register is not one OIOUBL names, or when nothing
+// addressable is left, such as a code that was only the "DK" prefix.
 func OIOUBLEndpointURI(name, code cbc.Code) cbc.URI {
 	reg, ok := registers[name]
 	if !ok {
@@ -150,7 +145,7 @@ func OIOUBLEndpointURI(name, code cbc.Code) cbc.URI {
 	}
 	// Peppol's own "<scheme>::<register>:<code>" serialisation: the doubled
 	// colon is the separator, not an empty segment.
-	return cbc.URI(EndpointScheme + "::" + reg.icd.String() + ":" + code.String())
+	return cbc.URI(iso.ActorIDScheme + "::" + reg.icd.String() + ":" + code.String())
 }
 
 // SplitEndpointURI returns the register, as OIOUBL spells it, and the code of a
@@ -158,7 +153,7 @@ func OIOUBLEndpointURI(name, code cbc.Code) cbc.URI {
 // are read: the one this addon writes, and the bare "DK:CVR:12345674" stored
 // before it.
 func SplitEndpointURI(uri cbc.URI) (name, code cbc.Code, ok bool) {
-	if uri.Scheme() == EndpointScheme {
+	if uri.Scheme() == iso.ActorIDScheme {
 		return splitICDEndpoint(uri.Opaque())
 	}
 	return splitRegisterEndpoint(uri.String())
