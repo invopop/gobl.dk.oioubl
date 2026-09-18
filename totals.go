@@ -159,7 +159,7 @@ func (ui *Invoice) includePrepaidPayments(inv *bill.Invoice, currency string) {
 			PaidAmount: &ubl.Amount{Value: adv.Amount.String(), CurrencyID: &currency},
 		}
 		if adv.Date != nil {
-			pp.ReceivedDate = ptr(formatDate(*adv.Date))
+			pp.ReceivedDate = ptr(formatDate(adv.Date))
 		}
 		if adv.Ref != "" {
 			pp.InstructionID = ptr(adv.Ref)

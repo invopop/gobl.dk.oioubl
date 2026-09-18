@@ -20,8 +20,11 @@ func normalizeParty(p *org.Party) {
 	}
 
 	// An inbox or an existing participant identifier may already have supplied
-	// one; endpoints on other networks are kept alongside the derived one.
-	if OIOUBLEndpoint(p) == nil {
+	// one. EN 16931 gives a party a single electronic address (BT-34, BT-49),
+	// so one naming a register OIOUBL cannot route to is still the party's
+	// address: deriving a second would be refused, and F-LIB179 already says
+	// what is wrong. Endpoints on other networks are kept alongside.
+	if OIOUBLEndpoint(p) == nil && !hasParticipantEndpoint(p) {
 		p.Endpoints = append(p.Endpoints, &org.Endpoint{
 			URI: OIOUBLEndpointURI(RegisterDKCVR, p.TaxID.Code),
 		})
@@ -78,6 +81,17 @@ func migrateInboxesToEndpoints(p *org.Party) {
 		})
 	}
 	p.Inboxes = kept
+}
+
+// hasParticipantEndpoint reports whether the party is already addressed by a
+// participant identifier, whatever register it names.
+func hasParticipantEndpoint(p *org.Party) bool {
+	for _, ep := range p.Endpoints {
+		if ep != nil && ep.URI.Scheme() == EndpointScheme {
+			return true
+		}
+	}
+	return false
 }
 
 // hasLegalIdentity reports whether the party already carries a legal-scope identity.

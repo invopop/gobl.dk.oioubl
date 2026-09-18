@@ -33,7 +33,6 @@
 			{
 				"scope": "tax",
 				"country": "DK",
-				"type": "66",
 				"code": "16356689"
 			},
 			{
@@ -144,7 +143,10 @@
 				"name": "Fine Car",
 				"description": "Fine Car",
 				"price": "200000.00",
-				"unit": "item"
+				"unit": "item",
+				"ext": {
+					"untdid-unit": "EA"
+				}
 			},
 			"sum": "200000.00",
 			"taxes": [

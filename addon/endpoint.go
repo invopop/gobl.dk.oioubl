@@ -4,6 +4,7 @@ import (
 	"maps"
 	"strings"
 
+	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 )
@@ -15,11 +16,9 @@ import (
 // networks and is spelled the same way in both. Every endpoint this addon
 // writes uses it; there is no second spelling.
 //
-// GOBL declares the same scheme as iso.ActorIDScheme, which this should become
-// once the module can take gobl v0.505.0 or later. That upgrade is not this
-// change's to make: cal.Date became a pointer in the period types, so it needs
-// gobl.ubl v0.76.0 and a migration of this module's own delivery handling.
-const EndpointScheme = "iso6523-actorid-upis"
+// It is GOBL's own iso.ActorIDScheme, re-exported so callers reading these
+// endpoints need not reach for the catalogue.
+const EndpointScheme = iso.ActorIDScheme
 
 // legacyEndpointScheme is the spelling v0.0.7 wrote, naming the register in
 // place of its code. Endpoints stored then are still read, so no document

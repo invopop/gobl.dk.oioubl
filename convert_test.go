@@ -187,9 +187,9 @@ func TestConvertUnsupportedVATKey(t *testing.T) {
 
 // TestConvertEndpointSelection pins that the emitted EndpointID is the one
 // from OIOUBL's register list (F-LIB179), not whichever endpoint happens to
-// come first: a party may also be addressed on a register OIOUBL's code list
-// does not name, such as by an LEI. The bare "GLN:…" spelling here and in the
-// fixtures keeps the legacy form covered.
+// come first: a party may also be reachable somewhere OIOUBL cannot route to.
+// The bare "GLN:…" spelling here and in the fixtures keeps the legacy form
+// covered.
 func TestConvertEndpointSelection(t *testing.T) {
 	inv := &bill.Invoice{
 		Regime:    tax.WithRegime("DK"),
@@ -208,7 +208,7 @@ func TestConvertEndpointSelection(t *testing.T) {
 			Name:  "Kunde ApS",
 			TaxID: &tax.Identity{Country: "DK", Code: "88146328"},
 			Endpoints: []*org.Endpoint{
-				{URI: "iso6523-actorid-upis::0199:529900T8BM49AURSDO55"},
+				{URI: "mailto:faktura@kunde.dk"},
 				{URI: "GLN:5798009883735"},
 			},
 			Addresses: []*org.Address{{Street: "Fredericiavej", Locality: "Helsingør", Code: "3000", Country: "DK"}},

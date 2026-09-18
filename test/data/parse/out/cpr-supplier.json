@@ -110,7 +110,10 @@
 			"item": {
 				"name": "Ydelse",
 				"price": "100.00",
-				"unit": "one"
+				"unit": "one",
+				"ext": {
+					"untdid-unit": "C62"
+				}
 			},
 			"sum": "100.00",
 			"taxes": [

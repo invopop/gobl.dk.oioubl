@@ -200,6 +200,20 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		assert.Equal(t, "iso6523-actorid-upis::0184:12345674", inv.Supplier.Endpoints[0].URI.String())
 	})
 
+	// EN 16931 gives a party one electronic address (BT-34, BT-49). A Danish
+	// party whose address is on a register OIOUBL cannot route to keeps it,
+	// rather than gaining a second the rule would refuse, and F-LIB179 says
+	// plainly what is wrong.
+	t.Run("an off-register participant identifier suppresses the derived one", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Supplier.Inboxes = nil
+		inv.Supplier.Endpoints = []*org.Endpoint{{URI: "iso6523-actorid-upis::0199:529900T8BM49AURSDO55"}}
+		require.NoError(t, inv.Calculate())
+		require.Len(t, inv.Supplier.Endpoints, 1, "no second participant identifier is derived")
+		assert.Equal(t, "iso6523-actorid-upis::0199:529900T8BM49AURSDO55", inv.Supplier.Endpoints[0].URI.String())
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB179")
+	})
+
 	// A sender that has not caught up with Peppol's re-coding still names a
 	// register we know, and it settles on the live code.
 	t.Run("a replaced code is read and rewritten onto the live one", func(t *testing.T) {

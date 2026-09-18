@@ -151,7 +151,10 @@
 				"name": "Stock Handling",
 				"description": "Stock Handling",
 				"price": "5000.00",
-				"unit": "item"
+				"unit": "item",
+				"ext": {
+					"untdid-unit": "EA"
+				}
 			},
 			"sum": "5000.00",
 			"taxes": [

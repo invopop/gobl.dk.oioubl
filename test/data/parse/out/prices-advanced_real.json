@@ -131,7 +131,9 @@
 				"name": "Husets vin",
 				"description": "Husets vin",
 				"price": "60.00",
-				"unit": "BO"
+				"ext": {
+					"untdid-unit": "BO"
+				}
 			},
 			"sum": "720.00",
 			"taxes": [
@@ -152,7 +154,9 @@
 				"name": "Husets vin",
 				"description": "Husets vin",
 				"price": "120.00",
-				"unit": "BO"
+				"ext": {
+					"untdid-unit": "BO"
+				}
 			},
 			"sum": "720.00",
 			"taxes": [
@@ -173,7 +177,9 @@
 				"name": "Husets vin",
 				"description": "Husets vin",
 				"price": "720.00",
-				"unit": "CS"
+				"ext": {
+					"untdid-unit": "CS"
+				}
 			},
 			"sum": "720.00",
 			"taxes": [
@@ -194,7 +200,9 @@
 				"name": "Husets vin",
 				"description": "Husets vin",
 				"price": "720.00",
-				"unit": "CS"
+				"ext": {
+					"untdid-unit": "CS"
+				}
 			},
 			"sum": "720.00",
 			"taxes": [
@@ -215,7 +223,9 @@
 				"name": "Husets vin",
 				"description": "Husets vin",
 				"price": "720.00",
-				"unit": "BLL"
+				"ext": {
+					"untdid-unit": "BLL"
+				}
 			},
 			"sum": "720.00",
 			"taxes": [

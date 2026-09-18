@@ -94,7 +94,10 @@
 			"item": {
 				"name": "Booking Fee (Fixed Rate)",
 				"price": "31676.00",
-				"unit": "one"
+				"unit": "one",
+				"ext": {
+					"untdid-unit": "C62"
+				}
 			},
 			"sum": "31676.00",
 			"taxes": [
@@ -112,7 +115,10 @@
 			"item": {
 				"name": "Sample service fee",
 				"price": "1267.04",
-				"unit": "one"
+				"unit": "one",
+				"ext": {
+					"untdid-unit": "C62"
+				}
 			},
 			"sum": "1267.04",
 			"taxes": [
