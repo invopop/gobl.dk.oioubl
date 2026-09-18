@@ -47,9 +47,8 @@ Both target the OIOUBL 2.1 profile, schematron v1.17.2.
   with `DK` on the way out, while the `DK` of 0198 is part of the identifier.
   Every register OIOUBL accepts has a code in this scheme, retired ones such as
   `DK:CPR` (9901) and `DK:VANS` (9905) included, so an endpoint has one shape
-  and only this one. The earlier `DK:CVR:12345674` and
-  `nemhandel:dk:cvr:12345674` spellings are still read, as are the codes Peppol
-  replaced when it re-coded a register. A Danish party carrying only a tax
+  and only this one. The earlier `DK:CVR:12345674` spelling is still read, as are
+  the codes Peppol replaced when it re-coded a register. A Danish party carrying only a tax
   identity derives its CVR endpoint automatically; explicit endpoints or inboxes
   always win.
 - **Invoice / credit note** — the document type must be an OIOUBL-supported code

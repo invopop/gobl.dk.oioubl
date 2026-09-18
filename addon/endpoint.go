@@ -20,11 +20,6 @@ import (
 // endpoints need not reach for the catalogue.
 const EndpointScheme = iso.ActorIDScheme
 
-// legacyEndpointScheme is the spelling v0.0.7 wrote, naming the register in
-// place of its code. Endpoints stored then are still read, so no document
-// needs migrating, but nothing is written under it again.
-const legacyEndpointScheme = "nemhandel"
-
 // prefixRule says what OIOUBL's "DK" prefix means for a register's code.
 type prefixRule uint8
 
@@ -159,19 +154,14 @@ func OIOUBLEndpointURI(name, code cbc.Code) cbc.URI {
 }
 
 // SplitEndpointURI returns the register, as OIOUBL spells it, and the code of a
-// participant identifier URI; ok is false for any other network. Three
-// spellings are read: the one this addon writes, and the two it no longer does
-// -- v0.0.7's "nemhandel:dk:cvr:12345674" and the bare "DK:CVR:12345674" that
-// came before it.
+// participant identifier URI; ok is false for any other network. Two spellings
+// are read: the one this addon writes, and the bare "DK:CVR:12345674" stored
+// before it.
 func SplitEndpointURI(uri cbc.URI) (name, code cbc.Code, ok bool) {
 	if uri.Scheme() == EndpointScheme {
 		return splitICDEndpoint(uri.Opaque())
 	}
-	addr := uri.String()
-	if uri.Scheme() == legacyEndpointScheme {
-		addr = uri.Opaque()
-	}
-	return splitRegisterEndpoint(addr)
+	return splitRegisterEndpoint(uri.String())
 }
 
 // splitICDEndpoint reads "<register>:<code>" from the scheme-specific part,
@@ -189,9 +179,9 @@ func splitICDEndpoint(opaque string) (name, code cbc.Code, ok bool) {
 	return name, cbc.Code(value), true
 }
 
-// splitRegisterEndpoint reads a retired spelling's "<register>:<code>", where
-// the register itself holds a colon in most cases, so the last one separates
-// it from the code.
+// splitRegisterEndpoint reads the earlier spelling's "<register>:<code>", where
+// the register itself holds a colon in most cases, so the last one separates it
+// from the code.
 func splitRegisterEndpoint(addr string) (name, code cbc.Code, ok bool) {
 	i := strings.LastIndex(addr, ":")
 	if i <= 0 || i == len(addr)-1 {

@@ -26,11 +26,11 @@ func TestConvertNemHandelEndpointURI(t *testing.T) {
 		given, stored, scheme, value string
 	}{
 		{"DK:CVR:88146328", "iso6523-actorid-upis::0184:88146328", "DK:CVR", "DK88146328"},
-		{"nemhandel:DK:CVR:88146328", "iso6523-actorid-upis::0184:88146328", "DK:CVR", "DK88146328"},
+		{"DK:CVR:DK88146328", "iso6523-actorid-upis::0184:88146328", "DK:CVR", "DK88146328"},
 		{"iso6523-actorid-upis::0184:88146328", "iso6523-actorid-upis::0184:88146328", "DK:CVR", "DK88146328"},
 		{"iso6523-actorid-upis::9902:DK88146328", "iso6523-actorid-upis::0184:88146328", "DK:CVR", "DK88146328"},
 		{"DK:SE:DK88146328", "iso6523-actorid-upis::0198:DK88146328", "DK:SE", "DK88146328"},
-		{"nemhandel:dk:se:88146328", "iso6523-actorid-upis::0198:DK88146328", "DK:SE", "DK88146328"},
+		{"DK:SE:88146328", "iso6523-actorid-upis::0198:DK88146328", "DK:SE", "DK88146328"},
 		{"iso6523-actorid-upis::0198:DK88146328", "iso6523-actorid-upis::0198:DK88146328", "DK:SE", "DK88146328"},
 	} {
 		t.Run(tt.given, func(t *testing.T) {

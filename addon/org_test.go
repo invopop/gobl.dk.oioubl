@@ -84,14 +84,12 @@ func TestNormalizePartyParticipant(t *testing.T) {
 	// settles on one spelling, whatever case it arrived in.
 	t.Run("a CVR or SE endpoint is stored as its own ICD spells it", func(t *testing.T) {
 		for given, want := range map[string]string{
-			"DK:CVR:12345674":             "iso6523-actorid-upis::0184:12345674",
-			"DK:CVR:DK12345674":           "iso6523-actorid-upis::0184:12345674",
-			"DK:CVR:dk12345674":           "iso6523-actorid-upis::0184:12345674",
-			"nemhandel:DK:CVR:DK12345674": "iso6523-actorid-upis::0184:12345674",
-			"DK:SE:12345674":              "iso6523-actorid-upis::0198:DK12345674",
-			"DK:SE:DK12345674":            "iso6523-actorid-upis::0198:DK12345674",
-			"DK:SE:dk12345674":            "iso6523-actorid-upis::0198:DK12345674",
-			"nemhandel:dk:se:12345674":    "iso6523-actorid-upis::0198:DK12345674",
+			"DK:CVR:12345674":   "iso6523-actorid-upis::0184:12345674",
+			"DK:CVR:DK12345674": "iso6523-actorid-upis::0184:12345674",
+			"DK:CVR:dk12345674": "iso6523-actorid-upis::0184:12345674",
+			"DK:SE:12345674":    "iso6523-actorid-upis::0198:DK12345674",
+			"DK:SE:DK12345674":  "iso6523-actorid-upis::0198:DK12345674",
+			"DK:SE:dk12345674":  "iso6523-actorid-upis::0198:DK12345674",
 		} {
 			inv := testInvoiceStandard(t)
 			inv.Supplier.Inboxes = nil
@@ -149,9 +147,9 @@ func TestNormalizePartyParticipant(t *testing.T) {
 	// The register means the same thing in any case, so one spelling is kept.
 	t.Run("a register is read regardless of case", func(t *testing.T) {
 		for _, given := range []string{
-			"nemhandel:dk:cvr:12345674",
-			"NEMHANDEL:DK:CVR:12345674",
+			"DK:CVR:12345674",
 			"dk:cvr:12345674",
+			"Dk:Cvr:12345674",
 		} {
 			inv := testInvoiceStandard(t)
 			inv.Supplier.Inboxes = nil
@@ -293,11 +291,9 @@ func TestSplitEndpointURI(t *testing.T) {
 		// A code Peppol replaced still names the register it named.
 		{"iso6523-actorid-upis::9902:12345674", "DK:CVR", "12345674", true},
 		{"iso6523-actorid-upis::9908:915442552", "NO:ORGNR", "915442552", true},
-		// The two spellings this addon no longer writes.
-		{"nemhandel:dk:cpr:1111111118", "DK:CPR", "1111111118", true},
-		{"nemhandel:dk:cvr:12345674", "DK:CVR", "12345674", true},
-		{"nemhandel:DK:CVR:12345674", "DK:CVR", "12345674", true},
+		// The bare spelling this addon no longer writes.
 		{"DK:CVR:12345674", "DK:CVR", "12345674", true},
+		{"DK:CPR:1111111118", "DK:CPR", "1111111118", true},
 		{"GLN:5798009883735", "GLN", "5798009883735", true},
 		// An ICD naming no register OIOUBL accepts, and an unparseable rest.
 		{"iso6523-actorid-upis::0007:5567321707", "SE:ORGNR", "5567321707", true},
@@ -308,8 +304,8 @@ func TestSplitEndpointURI(t *testing.T) {
 		{"iso6523-actorid-upis:", "", "", false},
 		{"mailto:faktura@eksempel.dk", "", "", false},
 		{"cvr:12345674", "", "", false},
-		{"nemhandel:DK:CVR:", "", "", false},
-		{"nemhandel:", "", "", false},
+		{"nemhandel:dk:cvr:12345674", "", "", false},
+		{"DK:CVR:", "", "", false},
 		{"12345674", "", "", false},
 		{"", "", "", false},
 	} {
