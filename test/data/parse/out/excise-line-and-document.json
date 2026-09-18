@@ -33,7 +33,6 @@
 			{
 				"scope": "tax",
 				"country": "DK",
-				"type": "66",
 				"code": "16356689"
 			},
 			{
@@ -57,7 +56,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:16356700"
+				"uri": "iso6523-actorid-upis::0184:16356700"
 			}
 		],
 		"addresses": [
@@ -111,7 +110,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:gln:5798000416604"
+				"uri": "iso6523-actorid-upis::0088:5798000416604"
 			}
 		],
 		"addresses": [
@@ -144,7 +143,10 @@
 				"name": "Fine Car",
 				"description": "Fine Car",
 				"price": "200000.00",
-				"unit": "item"
+				"unit": "item",
+				"ext": {
+					"untdid-unit": "EA"
+				}
 			},
 			"sum": "200000.00",
 			"taxes": [

@@ -4,10 +4,10 @@
 		"uuid": "8a51fd30-2a27-11ee-be56-0242ac120002",
 		"dig": {
 			"alg": "sha256",
-			"val": "57fe55aa1a8dbab7149d375f0a3fa314fc64c1488ad86f6e1750af9c071ee09f"
+			"val": "baadbdbf279a71eeb758a326f5f83f7e2f36a9a02238537f90267e4a5c008925"
 		},
-		"from": "nemhandel:dk:cvr:16356700",
-		"to": "nemhandel:gln:5798009883735"
+		"from": "iso6523-actorid-upis::0184:16356700",
+		"to": "iso6523-actorid-upis::0088:5798009883735"
 	},
 	"doc": {
 		"$schema": "https://gobl.org/draft-0/bill/invoice",
@@ -54,7 +54,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "nemhandel:dk:cvr:16356700"
+					"uri": "iso6523-actorid-upis::0184:16356700"
 				}
 			],
 			"addresses": [
@@ -102,7 +102,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "nemhandel:gln:5798009883735"
+					"uri": "iso6523-actorid-upis::0088:5798009883735"
 				}
 			],
 			"addresses": [

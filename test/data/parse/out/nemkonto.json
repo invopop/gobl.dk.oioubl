@@ -32,7 +32,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:10000009"
+				"uri": "iso6523-actorid-upis::0184:10000009"
 			}
 		],
 		"addresses": [
@@ -74,7 +74,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:10000017"
+				"uri": "iso6523-actorid-upis::0184:10000017"
 			}
 		],
 		"addresses": [
@@ -94,7 +94,10 @@
 			"item": {
 				"name": "Booking Fee (Fixed Rate)",
 				"price": "31676.00",
-				"unit": "one"
+				"unit": "one",
+				"ext": {
+					"untdid-unit": "C62"
+				}
 			},
 			"sum": "31676.00",
 			"taxes": [
@@ -112,7 +115,10 @@
 			"item": {
 				"name": "Sample service fee",
 				"price": "1267.04",
-				"unit": "one"
+				"unit": "one",
+				"ext": {
+					"untdid-unit": "C62"
+				}
 			},
 			"sum": "1267.04",
 			"taxes": [

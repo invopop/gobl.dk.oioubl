@@ -51,7 +51,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:16356700"
+				"uri": "iso6523-actorid-upis::0184:16356700"
 			}
 		],
 		"addresses": [
@@ -99,7 +99,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:99010080"
+				"uri": "iso6523-actorid-upis::0184:99010080"
 			}
 		],
 		"addresses": [
@@ -132,7 +132,10 @@
 				"name": "Hejsetavle",
 				"description": "Hejsetavle",
 				"price": "5000.00",
-				"unit": "item"
+				"unit": "item",
+				"ext": {
+					"untdid-unit": "EA"
+				}
 			},
 			"sum": "5000.00",
 			"taxes": [
@@ -153,7 +156,10 @@
 				"name": "Beslag",
 				"description": "Beslag",
 				"price": "25.00",
-				"unit": "item"
+				"unit": "item",
+				"ext": {
+					"untdid-unit": "EA"
+				}
 			},
 			"sum": "50.00",
 			"taxes": [

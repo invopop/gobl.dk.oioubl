@@ -51,7 +51,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:16356700"
+				"uri": "iso6523-actorid-upis::0184:16356700"
 			}
 		],
 		"addresses": [
@@ -109,7 +109,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:gln:5798000416604"
+				"uri": "iso6523-actorid-upis::0088:5798000416604"
 			}
 		],
 		"addresses": [
@@ -155,7 +155,10 @@
 				],
 				"description": "Hejsetavle",
 				"price": "5000.00",
-				"unit": "item"
+				"unit": "item",
+				"ext": {
+					"untdid-unit": "EA"
+				}
 			},
 			"sum": "5000.00",
 			"taxes": [
@@ -222,9 +225,9 @@
 		"contracts": [
 			{
 				"uuid": "6e09886b-dc6e-439f-82d1-7ccac7f4e3b1",
-				"type": "contract",
 				"issue_date": "2007-02-20",
-				"code": "234"
+				"code": "234",
+				"reason": "contract"
 			}
 		],
 		"purchases": [
@@ -269,7 +272,7 @@
 			],
 			"endpoints": [
 				{
-					"uri": "nemhandel:gln:5798000416605"
+					"uri": "iso6523-actorid-upis::0088:5798000416605"
 				}
 			],
 			"addresses": [

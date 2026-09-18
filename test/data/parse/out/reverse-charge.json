@@ -61,7 +61,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:16356706"
+				"uri": "iso6523-actorid-upis::0184:16356706"
 			}
 		],
 		"addresses": [
@@ -119,7 +119,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:gln:5798000416604"
+				"uri": "iso6523-actorid-upis::0088:5798000416604"
 			}
 		],
 		"addresses": [
@@ -151,7 +151,10 @@
 				"name": "Stock Handling",
 				"description": "Stock Handling",
 				"price": "5000.00",
-				"unit": "item"
+				"unit": "item",
+				"ext": {
+					"untdid-unit": "EA"
+				}
 			},
 			"sum": "5000.00",
 			"taxes": [

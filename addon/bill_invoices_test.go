@@ -93,7 +93,8 @@ func TestInvoiceValidation(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Customer.TaxID = &tax.Identity{Country: "DE", Code: "111111125"}
 		inv.Customer.Inboxes = nil
-		inv.Customer.Endpoints = []*org.Endpoint{{URI: "iso6523-actorid-upis::9930:DE111111125"}}
+		// DE:VAT would pass: OIOUBL names it. An LEI is on no register it does.
+		inv.Customer.Endpoints = []*org.Endpoint{{URI: lei}}
 		require.NoError(t, inv.Calculate())
 		assert.ErrorContains(t, rules.Validate(inv), "F-LIB179")
 	})

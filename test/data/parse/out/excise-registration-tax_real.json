@@ -41,7 +41,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:gln:5798000416604"
+				"uri": "iso6523-actorid-upis::0088:5798000416604"
 			}
 		],
 		"identities": [
@@ -101,6 +101,9 @@
 			"i": 1,
 			"item": {
 				"description": "Honda Jazz 1,4 Comfort I-shift",
+				"ext": {
+					"untdid-unit": "EA"
+				},
 				"name": "Honda Jazz 1,4 Comfort I-shift",
 				"price": "102842.00",
 				"unit": "item"
@@ -120,6 +123,9 @@
 			"i": 2,
 			"item": {
 				"description": "Byttebil",
+				"ext": {
+					"untdid-unit": "EA"
+				},
 				"name": "Byttebil",
 				"price": "26721.00",
 				"unit": "item"
@@ -171,7 +177,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:10000025"
+				"uri": "iso6523-actorid-upis::0184:10000025"
 			}
 		],
 		"identities": [

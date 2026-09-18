@@ -39,12 +39,20 @@ Both target the OIOUBL 2.1 profile, schematron v1.17.2.
   account, the 4-digit registration number a domestic transfer needs), and
   NemKonto rejects account details outright, since it resolves the payee's
   registered account.
-- **Participants** — parties are routed by their NemHandel endpoint, a URI
-  naming the network, the OIOUBL register and the code
-  (`nemhandel:dk:cvr:12345674`, and likewise `dk:se`, `gln`). The earlier
-  `DK:CVR:12345674` spelling is still read. A Danish party carrying only a tax
-  identity derives its CVR endpoint automatically; explicit endpoints or
-  inboxes always win.
+- **Participants** — parties are routed by their participant identifier, the
+  same URI Peppol uses: the scheme, the code naming the OIOUBL register and the
+  party's code (`iso6523-actorid-upis::0184:12345674` for a CVR, `::0198:DK12345674`
+  for an SE number, `::0088:5798009883735` for a GLN). The prefix follows the
+  ICD rather than the XML: 0184 is the bare CVR, which the converter prefixes
+  with `DK` on the way out, while the `DK` of 0198 is part of the identifier.
+  Every register OIOUBL accepts has a code in this scheme, retired ones such as
+  `DK:CPR` (9901) and `DK:VANS` (9905) included, so an endpoint has one shape
+  and only this one. The earlier `DK:CVR:12345674` spelling is still read, as are
+  the codes Peppol replaced when it re-coded a register. Precedence: a party
+  already addressed by a participant identifier keeps it as its one address,
+  whatever register it names; otherwise an inbox naming an OIOUBL register
+  becomes the endpoint; otherwise a Danish tax identity derives the CVR one.
+  Endpoints on other networks, such as `mailto:`, are kept alongside.
 - **Invoice / credit note** — the document type must be an OIOUBL-supported code
   (325/380/393, or 381 for a credit note), the customer must resolve to an
   endpoint for NemHandel to route to, every line needs a VAT category and a
@@ -84,7 +92,7 @@ supplier:
     country: "DK"
     code: "12345674"
   # endpoints may be omitted: the addon derives
-  # nemhandel:dk:cvr:12345674 from the tax identity.
+  # iso6523-actorid-upis::0184:12345674 from the tax identity.
 ```
 
 See [`examples/`](examples/) for complete invoice and credit note documents with

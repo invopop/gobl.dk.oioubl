@@ -1,97 +1,22 @@
 package addon
 
 import (
-	"strings"
-
+	"github.com/invopop/gobl/catalogues/iso"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 )
 
-// EndpointScheme is the URI scheme of a NemHandel endpoint, the way
-// "iso6523-actorid-upis" is Peppol's.
-const EndpointScheme = "nemhandel"
-
-// OIOUBLEndpointURI builds a NemHandel endpoint URI such as
-// "nemhandel:dk:cvr:12345674": the register lowercased, the code as given.
-func OIOUBLEndpointURI(register, code cbc.Code) cbc.URI {
-	return cbc.URI(EndpointScheme + ":" + strings.ToLower(register.String()) + ":" + code.String())
-}
-
-// SplitEndpointURI returns the register, as OIOUBL spells it, and the code of
-// a NemHandel endpoint URI; ok is false for any other network. The earlier
-// scheme-less "DK:CVR:12345674" form is still read.
-func SplitEndpointURI(uri cbc.URI) (register, code cbc.Code, ok bool) {
-	addr := uri.String()
-	if uri.Scheme() == EndpointScheme {
-		addr = uri.Opaque()
-	}
-	i := strings.LastIndex(addr, ":")
-	if i <= 0 || i == len(addr)-1 {
-		return "", "", false
-	}
-	register = cbc.Code(strings.ToUpper(addr[:i]))
-	if !registers[register] {
-		return "", "", false
-	}
-	return register, cbc.Code(addr[i+1:]), true
-}
-
-// registers lists the registers an OIOUBL EndpointID may name
-// (F-LIB179, schematron 1.17.2; invoices and responses share the list).
-var registers = map[cbc.Code]bool{
-	"GLN": true, "DUNS": true, "IBAN": true,
-	"DK:P": true, "DK:CVR": true, "DK:CPR": true, "DK:SE": true, "DK:VANS": true,
-	"FR:SIRET": true, "SE:ORGNR": true, "FI:OVT": true, "FI:ORGNR": true,
-	"IT:FTI": true, "IT:SIA": true, "IT:SECETI": true, "IT:CF": true, "IT:IPA": true,
-	"NO:ORGNR": true, "AT:GOV": true, "AT:CID": true, "AT:KUR": true, "IS:KT": true,
-	"EU:REID": true,
-	"AD:VAT":  true, "AL:VAT": true, "AT:VAT": true, "BA:VAT": true, "BE:VAT": true,
-	"BG:VAT": true, "CH:VAT": true, "CY:VAT": true, "CZ:VAT": true, "DE:VAT": true,
-	"EE:VAT": true, "ES:VAT": true, "EU:VAT": true, "FI:VAT": true, "GB:VAT": true,
-	"GR:VAT": true, "HR:VAT": true, "HU:VAT": true, "IE:VAT": true, "IT:VAT": true,
-	"LI:VAT": true, "LT:VAT": true, "LU:VAT": true, "LV:VAT": true, "MC:VAT": true,
-	"ME:VAT": true, "MK:VAT": true, "MT:VAT": true, "NL:VAT": true, "NO:VAT": true,
-	"PL:VAT": true, "PT:VAT": true, "RO:VAT": true, "RS:VAT": true, "SE:VAT": true,
-	"SI:VAT": true, "SK:VAT": true, "SM:VAT": true, "TR:VAT": true, "VA:VAT": true,
-}
-
-// OIOUBLEndpoint returns the party's first NemHandel endpoint naming a register
-// OIOUBL accepts (F-LIB179), or nil when it has none; endpoints for other
-// networks, such as Peppol's, are left alone.
-func OIOUBLEndpoint(p *org.Party) *org.Endpoint {
-	if p == nil {
-		return nil
-	}
-	return oioublEndpoint(p.Endpoints)
-}
-
-func oioublEndpoint(eps []*org.Endpoint) *org.Endpoint {
-	for _, ep := range eps {
-		if ep == nil {
-			continue
-		}
-		if _, _, ok := SplitEndpointURI(ep.URI); ok {
-			return ep
-		}
-	}
-	return nil
-}
-
-// partyHasOIOUBLEndpoint reports whether at least one endpoint names a
-// register OIOUBL accepts. An empty list passes; presence has its own rules.
-func partyHasOIOUBLEndpoint(val any) bool {
-	eps, ok := val.([]*org.Endpoint)
-	if !ok || len(eps) == 0 {
-		return true
-	}
-	return oioublEndpoint(eps) != nil
-}
-
 // normalizeParty derives the endpoint and legal identity a Danish party may
-// omit. An endpoint for another network (e.g. Peppol) does not count as
-// having one: OIOUBL needs its own.
+// omit. An endpoint on another network does not count as having one: OIOUBL
+// needs one naming a register it accepts.
+//
+// EN 16931 gives a party a single electronic address (BT-34, BT-49). A party
+// already addressed by a participant identifier, even one naming a register
+// OIOUBL cannot route to, gets no second one, whether from an inbox or from
+// its tax ID: deriving it would be refused, and F-LIB179 already says what is
+// wrong. Endpoints on other networks are kept alongside.
 func normalizeParty(p *org.Party) {
-	if OIOUBLEndpoint(p) == nil {
+	if OIOUBLEndpoint(p) == nil && !hasParticipantEndpoint(p) {
 		migrateInboxesToEndpoints(p)
 	}
 	normalizeEndpoints(p)
@@ -101,9 +26,9 @@ func normalizeParty(p *org.Party) {
 		return
 	}
 
-	// An inbox may already have supplied one; endpoints for other networks
-	// are kept alongside the derived one.
-	if OIOUBLEndpoint(p) == nil {
+	// An inbox or an existing participant identifier may already have supplied
+	// one.
+	if OIOUBLEndpoint(p) == nil && !hasParticipantEndpoint(p) {
 		p.Endpoints = append(p.Endpoints, &org.Endpoint{
 			URI: OIOUBLEndpointURI(RegisterDKCVR, p.TaxID.Code),
 		})
@@ -118,26 +43,23 @@ func normalizeParty(p *org.Party) {
 	}
 }
 
-// normalizeEndpoints rewrites each NemHandel endpoint onto the "nemhandel:"
-// scheme and strips the "DK" prefix from a CVR or SE code, which the converter
-// adds back in the XML; other registers' codes are kept as given.
+// normalizeEndpoints rewrites each endpoint OIOUBL can route onto the
+// participant identifier its register is named by, and settles the code on
+// what that identifier expects.
 func normalizeEndpoints(p *org.Party) {
 	for _, ep := range p.Endpoints {
 		if ep == nil {
 			continue
 		}
-		register, code, ok := SplitEndpointURI(ep.URI)
+		name, code, ok := SplitEndpointURI(ep.URI)
 		if !ok {
 			continue
 		}
-		if register == RegisterDKCVR || register == RegisterDKSE {
-			code = cbc.Code(strings.TrimPrefix(code.String(), "DK"))
+		if uri := OIOUBLEndpointURI(name, code); uri != "" {
+			// An empty URI means nothing addressable was left, such as a code
+			// that was only the prefix; leave it for validation to refuse.
+			ep.URI = uri
 		}
-		if code == cbc.CodeEmpty {
-			// Only the prefix was given; leave it for validation to refuse.
-			continue
-		}
-		ep.URI = OIOUBLEndpointURI(register, code)
 	}
 }
 
@@ -150,12 +72,30 @@ func migrateInboxesToEndpoints(p *org.Party) {
 			kept = append(kept, in)
 			continue
 		}
+		uri := OIOUBLEndpointURI(in.Scheme, in.Code)
+		if uri == "" {
+			// Nothing addressable, such as a code that was only the "DK"
+			// prefix; keep the inbox rather than mint an empty endpoint.
+			kept = append(kept, in)
+			continue
+		}
 		p.Endpoints = append(p.Endpoints, &org.Endpoint{
 			Label: in.Label,
-			URI:   OIOUBLEndpointURI(in.Scheme, in.Code),
+			URI:   uri,
 		})
 	}
 	p.Inboxes = kept
+}
+
+// hasParticipantEndpoint reports whether the party is already addressed by a
+// participant identifier, whatever register it names.
+func hasParticipantEndpoint(p *org.Party) bool {
+	for _, ep := range p.Endpoints {
+		if ep != nil && ep.URI.Scheme() == iso.ActorIDScheme {
+			return true
+		}
+	}
+	return false
 }
 
 // hasLegalIdentity reports whether the party already carries a legal-scope identity.

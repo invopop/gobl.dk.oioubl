@@ -12,9 +12,11 @@ func ptr(s string) *string {
 	return &s
 }
 
-// formatDate renders a GOBL date in UBL's YYYY-MM-DD form.
-func formatDate(d cal.Date) string {
-	if d.IsZero() {
+// formatDate renders a GOBL date in UBL's YYYY-MM-DD form. A date that is
+// absent renders as empty, the same as a zero one: GOBL's optional dates are
+// pointers, and a period may carry only one of its two ends.
+func formatDate(d *cal.Date) string {
+	if d == nil || d.IsZero() {
 		return ""
 	}
 	return d.Time().Format("2006-01-02")
