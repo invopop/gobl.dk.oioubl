@@ -18,7 +18,8 @@ import (
 
 // lei is a participant identifier on a register OIOUBL's EndpointID code list
 // does not name (F-LIB179), so it stands for an address OIOUBL cannot route to.
-const lei cbc.URI = "iso6523-actorid-upis::0199:529900T8BM49AURSDO55"
+// The number is made up; nothing checks it.
+const lei cbc.URI = "iso6523-actorid-upis::0199:EXAMPLELEI0000000000"
 
 func testStatusResponse(t *testing.T) *bill.Status {
 	t.Helper()

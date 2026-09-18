@@ -72,7 +72,7 @@ var registers = map[cbc.Code]register{
 	"AT:GOV":    {icd: "9915"},
 	"AT:CID":    {icd: "9916"},
 	"AT:KUR":    {icd: "9919"},
-	"IS:KT":     {icd: "9917"},
+	"IS:KT":     {icd: "0196"}, // Peppol "IS:KTNR", the same kennitala
 	"EU:REID":   {icd: "9913"},
 	// The Finnish registers were removed, not re-coded: Peppol's live 0216
 	// carries the "0037" prefix inside the value, so it names a differently
@@ -108,6 +108,7 @@ var recodedICDs = map[cbc.Code]cbc.Code{
 	"9906": "IT:VAT",
 	"9907": "IT:CF",
 	"9908": "NO:ORGNR",
+	"9917": "IS:KT",
 	"9921": "IT:IPA",
 }
 

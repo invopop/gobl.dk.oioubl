@@ -205,10 +205,10 @@ func TestNormalizePartyParticipant(t *testing.T) {
 	t.Run("an off-register participant identifier suppresses the derived one", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Inboxes = nil
-		inv.Supplier.Endpoints = []*org.Endpoint{{URI: "iso6523-actorid-upis::0199:529900T8BM49AURSDO55"}}
+		inv.Supplier.Endpoints = []*org.Endpoint{{URI: lei}}
 		require.NoError(t, inv.Calculate())
 		require.Len(t, inv.Supplier.Endpoints, 1, "no second participant identifier is derived")
-		assert.Equal(t, "iso6523-actorid-upis::0199:529900T8BM49AURSDO55", inv.Supplier.Endpoints[0].URI.String())
+		assert.Equal(t, lei, inv.Supplier.Endpoints[0].URI)
 		assert.ErrorContains(t, rules.Validate(inv), "F-LIB179")
 	})
 
@@ -219,6 +219,7 @@ func TestNormalizePartyParticipant(t *testing.T) {
 			"iso6523-actorid-upis::9902:12345674":   "iso6523-actorid-upis::0184:12345674",
 			"iso6523-actorid-upis::9904:DK12345674": "iso6523-actorid-upis::0198:DK12345674",
 			"iso6523-actorid-upis::9908:915442552":  "iso6523-actorid-upis::0192:915442552",
+			"iso6523-actorid-upis::9917:0101302209": "iso6523-actorid-upis::0196:0101302209",
 		} {
 			inv := testInvoiceStandard(t)
 			inv.Supplier.Inboxes = nil
