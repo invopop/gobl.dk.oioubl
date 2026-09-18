@@ -137,6 +137,7 @@ func buildRegisterByICD() map[cbc.Code]cbc.Code {
 // The URI is empty when the register is not one OIOUBL names, or when nothing
 // addressable is left, such as a code that was only the "DK" prefix.
 func OIOUBLEndpointURI(name, code cbc.Code) cbc.URI {
+	name = cbc.Code(strings.ToUpper(name.String()))
 	reg, ok := registers[name]
 	if !ok {
 		return ""

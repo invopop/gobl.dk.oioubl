@@ -144,12 +144,15 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		}
 	})
 
-	// The register means the same thing in any case, so one spelling is kept.
+	// The register means the same thing in any case, and a single colon after
+	// the scheme names the same address as Peppol's doubled one, so one
+	// spelling is kept.
 	t.Run("a register is read regardless of case", func(t *testing.T) {
 		for _, given := range []string{
 			"DK:CVR:12345674",
 			"dk:cvr:12345674",
 			"Dk:Cvr:12345674",
+			"iso6523-actorid-upis:0184:12345674",
 		} {
 			inv := testInvoiceStandard(t)
 			inv.Supplier.Inboxes = nil
@@ -232,12 +235,31 @@ func TestNormalizePartyParticipant(t *testing.T) {
 
 	// An inbox is settled like an endpoint that arrived as one.
 	t.Run("a migrated inbox is normalized too", func(t *testing.T) {
+		for given, want := range map[org.Inbox]string{
+			{Scheme: "dk:cvr", Code: "DK12345674"}: "iso6523-actorid-upis::0184:12345674",
+			{Scheme: "dk:se", Code: "12345674"}:    "iso6523-actorid-upis::0198:DK12345674",
+		} {
+			inv := testInvoiceStandard(t)
+			inv.Supplier.Endpoints = nil
+			inv.Supplier.Inboxes = []*org.Inbox{{Scheme: given.Scheme, Code: given.Code}}
+			require.NoError(t, inv.Calculate())
+			assert.Empty(t, inv.Supplier.Inboxes, "given %v", given)
+			require.Len(t, inv.Supplier.Endpoints, 1, "given %v", given)
+			assert.Equal(t, want, inv.Supplier.Endpoints[0].URI.String(), "given %v", given)
+		}
+	})
+
+	// The same single-address rule that stops a derived CVR stops an inbox
+	// from becoming a second participant identifier.
+	t.Run("an addressed party's inbox stays an inbox", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
-		inv.Supplier.Endpoints = nil
-		inv.Supplier.Inboxes = []*org.Inbox{{Scheme: "dk:cvr", Code: "DK12345674"}}
+		inv.Supplier.Endpoints = []*org.Endpoint{{URI: lei}}
+		inv.Supplier.Inboxes = []*org.Inbox{{Scheme: "DK:CVR", Code: "12345674"}}
 		require.NoError(t, inv.Calculate())
-		require.Len(t, inv.Supplier.Endpoints, 1)
-		assert.Equal(t, "iso6523-actorid-upis::0184:12345674", inv.Supplier.Endpoints[0].URI.String())
+		require.Len(t, inv.Supplier.Inboxes, 1, "the inbox is kept, not migrated")
+		require.Len(t, inv.Supplier.Endpoints, 1, "no second participant identifier")
+		assert.Equal(t, lei, inv.Supplier.Endpoints[0].URI)
+		assert.ErrorContains(t, rules.Validate(inv), "F-LIB179")
 	})
 
 	t.Run("an explicit inbox is migrated to an endpoint", func(t *testing.T) {
@@ -289,6 +311,9 @@ func TestSplitEndpointURI(t *testing.T) {
 		{"iso6523-actorid-upis::0088:5798009883735", "GLN", "5798009883735", true},
 		{"iso6523-actorid-upis::9901:1111111118", "DK:CPR", "1111111118", true},
 		{"iso6523-actorid-upis::9905:12345674", "DK:VANS", "12345674", true},
+		// A single colon is read too, and normalizing settles it on the
+		// doubled one.
+		{"iso6523-actorid-upis:0184:12345674", "DK:CVR", "12345674", true},
 		// A code Peppol replaced still names the register it named.
 		{"iso6523-actorid-upis::9902:12345674", "DK:CVR", "12345674", true},
 		{"iso6523-actorid-upis::9908:915442552", "NO:ORGNR", "915442552", true},

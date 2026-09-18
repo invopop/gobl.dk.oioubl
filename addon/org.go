@@ -9,8 +9,14 @@ import (
 // normalizeParty derives the endpoint and legal identity a Danish party may
 // omit. An endpoint on another network does not count as having one: OIOUBL
 // needs one naming a register it accepts.
+//
+// EN 16931 gives a party a single electronic address (BT-34, BT-49). A party
+// already addressed by a participant identifier, even one naming a register
+// OIOUBL cannot route to, gets no second one, whether from an inbox or from
+// its tax ID: deriving it would be refused, and F-LIB179 already says what is
+// wrong. Endpoints on other networks are kept alongside.
 func normalizeParty(p *org.Party) {
-	if OIOUBLEndpoint(p) == nil {
+	if OIOUBLEndpoint(p) == nil && !hasParticipantEndpoint(p) {
 		migrateInboxesToEndpoints(p)
 	}
 	normalizeEndpoints(p)
@@ -21,10 +27,7 @@ func normalizeParty(p *org.Party) {
 	}
 
 	// An inbox or an existing participant identifier may already have supplied
-	// one. EN 16931 gives a party a single electronic address (BT-34, BT-49),
-	// so one naming a register OIOUBL cannot route to is still the party's
-	// address: deriving a second would be refused, and F-LIB179 already says
-	// what is wrong. Endpoints on other networks are kept alongside.
+	// one.
 	if OIOUBLEndpoint(p) == nil && !hasParticipantEndpoint(p) {
 		p.Endpoints = append(p.Endpoints, &org.Endpoint{
 			URI: OIOUBLEndpointURI(RegisterDKCVR, p.TaxID.Code),
