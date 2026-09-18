@@ -48,9 +48,11 @@ Both target the OIOUBL 2.1 profile, schematron v1.17.2.
   Every register OIOUBL accepts has a code in this scheme, retired ones such as
   `DK:CPR` (9901) and `DK:VANS` (9905) included, so an endpoint has one shape
   and only this one. The earlier `DK:CVR:12345674` spelling is still read, as are
-  the codes Peppol replaced when it re-coded a register. A Danish party carrying only a tax
-  identity derives its CVR endpoint automatically; explicit endpoints or inboxes
-  always win.
+  the codes Peppol replaced when it re-coded a register. Precedence: a party
+  already addressed by a participant identifier keeps it as its one address,
+  whatever register it names; otherwise an inbox naming an OIOUBL register
+  becomes the endpoint; otherwise a Danish tax identity derives the CVR one.
+  Endpoints on other networks, such as `mailto:`, are kept alongside.
 - **Invoice / credit note** — the document type must be an OIOUBL-supported code
   (325/380/393, or 381 for a credit note), the customer must resolve to an
   endpoint for NemHandel to route to, every line needs a VAT category and a
