@@ -8,18 +8,18 @@ import (
 	"github.com/invopop/gobl/org"
 )
 
-// EndpointScheme is the URI scheme of a participant identifier: the ISO 6523
-// ICD and the code follow it, as "iso6523-actorid-upis::0184:12345674". It is
-// Peppol's scheme and NemHandel shares it -- the Nemhandelsregister is itself
-// a Peppol SMP, so a Danish party is the same participant on both networks and
-// is spelled the same way in both.
+// EndpointScheme is the URI scheme of a participant identifier: the register's
+// code and the party's code follow it, as "iso6523-actorid-upis::0184:12345674".
+// It is Peppol's scheme and NemHandel shares it -- the Nemhandelsregister is
+// itself a Peppol SMP, so a Danish party is the same participant on both
+// networks and is spelled the same way in both. Every endpoint this addon
+// writes uses it; there is no second spelling.
 const EndpointScheme = "iso6523-actorid-upis"
 
-// RegisterEndpointScheme names the OIOUBL register in place of an ICD, as
-// "nemhandel:dk:vans:12345674". It carries the few registers OIOUBL accepts
-// that Peppol has retired without a successor, so that an address in one of
-// them still has a URI to live in.
-const RegisterEndpointScheme = "nemhandel"
+// legacyEndpointScheme is the spelling v0.0.7 wrote, naming the register in
+// place of its code. Endpoints stored then are still read, so no document
+// needs migrating, but nothing is written under it again.
+const legacyEndpointScheme = "nemhandel"
 
 // prefixRule says what OIOUBL's "DK" prefix means for a register's code.
 type prefixRule uint8
@@ -43,20 +43,23 @@ const (
 // register is one entry of the list an OIOUBL cbc:EndpointID may name
 // (F-LIB179, schematron 1.17.2; invoices and responses share the list).
 type register struct {
-	// icd is the ISO 6523 ICD Peppol assigns to this same register today. It
-	// is empty where Peppol has retired the register with no successor, or
-	// where the successor's value is spelled differently enough that mapping
-	// onto it would change the identifier.
+	// icd is the code that names this register inside the participant
+	// identifier scheme. The 0xxx codes are ISO 6523 ICDs; the 9xxx ones are
+	// Peppol's own allocations. Every register OIOUBL accepts has one, so
+	// every endpoint has the same shape.
 	icd cbc.Code
 
 	// prefix is what the "DK" prefix does to this register's code.
 	prefix prefixRule
 }
 
-// registers maps each OIOUBL register to the participant identifier scheme that
-// names the same register. The ICDs are those of the Peppol participant
-// identifier scheme code list v9.7; a register left without one is written
-// under RegisterEndpointScheme instead.
+// registers maps each OIOUBL register to the code that names it in a
+// participant identifier, from the Peppol participant identifier scheme code
+// list v9.7. Where Peppol has re-coded a register the live code is used; where
+// it has retired one without re-coding it, the code it retired is kept, since
+// it is still the only one that names that register and Peppol has not reused
+// it. Retired here means Peppol will not route the address, which was already
+// true of these registers -- it does not make the identifier ambiguous.
 var registers = map[cbc.Code]register{
 	"GLN":  {icd: "0088"},
 	"DUNS": {icd: "0060"},
@@ -65,10 +68,10 @@ var registers = map[cbc.Code]register{
 	"DK:P":   {icd: "0096"},
 	"DK:CVR": {icd: "0184", prefix: prefixWire}, // Peppol "DK:DIGST"
 	"DK:SE":  {icd: "0198", prefix: prefixCode}, // Peppol "DK:ERST"
-	// CPR is a personal number and VANS a Danish-only routing register;
-	// Peppol removed both (9901, 9905) and named no successor.
-	"DK:CPR":  {},
-	"DK:VANS": {},
+	// CPR is a personal number and VANS a Danish-only routing register, so
+	// Peppol removed both and re-coded neither. OIOUBL still accepts them.
+	"DK:CPR":  {icd: "9901"},
+	"DK:VANS": {icd: "9905"},
 
 	"FR:SIRET":  {icd: "0009"},
 	"SE:ORGNR":  {icd: "0007"},
@@ -83,10 +86,11 @@ var registers = map[cbc.Code]register{
 	"AT:KUR":    {icd: "9919"},
 	"IS:KT":     {icd: "9917"},
 	"EU:REID":   {icd: "9913"},
-	// Peppol's live Finnish codes are not these registers: 0216 carries the
-	// "0037" prefix inside the value, and 0212/0213 were removed outright.
-	"FI:OVT":   {},
-	"FI:ORGNR": {},
+	// The Finnish registers were removed, not re-coded: Peppol's live 0216
+	// carries the "0037" prefix inside the value, so it names a differently
+	// spelled identifier rather than this one.
+	"FI:OVT":   {icd: "0037"},
+	"FI:ORGNR": {icd: "0212"}, // Peppol "FI:ORG"
 
 	"AD:VAT": {icd: "9922"}, "AL:VAT": {icd: "9923"}, "AT:VAT": {icd: "9914"},
 	"BA:VAT": {icd: "9924"}, "BE:VAT": {icd: "9925"}, "BG:VAT": {icd: "9926"},
@@ -102,78 +106,73 @@ var registers = map[cbc.Code]register{
 	"RO:VAT": {icd: "9947"}, "RS:VAT": {icd: "9948"}, "SI:VAT": {icd: "9949"},
 	"SK:VAT": {icd: "9950"}, "SM:VAT": {icd: "9951"}, "TR:VAT": {icd: "9952"},
 	"VA:VAT": {icd: "9953"},
-	// Peppol removed both without a successor of the same register.
-	"FI:VAT": {}, "SE:VAT": {},
+	// Removed without a successor naming the same register.
+	"FI:VAT": {icd: "0213"}, "SE:VAT": {icd: "9955"},
 }
 
-// retiredICDs are the ICDs Peppol has removed, mapped onto the register they
-// named. Nothing is written under them, but a participant identifier stored
-// before the re-coding still names a register we recognise, and one arriving
-// from a sender that has not caught up is read rather than refused.
-var retiredICDs = map[cbc.Code]cbc.Code{
-	"0037": "FI:OVT",
-	"0212": "FI:ORGNR",
-	"0213": "FI:VAT",
-	"9901": "DK:CPR",
+// recodedICDs are the codes Peppol replaced when it re-coded a register, each
+// mapped onto the register it named. Nothing is written under them, but an
+// identifier stored before the re-coding, or sent by someone who has not caught
+// up, still names a register we recognise and settles on the live code.
+var recodedICDs = map[cbc.Code]cbc.Code{
 	"9902": RegisterDKCVR,
 	"9904": RegisterDKSE,
-	"9905": "DK:VANS",
 	"9906": "IT:VAT",
 	"9907": "IT:CF",
 	"9908": "NO:ORGNR",
 	"9921": "IT:IPA",
-	"9955": "SE:VAT",
 }
 
-// registerByICD indexes the registers by the ICD that names them, retired
-// codes included, so one address has one reading whichever code it arrived in.
+// registerByICD indexes the registers by the code that names them, the codes
+// Peppol has replaced included, so one address has one reading whichever of
+// them it arrived under.
 var registerByICD = buildRegisterByICD()
 
 func buildRegisterByICD() map[cbc.Code]cbc.Code {
-	index := make(map[cbc.Code]cbc.Code, len(registers)+len(retiredICDs))
+	index := make(map[cbc.Code]cbc.Code, len(registers)+len(recodedICDs))
 	for name, reg := range registers {
-		if reg.icd != cbc.CodeEmpty {
-			index[reg.icd] = name
-		}
+		index[reg.icd] = name
 	}
-	maps.Copy(index, retiredICDs)
+	maps.Copy(index, recodedICDs)
 	return index
 }
 
 // OIOUBLEndpointURI builds the participant identifier URI of an address in the
-// given OIOUBL register, settling the code on what that register's ICD expects.
-// It returns an empty URI when nothing addressable is left, such as a code that
-// was only the "DK" prefix.
+// given OIOUBL register, settling the code on what that register expects. It
+// returns an empty URI when the register is not one OIOUBL names, or when
+// nothing addressable is left, such as a code that was only the "DK" prefix.
 func OIOUBLEndpointURI(name, code cbc.Code) cbc.URI {
-	code = normalizeEndpointCode(name, code)
-	if code == cbc.CodeEmpty {
+	reg, ok := registers[name]
+	if !ok {
 		return ""
 	}
-	if reg, ok := registers[name]; ok && reg.icd != cbc.CodeEmpty {
-		// Peppol's own "<scheme>::<icd>:<code>" serialisation: the doubled
-		// colon is the separator, not an empty segment.
-		return cbc.URI(EndpointScheme + "::" + reg.icd.String() + ":" + code.String())
+	if code = normalizeEndpointCode(name, code); code == cbc.CodeEmpty {
+		return ""
 	}
-	return cbc.URI(RegisterEndpointScheme + ":" + strings.ToLower(name.String()) + ":" + code.String())
+	// Peppol's own "<scheme>::<register>:<code>" serialisation: the doubled
+	// colon is the separator, not an empty segment.
+	return cbc.URI(EndpointScheme + "::" + reg.icd.String() + ":" + code.String())
 }
 
 // SplitEndpointURI returns the register, as OIOUBL spells it, and the code of a
 // participant identifier URI; ok is false for any other network. Three
-// spellings are read: the ICD form this addon writes, the register form it
-// falls back to, and the bare "DK:CVR:12345674" stored before either existed.
+// spellings are read: the one this addon writes, and the two it no longer does
+// -- v0.0.7's "nemhandel:dk:cvr:12345674" and the bare "DK:CVR:12345674" that
+// came before it.
 func SplitEndpointURI(uri cbc.URI) (name, code cbc.Code, ok bool) {
 	if uri.Scheme() == EndpointScheme {
 		return splitICDEndpoint(uri.Opaque())
 	}
 	addr := uri.String()
-	if uri.Scheme() == RegisterEndpointScheme {
+	if uri.Scheme() == legacyEndpointScheme {
 		addr = uri.Opaque()
 	}
 	return splitRegisterEndpoint(addr)
 }
 
-// splitICDEndpoint reads "<icd>:<code>" from the scheme-specific part, which
-// Peppol's serialisation leaves with the separator's second colon at its head.
+// splitICDEndpoint reads "<register>:<code>" from the scheme-specific part,
+// which Peppol's serialisation leaves with the separator's second colon at its
+// head.
 func splitICDEndpoint(opaque string) (name, code cbc.Code, ok bool) {
 	icd, value, found := strings.Cut(strings.TrimPrefix(opaque, ":"), ":")
 	if !found || icd == "" || value == "" {
@@ -186,8 +185,9 @@ func splitICDEndpoint(opaque string) (name, code cbc.Code, ok bool) {
 	return name, cbc.Code(value), true
 }
 
-// splitRegisterEndpoint reads "<register>:<code>", where the register itself
-// holds a colon in most cases, so the last one separates it from the code.
+// splitRegisterEndpoint reads a retired spelling's "<register>:<code>", where
+// the register itself holds a colon in most cases, so the last one separates
+// it from the code.
 func splitRegisterEndpoint(addr string) (name, code cbc.Code, ok bool) {
 	i := strings.LastIndex(addr, ":")
 	if i <= 0 || i == len(addr)-1 {
@@ -200,9 +200,9 @@ func splitRegisterEndpoint(addr string) (name, code cbc.Code, ok bool) {
 	return name, cbc.Code(addr[i+1:]), true
 }
 
-// normalizeEndpointCode settles a code on what its register's ICD expects.
-// OIOUBL writes "DK" on both Danish numbers in the XML, but the two
-// identifiers differ: ICD 0184 is the bare CVR, ICD 0198 carries the prefix.
+// normalizeEndpointCode settles a code on what its register expects. OIOUBL
+// writes "DK" on both Danish numbers in the XML, but the two identifiers
+// differ: 0184 is the bare CVR, 0198 carries the prefix.
 func normalizeEndpointCode(name, code cbc.Code) cbc.Code {
 	switch registers[name].prefix {
 	case prefixNone:
@@ -221,7 +221,7 @@ func normalizeEndpointCode(name, code cbc.Code) cbc.Code {
 
 // trimDKPrefix removes a leading "DK" in any case: Peppol compares participant
 // identifiers case-insensitively, so a lowercased prefix names one address with
-// the uppercase spelling the ICD and the XML both want.
+// the uppercase spelling the register and the XML both want.
 func trimDKPrefix(code string) string {
 	if len(code) >= 2 && strings.EqualFold(code[:2], "DK") {
 		return code[2:]

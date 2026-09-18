@@ -40,17 +40,18 @@ Both target the OIOUBL 2.1 profile, schematron v1.17.2.
   NemKonto rejects account details outright, since it resolves the payee's
   registered account.
 - **Participants** — parties are routed by their participant identifier, the
-  same URI Peppol uses: the scheme, the ISO 6523 ICD of the OIOUBL register and
-  the code (`iso6523-actorid-upis::0184:12345674` for a CVR, `::0198:DK12345674`
+  same URI Peppol uses: the scheme, the code naming the OIOUBL register and the
+  party's code (`iso6523-actorid-upis::0184:12345674` for a CVR, `::0198:DK12345674`
   for an SE number, `::0088:5798009883735` for a GLN). The prefix follows the
   ICD rather than the XML: 0184 is the bare CVR, which the converter prefixes
   with `DK` on the way out, while the `DK` of 0198 is part of the identifier.
-  A register Peppol has retired without a successor, such as `DK:CPR` or
-  `DK:VANS`, is written `nemhandel:dk:cpr:1111111118` instead. The earlier
-  `DK:CVR:12345674` and `nemhandel:dk:cvr:12345674` spellings are still read, as
-  are the ICDs Peppol has retired. A Danish party carrying only a tax identity
-  derives its CVR endpoint automatically; explicit endpoints or inboxes always
-  win.
+  Every register OIOUBL accepts has a code in this scheme, retired ones such as
+  `DK:CPR` (9901) and `DK:VANS` (9905) included, so an endpoint has one shape
+  and only this one. The earlier `DK:CVR:12345674` and
+  `nemhandel:dk:cvr:12345674` spellings are still read, as are the codes Peppol
+  replaced when it re-coded a register. A Danish party carrying only a tax
+  identity derives its CVR endpoint automatically; explicit endpoints or inboxes
+  always win.
 - **Invoice / credit note** — the document type must be an OIOUBL-supported code
   (325/380/393, or 381 for a credit note), the customer must resolve to an
   endpoint for NemHandel to route to, every line needs a VAT category and a

@@ -126,14 +126,16 @@ func TestNormalizePartyParticipant(t *testing.T) {
 	})
 
 	// No other register has a prefix convention, so nothing is invented for
-	// GLN or CPR: the code is kept exactly as given. CPR keeps the register
-	// scheme too -- Peppol removed 9901 and named no successor to write it to.
+	// GLN or CPR: the code is kept exactly as given. A register Peppol has
+	// retired keeps the code Peppol retired, which still names it and nothing
+	// else, so every endpoint has the one shape.
 	t.Run("other registers keep the code they were given", func(t *testing.T) {
 		for given, want := range map[string]string{
-			"GLN:5798009883735":  "iso6523-actorid-upis::0088:5798009883735",
-			"DK:CPR:1111111118":  "nemhandel:dk:cpr:1111111118",
-			"DK:VANS:1111111118": "nemhandel:dk:vans:1111111118",
-			"DK:CVR:DK":          "DK:CVR:DK",
+			"GLN:5798009883735":   "iso6523-actorid-upis::0088:5798009883735",
+			"DK:CPR:1111111118":   "iso6523-actorid-upis::9901:1111111118",
+			"DK:VANS:1111111118":  "iso6523-actorid-upis::9905:1111111118",
+			"SE:ORGNR:5567321707": "iso6523-actorid-upis::0007:5567321707",
+			"DK:CVR:DK":           "DK:CVR:DK",
 		} {
 			inv := testInvoiceStandard(t)
 			inv.Supplier.Inboxes = nil
@@ -199,12 +201,12 @@ func TestNormalizePartyParticipant(t *testing.T) {
 	})
 
 	// A sender that has not caught up with Peppol's re-coding still names a
-	// register we know, and it settles on the live ICD.
-	t.Run("a retired ICD is read and rewritten onto the live one", func(t *testing.T) {
+	// register we know, and it settles on the live code.
+	t.Run("a replaced code is read and rewritten onto the live one", func(t *testing.T) {
 		for given, want := range map[string]string{
 			"iso6523-actorid-upis::9902:12345674":   "iso6523-actorid-upis::0184:12345674",
 			"iso6523-actorid-upis::9904:DK12345674": "iso6523-actorid-upis::0198:DK12345674",
-			"iso6523-actorid-upis::9901:1111111118": "nemhandel:dk:cpr:1111111118",
+			"iso6523-actorid-upis::9908:915442552":  "iso6523-actorid-upis::0192:915442552",
 		} {
 			inv := testInvoiceStandard(t)
 			inv.Supplier.Inboxes = nil
@@ -268,15 +270,16 @@ func TestSplitEndpointURI(t *testing.T) {
 		code     string
 		ok       bool
 	}{
-		// The ICD form, as written today.
+		// The form written today, a register Peppol has retired included.
 		{"iso6523-actorid-upis::0184:12345674", "DK:CVR", "12345674", true},
 		{"iso6523-actorid-upis::0198:DK12345674", "DK:SE", "DK12345674", true},
 		{"iso6523-actorid-upis::0088:5798009883735", "GLN", "5798009883735", true},
-		// ICDs Peppol has retired still name the register they named.
-		{"iso6523-actorid-upis::9902:12345674", "DK:CVR", "12345674", true},
+		{"iso6523-actorid-upis::9901:1111111118", "DK:CPR", "1111111118", true},
 		{"iso6523-actorid-upis::9905:12345674", "DK:VANS", "12345674", true},
-		// The register form, for a register with no live ICD, and the bare
-		// spellings stored before either scheme existed.
+		// A code Peppol replaced still names the register it named.
+		{"iso6523-actorid-upis::9902:12345674", "DK:CVR", "12345674", true},
+		{"iso6523-actorid-upis::9908:915442552", "NO:ORGNR", "915442552", true},
+		// The two spellings this addon no longer writes.
 		{"nemhandel:dk:cpr:1111111118", "DK:CPR", "1111111118", true},
 		{"nemhandel:dk:cvr:12345674", "DK:CVR", "12345674", true},
 		{"nemhandel:DK:CVR:12345674", "DK:CVR", "12345674", true},
