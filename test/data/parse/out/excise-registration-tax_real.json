@@ -41,7 +41,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:gln:5798000416604"
+				"uri": "iso6523-actorid-upis::0088:5798000416604"
 			}
 		],
 		"identities": [
@@ -171,7 +171,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:10000025"
+				"uri": "iso6523-actorid-upis::0184:10000025"
 			}
 		],
 		"identities": [

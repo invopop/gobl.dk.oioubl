@@ -17,14 +17,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestConvertNemHandelEndpointURI pins the endpoint URI end to end: the
-// cbc:EndpointID carries OIOUBL's register and a DK-prefixed CVR or SE code.
+// TestConvertNemHandelEndpointURI pins the endpoint URI end to end: however it
+// is spelled going in, it is stored as the participant identifier of its
+// register and the cbc:EndpointID carries OIOUBL's register name with a
+// DK-prefixed CVR or SE code.
 func TestConvertNemHandelEndpointURI(t *testing.T) {
 	for _, tt := range []struct {
 		given, stored, scheme, value string
 	}{
-		{"nemhandel:DK:CVR:88146328", "nemhandel:dk:cvr:88146328", "DK:CVR", "DK88146328"},
-		{"DK:SE:DK88146328", "nemhandel:dk:se:88146328", "DK:SE", "DK88146328"},
+		{"DK:CVR:88146328", "iso6523-actorid-upis::0184:88146328", "DK:CVR", "DK88146328"},
+		{"nemhandel:DK:CVR:88146328", "iso6523-actorid-upis::0184:88146328", "DK:CVR", "DK88146328"},
+		{"iso6523-actorid-upis::0184:88146328", "iso6523-actorid-upis::0184:88146328", "DK:CVR", "DK88146328"},
+		{"iso6523-actorid-upis::9902:DK88146328", "iso6523-actorid-upis::0184:88146328", "DK:CVR", "DK88146328"},
+		{"DK:SE:DK88146328", "iso6523-actorid-upis::0198:DK88146328", "DK:SE", "DK88146328"},
+		{"nemhandel:dk:se:88146328", "iso6523-actorid-upis::0198:DK88146328", "DK:SE", "DK88146328"},
+		{"iso6523-actorid-upis::0198:DK88146328", "iso6523-actorid-upis::0198:DK88146328", "DK:SE", "DK88146328"},
 	} {
 		t.Run(tt.given, func(t *testing.T) {
 			env := envelopeWithCustomerEndpoint(t, tt.given)

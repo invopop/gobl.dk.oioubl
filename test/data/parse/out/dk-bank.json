@@ -32,7 +32,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:10000009"
+				"uri": "iso6523-actorid-upis::0184:10000009"
 			}
 		],
 		"addresses": [
@@ -74,7 +74,7 @@
 		],
 		"endpoints": [
 			{
-				"uri": "nemhandel:dk:cvr:10000017"
+				"uri": "iso6523-actorid-upis::0184:10000017"
 			}
 		],
 		"addresses": [

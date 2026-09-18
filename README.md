@@ -39,12 +39,18 @@ Both target the OIOUBL 2.1 profile, schematron v1.17.2.
   account, the 4-digit registration number a domestic transfer needs), and
   NemKonto rejects account details outright, since it resolves the payee's
   registered account.
-- **Participants** — parties are routed by their NemHandel endpoint, a URI
-  naming the network, the OIOUBL register and the code
-  (`nemhandel:dk:cvr:12345674`, and likewise `dk:se`, `gln`). The earlier
-  `DK:CVR:12345674` spelling is still read. A Danish party carrying only a tax
-  identity derives its CVR endpoint automatically; explicit endpoints or
-  inboxes always win.
+- **Participants** — parties are routed by their participant identifier, the
+  same URI Peppol uses: the scheme, the ISO 6523 ICD of the OIOUBL register and
+  the code (`iso6523-actorid-upis::0184:12345674` for a CVR, `::0198:DK12345674`
+  for an SE number, `::0088:5798009883735` for a GLN). The prefix follows the
+  ICD rather than the XML: 0184 is the bare CVR, which the converter prefixes
+  with `DK` on the way out, while the `DK` of 0198 is part of the identifier.
+  A register Peppol has retired without a successor, such as `DK:CPR` or
+  `DK:VANS`, is written `nemhandel:dk:cpr:1111111118` instead. The earlier
+  `DK:CVR:12345674` and `nemhandel:dk:cvr:12345674` spellings are still read, as
+  are the ICDs Peppol has retired. A Danish party carrying only a tax identity
+  derives its CVR endpoint automatically; explicit endpoints or inboxes always
+  win.
 - **Invoice / credit note** — the document type must be an OIOUBL-supported code
   (325/380/393, or 381 for a credit note), the customer must resolve to an
   endpoint for NemHandel to route to, every line needs a VAT category and a
@@ -84,7 +90,7 @@ supplier:
     country: "DK"
     code: "12345674"
   # endpoints may be omitted: the addon derives
-  # nemhandel:dk:cvr:12345674 from the tax identity.
+  # iso6523-actorid-upis::0184:12345674 from the tax identity.
 ```
 
 See [`examples/`](examples/) for complete invoice and credit note documents with

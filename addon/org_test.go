@@ -62,31 +62,36 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		inv.Payment = bankPayment()
 		require.NoError(t, inv.Calculate())
 		require.Len(t, inv.Supplier.Endpoints, 1)
-		assert.Equal(t, "nemhandel:dk:cvr:12345674", inv.Supplier.Endpoints[0].URI.String())
-		assert.Empty(t, inv.Supplier.Inboxes, "no Peppol endpoint URI is fabricated; the deprecated inbox is not used")
+		assert.Equal(t, "iso6523-actorid-upis::0184:12345674", inv.Supplier.Endpoints[0].URI.String())
+		assert.Empty(t, inv.Supplier.Inboxes, "the deprecated inbox is not used")
 		require.NoError(t, rules.Validate(inv), "a bare DK party should validate via the derived participant")
 	})
 
-	// Documents stored before the network scheme existed still read, and
-	// normalizing settles them on the current spelling.
-	t.Run("a bare endpoint is rewritten onto the network scheme", func(t *testing.T) {
+	// Documents stored before the participant identifier existed still read,
+	// and normalizing settles them on the current spelling.
+	t.Run("a bare endpoint is rewritten onto the participant identifier", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Inboxes = nil
-		inv.Supplier.Endpoints = []*org.Endpoint{{URI: "DK:SE:12345678"}}
+		inv.Supplier.Endpoints = []*org.Endpoint{{URI: "DK:SE:12345674"}}
 		require.NoError(t, inv.Calculate())
 		require.Len(t, inv.Supplier.Endpoints, 1, "no second endpoint is derived from the tax ID")
-		assert.Equal(t, "nemhandel:dk:se:12345678", inv.Supplier.Endpoints[0].URI.String())
+		assert.Equal(t, "iso6523-actorid-upis::0198:DK12345674", inv.Supplier.Endpoints[0].URI.String())
 	})
 
-	// The converter adds the DK prefix in the XML (F-LIB180 for CVR), so the
-	// stored code does without it and one address has one spelling.
-	t.Run("a CVR or SE endpoint is stored without the DK prefix", func(t *testing.T) {
+	// The two Danish registers disagree about the prefix: ICD 0184 is the bare
+	// CVR, which the converter prefixes in the XML (F-LIB180), while the "DK"
+	// of ICD 0198 is part of the SE identifier itself. Either way one address
+	// settles on one spelling, whatever case it arrived in.
+	t.Run("a CVR or SE endpoint is stored as its own ICD spells it", func(t *testing.T) {
 		for given, want := range map[string]string{
-			"DK:CVR:12345674":             "nemhandel:dk:cvr:12345674",
-			"DK:CVR:DK12345674":           "nemhandel:dk:cvr:12345674",
-			"nemhandel:DK:CVR:DK12345674": "nemhandel:dk:cvr:12345674",
-			"DK:SE:12345678":              "nemhandel:dk:se:12345678",
-			"DK:SE:DK12345678":            "nemhandel:dk:se:12345678",
+			"DK:CVR:12345674":             "iso6523-actorid-upis::0184:12345674",
+			"DK:CVR:DK12345674":           "iso6523-actorid-upis::0184:12345674",
+			"DK:CVR:dk12345674":           "iso6523-actorid-upis::0184:12345674",
+			"nemhandel:DK:CVR:DK12345674": "iso6523-actorid-upis::0184:12345674",
+			"DK:SE:12345674":              "iso6523-actorid-upis::0198:DK12345674",
+			"DK:SE:DK12345674":            "iso6523-actorid-upis::0198:DK12345674",
+			"DK:SE:dk12345674":            "iso6523-actorid-upis::0198:DK12345674",
+			"nemhandel:dk:se:12345674":    "iso6523-actorid-upis::0198:DK12345674",
 		} {
 			inv := testInvoiceStandard(t)
 			inv.Supplier.Inboxes = nil
@@ -108,12 +113,27 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		assert.Equal(t, "DK:CVR:DK", inv.Supplier.Endpoints[0].URI.String())
 	})
 
+	// Nor does a prefix-only inbox become an endpoint with no URI at all,
+	// which would fail validation for a reason that names nothing useful.
+	t.Run("a prefix-only inbox stays an inbox", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Supplier.Endpoints = nil
+		inv.Supplier.Inboxes = []*org.Inbox{{Scheme: "DK:CVR", Code: "DK"}}
+		require.NoError(t, inv.Calculate())
+		require.Len(t, inv.Supplier.Inboxes, 1, "the inbox is kept, not migrated")
+		require.Len(t, inv.Supplier.Endpoints, 1, "and the CVR endpoint is derived instead")
+		assert.Equal(t, "iso6523-actorid-upis::0184:12345674", inv.Supplier.Endpoints[0].URI.String())
+	})
+
 	// No other register has a prefix convention, so nothing is invented for
-	// GLN or CPR: the code is kept exactly as given.
+	// GLN or CPR: the code is kept exactly as given. CPR keeps the register
+	// scheme too -- Peppol removed 9901 and named no successor to write it to.
 	t.Run("other registers keep the code they were given", func(t *testing.T) {
 		for given, want := range map[string]string{
-			"GLN:5798009883735": "nemhandel:gln:5798009883735",
-			"DK:CPR:1111111118": "nemhandel:dk:cpr:1111111118",
+			"GLN:5798009883735":  "iso6523-actorid-upis::0088:5798009883735",
+			"DK:CPR:1111111118":  "nemhandel:dk:cpr:1111111118",
+			"DK:VANS:1111111118": "nemhandel:dk:vans:1111111118",
+			"DK:CVR:DK":          "DK:CVR:DK",
 		} {
 			inv := testInvoiceStandard(t)
 			inv.Supplier.Inboxes = nil
@@ -136,7 +156,7 @@ func TestNormalizePartyParticipant(t *testing.T) {
 			inv.Supplier.Endpoints = []*org.Endpoint{{URI: cbc.URI(given)}}
 			require.NoError(t, inv.Calculate())
 			require.Len(t, inv.Supplier.Endpoints, 1, "given %q", given)
-			assert.Equal(t, "nemhandel:dk:cvr:12345674", inv.Supplier.Endpoints[0].URI.String(),
+			assert.Equal(t, "iso6523-actorid-upis::0184:12345674", inv.Supplier.Endpoints[0].URI.String(),
 				"given %q", given)
 		}
 	})
@@ -151,18 +171,48 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		assert.Equal(t, "cvr:12345674", inv.Supplier.Endpoints[0].URI.String(),
 			"left untouched: it names no network we recognise")
 		require.Len(t, inv.Supplier.Endpoints, 2, "so a Danish endpoint is still derived")
-		assert.Equal(t, "nemhandel:dk:cvr:12345674", inv.Supplier.Endpoints[1].URI.String())
+		assert.Equal(t, "iso6523-actorid-upis::0184:12345674", inv.Supplier.Endpoints[1].URI.String())
 	})
 
-	// A party may sit on both networks. Rewriting must not touch the Peppol one.
+	// A party addressed somewhere OIOUBL cannot route to keeps that address
+	// untouched, and gets a Danish one derived alongside.
 	t.Run("an endpoint on another network is left alone", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Supplier.Inboxes = nil
+		inv.Supplier.Endpoints = []*org.Endpoint{{URI: "mailto:faktura@eksempel.dk"}}
+		require.NoError(t, inv.Calculate())
+		require.Len(t, inv.Supplier.Endpoints, 2, "a Danish one is derived alongside")
+		assert.Equal(t, "mailto:faktura@eksempel.dk", inv.Supplier.Endpoints[0].URI.String())
+		assert.Equal(t, "iso6523-actorid-upis::0184:12345674", inv.Supplier.Endpoints[1].URI.String())
+	})
+
+	// The party's Peppol participant identifier is its NemHandel one: the
+	// Nemhandelsregister is a Peppol SMP. Deriving a second endpoint for the
+	// same address would say the party sits in two places.
+	t.Run("a Peppol participant identifier is the OIOUBL endpoint", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Inboxes = nil
 		inv.Supplier.Endpoints = []*org.Endpoint{{URI: "iso6523-actorid-upis::0184:12345674"}}
 		require.NoError(t, inv.Calculate())
-		require.Len(t, inv.Supplier.Endpoints, 2, "a Danish one is derived alongside")
+		require.Len(t, inv.Supplier.Endpoints, 1, "no duplicate is derived from the tax ID")
 		assert.Equal(t, "iso6523-actorid-upis::0184:12345674", inv.Supplier.Endpoints[0].URI.String())
-		assert.Equal(t, "nemhandel:dk:cvr:12345674", inv.Supplier.Endpoints[1].URI.String())
+	})
+
+	// A sender that has not caught up with Peppol's re-coding still names a
+	// register we know, and it settles on the live ICD.
+	t.Run("a retired ICD is read and rewritten onto the live one", func(t *testing.T) {
+		for given, want := range map[string]string{
+			"iso6523-actorid-upis::9902:12345674":   "iso6523-actorid-upis::0184:12345674",
+			"iso6523-actorid-upis::9904:DK12345674": "iso6523-actorid-upis::0198:DK12345674",
+			"iso6523-actorid-upis::9901:1111111118": "nemhandel:dk:cpr:1111111118",
+		} {
+			inv := testInvoiceStandard(t)
+			inv.Supplier.Inboxes = nil
+			inv.Supplier.Endpoints = []*org.Endpoint{{URI: cbc.URI(given)}}
+			require.NoError(t, inv.Calculate())
+			require.Len(t, inv.Supplier.Endpoints, 1, "given %q", given)
+			assert.Equal(t, want, inv.Supplier.Endpoints[0].URI.String(), "given %q", given)
+		}
 	})
 
 	// An inbox is settled like an endpoint that arrived as one.
@@ -172,17 +222,17 @@ func TestNormalizePartyParticipant(t *testing.T) {
 		inv.Supplier.Inboxes = []*org.Inbox{{Scheme: "dk:cvr", Code: "DK12345674"}}
 		require.NoError(t, inv.Calculate())
 		require.Len(t, inv.Supplier.Endpoints, 1)
-		assert.Equal(t, "nemhandel:dk:cvr:12345674", inv.Supplier.Endpoints[0].URI.String())
+		assert.Equal(t, "iso6523-actorid-upis::0184:12345674", inv.Supplier.Endpoints[0].URI.String())
 	})
 
 	t.Run("an explicit inbox is migrated to an endpoint", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Supplier.Endpoints = nil
-		inv.Supplier.Inboxes = []*org.Inbox{{Scheme: "DK:SE", Code: "12345678"}}
+		inv.Supplier.Inboxes = []*org.Inbox{{Scheme: "DK:SE", Code: "12345674"}}
 		require.NoError(t, inv.Calculate())
 		assert.Empty(t, inv.Supplier.Inboxes, "the deprecated inbox is migrated away")
 		require.Len(t, inv.Supplier.Endpoints, 1, "the inbox becomes the participant endpoint")
-		assert.Equal(t, "nemhandel:dk:se:12345678", inv.Supplier.Endpoints[0].URI.String(),
+		assert.Equal(t, "iso6523-actorid-upis::0198:DK12345674", inv.Supplier.Endpoints[0].URI.String(),
 			"an explicit DK:SE participant wins over the derived CVR")
 	})
 
@@ -218,12 +268,28 @@ func TestSplitEndpointURI(t *testing.T) {
 		code     string
 		ok       bool
 	}{
+		// The ICD form, as written today.
+		{"iso6523-actorid-upis::0184:12345674", "DK:CVR", "12345674", true},
+		{"iso6523-actorid-upis::0198:DK12345674", "DK:SE", "DK12345674", true},
+		{"iso6523-actorid-upis::0088:5798009883735", "GLN", "5798009883735", true},
+		// ICDs Peppol has retired still name the register they named.
+		{"iso6523-actorid-upis::9902:12345674", "DK:CVR", "12345674", true},
+		{"iso6523-actorid-upis::9905:12345674", "DK:VANS", "12345674", true},
+		// The register form, for a register with no live ICD, and the bare
+		// spellings stored before either scheme existed.
+		{"nemhandel:dk:cpr:1111111118", "DK:CPR", "1111111118", true},
 		{"nemhandel:dk:cvr:12345674", "DK:CVR", "12345674", true},
 		{"nemhandel:DK:CVR:12345674", "DK:CVR", "12345674", true},
-		{"nemhandel:gln:5798009883735", "GLN", "5798009883735", true},
 		{"DK:CVR:12345674", "DK:CVR", "12345674", true},
 		{"GLN:5798009883735", "GLN", "5798009883735", true},
-		{"iso6523-actorid-upis::0184:12345674", "", "", false},
+		// An ICD naming no register OIOUBL accepts, and an unparseable rest.
+		{"iso6523-actorid-upis::0007:5567321707", "SE:ORGNR", "5567321707", true},
+		{"iso6523-actorid-upis::0060:123456789", "DUNS", "123456789", true},
+		{"iso6523-actorid-upis::9999:12345674", "", "", false},
+		{"iso6523-actorid-upis::0184:", "", "", false},
+		{"iso6523-actorid-upis::12345674", "", "", false},
+		{"iso6523-actorid-upis:", "", "", false},
+		{"mailto:faktura@eksempel.dk", "", "", false},
 		{"cvr:12345674", "", "", false},
 		{"nemhandel:DK:CVR:", "", "", false},
 		{"nemhandel:", "", "", false},
@@ -242,8 +308,8 @@ func TestSplitEndpointURI(t *testing.T) {
 func TestEndpointNilsAreSkipped(t *testing.T) {
 	assert.Nil(t, addon.OIOUBLEndpoint(nil))
 
-	p := &org.Party{Endpoints: []*org.Endpoint{nil, {URI: "nemhandel:dk:cvr:12345674"}}}
+	p := &org.Party{Endpoints: []*org.Endpoint{nil, {URI: "iso6523-actorid-upis::0184:12345674"}}}
 	ep := addon.OIOUBLEndpoint(p)
 	require.NotNil(t, ep)
-	assert.Equal(t, "nemhandel:dk:cvr:12345674", ep.URI.String())
+	assert.Equal(t, "iso6523-actorid-upis::0184:12345674", ep.URI.String())
 }

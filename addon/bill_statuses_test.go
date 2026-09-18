@@ -7,6 +7,7 @@ import (
 	oioubl "github.com/invopop/gobl.dk.oioubl/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/rules"
 	"github.com/invopop/gobl/tax"
@@ -14,6 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// lei is a participant identifier on a register OIOUBL's EndpointID code list
+// does not name (F-LIB179), so it stands for an address OIOUBL cannot route to.
+const lei cbc.URI = "iso6523-actorid-upis::0199:529900T8BM49AURSDO55"
 
 func testStatusResponse(t *testing.T) *bill.Status {
 	t.Helper()
@@ -64,28 +69,34 @@ func TestStatusValidation(t *testing.T) {
 		assert.NoError(t, rules.Validate(st))
 	})
 
-	t.Run("a DK party with only other-network endpoints gains a derived Danish one", func(t *testing.T) {
+	// The party's participant identifier names DK:CVR, a register OIOUBL
+	// accepts, so it is the OIOUBL endpoint and nothing is derived beside it.
+	t.Run("a DK party's participant identifier is its OIOUBL endpoint", func(t *testing.T) {
 		st := testStatusResponse(t)
 		require.NoError(t, st.Calculate())
 		require.NoError(t, rules.Validate(st))
 		ep := oioubl.OIOUBLEndpoint(st.Supplier)
 		require.NotNil(t, ep)
-		assert.Equal(t, "nemhandel:dk:cvr:88146328", ep.URI.String())
-		assert.Len(t, st.Supplier.Endpoints, 2, "the Peppol endpoint stays alongside")
+		assert.Equal(t, "iso6523-actorid-upis::0184:88146328", ep.URI.String())
+		assert.Len(t, st.Supplier.Endpoints, 1, "no second endpoint for the same address")
 	})
 
-	t.Run("foreign supplier with only other-network endpoints fails (F-LIB179)", func(t *testing.T) {
+	// An LEI is a participant identifier, but not one of the registers an
+	// OIOUBL EndpointID may name, so it cannot stand in for one.
+	t.Run("foreign supplier with only off-register endpoints fails (F-LIB179)", func(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Supplier.TaxID = &tax.Identity{Country: "SE", Code: "556677889901"}
+		st.Supplier.Endpoints = []*org.Endpoint{{URI: lei}}
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "F-LIB179")
 	})
 
-	t.Run("foreign customer with only other-network endpoints fails (F-LIB179)", func(t *testing.T) {
+	t.Run("foreign customer with only off-register endpoints fails (F-LIB179)", func(t *testing.T) {
 		st := testStatusResponse(t)
 		st.Customer.TaxID = &tax.Identity{Country: "DE", Code: "111111125"}
 		st.Customer.Identities = []*org.Identity{{Scope: org.IdentityScopeLegal, Code: "4035811991021"}}
+		st.Customer.Endpoints = []*org.Endpoint{{URI: lei}}
 		require.NoError(t, st.Calculate())
 		err := rules.Validate(st)
 		assert.ErrorContains(t, err, "F-LIB179")

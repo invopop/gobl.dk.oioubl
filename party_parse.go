@@ -90,8 +90,10 @@ func recoverIdentityScheme(p *org.Party, wire *ubl.Party) {
 		if id == nil || id.Ext.Get(iso.ExtKeySchemeID).String() != schemeZZZ {
 			continue
 		}
-		// stripParties has already unprefixed the endpoint, as it did the identity.
-		if id.Code.String() != wire.EndpointID.Value {
+		// stripParties has already unprefixed the endpoint, as it did the
+		// identity. Participant identifiers compare case-insensitively, so a
+		// sender that lowercased either still names one address.
+		if !strings.EqualFold(id.Code.String(), wire.EndpointID.Value) {
 			continue
 		}
 		id.Ext = id.Ext.Set(iso.ExtKeySchemeID, cbc.Code(scheme))
