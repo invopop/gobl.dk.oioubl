@@ -54,6 +54,9 @@ func testInvoiceStandard(t *testing.T) *bill.Invoice {
 			Inboxes: []*org.Inbox{
 				{Scheme: "DK:CVR", Code: "88146328"},
 			},
+			Emails: []*org.Email{
+				{Address: "bogholderi@kunde.dk"},
+			},
 			Addresses: []*org.Address{
 				{Number: "5", Street: "Bygaden", Locality: "Aarhus", Code: "8000", Country: "DK"},
 			},
@@ -78,6 +81,41 @@ func TestInvoiceValidation(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		require.NoError(t, inv.Calculate())
 		require.NoError(t, rules.Validate(inv))
+	})
+
+	t.Run("customer contact from a person's identity code (F-INV051)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Customer.Emails = nil
+		inv.Customer.People = []*org.Person{{
+			Name:       &org.Name{Given: "Hans Hansen"},
+			Identities: []*org.Identity{{Code: "7778"}},
+		}}
+		require.NoError(t, inv.Calculate())
+		require.NoError(t, rules.Validate(inv))
+	})
+
+	t.Run("customer without a contact identifier is rejected (F-INV046)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Customer.Emails = nil
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "contact identifier")
+	})
+
+	t.Run("a missing customer is left to the rules that require one", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Customer = nil
+		require.NoError(t, inv.Calculate())
+		if err := rules.Validate(inv); err != nil {
+			assert.NotContains(t, err.Error(), "contact identifier")
+		}
+	})
+
+	t.Run("a person without an identity code is not a contact identifier (F-INV051)", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Customer.Emails = nil
+		inv.Customer.People = []*org.Person{{Name: &org.Name{Given: "Hans Hansen"}}}
+		require.NoError(t, inv.Calculate())
+		assert.ErrorContains(t, rules.Validate(inv), "contact identifier")
 	})
 
 	t.Run("unsupported document type is rejected (F-INV011)", func(t *testing.T) {

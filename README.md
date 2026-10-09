@@ -57,7 +57,10 @@ Both target the OIOUBL 2.1 profile, schematron v1.17.2.
   (325/380/393, or 381 for a credit note), the customer must resolve to an
   endpoint for NemHandel to route to, every line needs a VAT category and a
   non-zero quantity, and ordering is required once any line carries an order
-  reference.
+  reference. The customer also needs a contact identifier, since OIOUBL
+  requires a `Contact` with an `ID` on the customer: the first person's
+  identity code, or failing that the first email, which the OIOUBL contact
+  guideline recommends as the identifier.
 
 Rules the OIOUBL schematron already enforces are generally left to it rather
 than duplicated here; the addon aims at the paths a sender realistically hits.

@@ -37,6 +37,8 @@ func billInvoiceRules() *rules.Set {
 			),
 		),
 		rules.Field("customer",
+			rules.Assert("08", "customer needs a contact identifier: a person with an identity code, or an email (F-INV046 / F-INV051)",
+				is.Func("has a contact identifier", partyHasContactID)),
 			rules.Field("endpoints",
 				rules.Assert("03", "customer endpoint is required (F-INV044 / F-CRN040)",
 					is.Present),
