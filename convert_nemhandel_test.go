@@ -72,6 +72,7 @@ func envelopeWithCustomerEndpoint(t *testing.T, uri string) *gobl.Envelope {
 			Name:      "Kunde ApS",
 			TaxID:     &tax.Identity{Country: "DK", Code: "88146328"},
 			Endpoints: []*org.Endpoint{{URI: cbc.URI(uri)}},
+			Emails:    []*org.Email{{Address: "bogholderi@kunde.dk"}},
 			Addresses: []*org.Address{{Street: "Fredericiavej", Locality: "Helsingør", Code: "3000", Country: "DK"}},
 		},
 		Lines: []*bill.Line{{

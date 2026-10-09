@@ -98,6 +98,22 @@ func hasParticipantEndpoint(p *org.Party) bool {
 	return false
 }
 
+// partyHasContactID reports whether the party offers a value for its contact's
+// cbc:ID: a first person with an identity code, or an email. A missing party
+// passes; presence has its own rules.
+func partyHasContactID(val any) bool {
+	p, ok := val.(*org.Party)
+	if !ok || p == nil {
+		return true
+	}
+	if len(p.People) > 0 {
+		if ids := p.People[0].Identities; len(ids) > 0 && ids[0].Code != "" {
+			return true
+		}
+	}
+	return len(p.Emails) > 0
+}
+
 // hasLegalIdentity reports whether the party already carries a legal-scope identity.
 func hasLegalIdentity(p *org.Party) bool {
 	for _, id := range p.Identities {

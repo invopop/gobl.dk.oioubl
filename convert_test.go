@@ -150,6 +150,7 @@ func TestConvertUnsupportedVATKey(t *testing.T) {
 		return &org.Party{
 			Name:      name,
 			TaxID:     &tax.Identity{Country: "DK", Code: cbc.Code(code)},
+			Emails:    []*org.Email{{Address: "faktura@example.dk"}},
 			Addresses: []*org.Address{{Street: "Hovedgaden", Locality: "København", Code: "1000", Country: "DK"}},
 		}
 	}
@@ -211,6 +212,7 @@ func TestConvertEndpointSelection(t *testing.T) {
 				{URI: "mailto:faktura@kunde.dk"},
 				{URI: "GLN:5798009883735"},
 			},
+			Emails:    []*org.Email{{Address: "faktura@kunde.dk"}},
 			Addresses: []*org.Address{{Street: "Fredericiavej", Locality: "Helsingør", Code: "3000", Country: "DK"}},
 		},
 		Lines: []*bill.Line{{
@@ -278,6 +280,7 @@ func TestConvertCompanyIDScheme(t *testing.T) {
 					Name:       "Den Lille Skole",
 					Identities: []*org.Identity{id},
 					Endpoints:  []*org.Endpoint{{URI: "GLN:5798009883735"}},
+					Emails:     []*org.Email{{Address: "kontor@dls.dk"}},
 					Addresses:  []*org.Address{{Street: "Fredericiavej", Locality: "Helsingør", Code: "3000", Country: country}},
 				},
 				Lines: []*bill.Line{{

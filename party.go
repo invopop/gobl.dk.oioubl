@@ -30,6 +30,7 @@ func (ui *Invoice) applyParties(inv *bill.Invoice) {
 	}
 	addPartyDetails(ui.AccountingSupplierParty.Party, supplier)
 	addPartyDetails(ui.AccountingCustomerParty.Party, inv.Customer)
+	addContactEmailID(ui.AccountingCustomerParty.Party, inv.Customer)
 	addPartyDetails(ui.TaxRepresentativeParty, taxRep)
 	if inv.Payment != nil {
 		addPayeeDetails(ui.PayeeParty, inv.Payment.Payee)
@@ -66,6 +67,22 @@ func addPayeeDetails(p *ubl.Party, payee *org.Party) {
 		p.PostalAddress = newPostalAddress(payee.Addresses)
 	}
 	addPartyDetails(p, payee)
+}
+
+// addContactEmailID falls back to the party's email for the contact's cbc:ID
+// when no person carries an identity code. The customer contact is mandatory
+// (F-INV046) and so is its ID (F-INV051); the OIOUBL contact guideline
+// recommends an email as the identifier.
+func addContactEmailID(p *ubl.Party, party *org.Party) {
+	if p == nil || party == nil || len(party.Emails) == 0 {
+		return
+	}
+	if p.Contact == nil {
+		p.Contact = &ubl.Contact{}
+	}
+	if p.Contact.ID == nil {
+		p.Contact.ID = ptr(party.Emails[0].Address)
+	}
 }
 
 // addContactID adds the mandatory cbc:ID (F-INV051), sourced from the
