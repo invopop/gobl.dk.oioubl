@@ -72,17 +72,13 @@ func addPayeeDetails(p *ubl.Party, payee *org.Party) {
 // addContactEmailID falls back to the party's email for the contact's cbc:ID
 // when no person carries an identity code. The customer contact is mandatory
 // (F-INV046) and so is its ID (F-INV051); the OIOUBL contact guideline
-// recommends an email as the identifier.
+// recommends an email as the identifier. The base already wrote the contact
+// itself from that email.
 func addContactEmailID(p *ubl.Party, party *org.Party) {
-	if p == nil || party == nil || len(party.Emails) == 0 {
+	if party == nil || len(party.Emails) == 0 || p.Contact.ID != nil {
 		return
 	}
-	if p.Contact == nil {
-		p.Contact = &ubl.Contact{}
-	}
-	if p.Contact.ID == nil {
-		p.Contact.ID = ptr(party.Emails[0].Address)
-	}
+	p.Contact.ID = ptr(party.Emails[0].Address)
 }
 
 // addContactID adds the mandatory cbc:ID (F-INV051), sourced from the

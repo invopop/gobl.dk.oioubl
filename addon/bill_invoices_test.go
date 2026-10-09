@@ -101,6 +101,15 @@ func TestInvoiceValidation(t *testing.T) {
 		assert.ErrorContains(t, rules.Validate(inv), "contact identifier")
 	})
 
+	t.Run("a missing customer is left to the rules that require one", func(t *testing.T) {
+		inv := testInvoiceStandard(t)
+		inv.Customer = nil
+		require.NoError(t, inv.Calculate())
+		if err := rules.Validate(inv); err != nil {
+			assert.NotContains(t, err.Error(), "contact identifier")
+		}
+	})
+
 	t.Run("a person without an identity code is not a contact identifier (F-INV051)", func(t *testing.T) {
 		inv := testInvoiceStandard(t)
 		inv.Customer.Emails = nil
